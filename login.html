@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Orion Electronics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .auth-container {
+      max-width: 400px;
+      margin: 4rem auto;
+      background: #181818;
+      border-radius: 1.2rem;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+      padding: 2.5rem 2rem 2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1.5px solid #222;
+    }
+    .auth-container h2 {
+      margin-bottom: 1.5rem;
+      color: #fff;
+    }
+    .auth-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .auth-form input[type="email"],
+    .auth-form input[type="password"],
+    .auth-form input[type="text"] {
+      padding: 0.7rem 1rem;
+      border: none;
+      border-radius: 2rem;
+      font-size: 1rem;
+      background: #fff;
+      color: #fff;
+      transition: border 0.2s, background 0.2s;
+      box-shadow: 0 2px 8px #0003;
+    }
+    .auth-form input:focus {
+      outline: 2px solid #595959;
+      background: #fff;
+    }
+    .auth-form button {
+      background: #595959;
+      color: #fff;
+      border: none;
+      border-radius: 2rem;
+      padding: 0.8rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #0003;
+    }
+    .auth-form button:hover {
+      background: #fff;
+      color: #181818;
+      box-shadow: 0 4px 16px #0005;
+    }
+    .auth-links {
+      margin-top: 1.2rem;
+      font-size: 0.97rem;
+      text-align: center;
+    }
+    .auth-links a {
+      color: #eb6f40;
+      text-decoration: underline;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .auth-links a:hover {
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      .auth-container {
+        margin: 2rem 0.5rem;
+        padding: 1.5rem 0.5rem;
+      }
+    }
+  </style>
+  <script>
+    function sanitizeInput(str) {
+      // Remove script tags and angle brackets
+      return str.replace(/[<>]/g, '').replace(/script/gi, '');
+    }
+    function handleAuthForm(e) {
+      const isSignup = document.getElementById('signup-name').style.display !== 'none';
+      const email = document.getElementById('auth-email');
+      const password = document.getElementById('auth-password');
+      email.value = sanitizeInput(email.value);
+      password.value = sanitizeInput(password.value);
+      if (!email.value || !password.value) {
+        alert('Compila tutti i campi.');
+        return false;
+      }
+      // Basic email format check
+      if (!/^\S+@\S+\.\S+$/.test(email.value)) {
+        alert('Inserisci una email valida.');
+        return false;
+      }
+      // Password length check
+      if (password.value.length < 6) {
+        alert('La password deve essere di almeno 6 caratteri.');
+        return false;
+      }
+      if (isSignup) {
+        const name = document.getElementById('signup-name');
+        const services = document.querySelectorAll('input[name="services"]:checked');
+        name.value = sanitizeInput(name.value);
+        if (!name.value || services.length === 0) {
+          alert('Compila tutti i campi e seleziona almeno un servizio.');
+          return false;
+        }
+        // Name validity check
+        if (!/^[\w\sàèéìòùÀÈÉÌÒÙ'-]{2,40}$/.test(name.value)) {
+          alert('Il nome contiene caratteri non validi.');
+          return false;
+        }
+      }
+      return true;
+    }
+    function switchToSignup() {
+      document.getElementById('auth-title').textContent = 'Registrati';
+      document.getElementById('auth-form').action = '/api/auth/signup';
+      document.getElementById('signup-name').style.display = '';
+      document.getElementById('signup-services-group').style.display = 'flex';
+      document.getElementById('auth-password').setAttribute('autocomplete', 'new-password');
+      document.getElementById('auth-submit').textContent = 'Registrati';
+      document.getElementById('toggle-auth').style.display = 'none';
+      document.getElementById('toggle-login').style.display = '';
+    }
+    function switchToLogin() {
+      document.getElementById('auth-title').textContent = 'Accedi';
+      document.getElementById('auth-form').action = '/api/auth/login';
+      document.getElementById('signup-name').style.display = 'none';
+      document.getElementById('signup-services-group').style.display = 'none';
+      document.getElementById('auth-password').setAttribute('autocomplete', 'current-password');
+      document.getElementById('auth-submit').textContent = 'Accedi';
+      document.getElementById('toggle-auth').style.display = '';
+      document.getElementById('toggle-login').style.display = 'none';
+    }
+  </script>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo-container" style="display:flex;align-items:center;text-decoration:none;">
+      <img src="media/logoOrion.png" alt="Orion Logo" class="logo-img">
+      <span class="logo-text">Orion Electronics</span>
+    </a>
+  </nav>
+  <div class="auth-container">
+    <h2 id="auth-title">Accedi</h2>
+    <form class="auth-form" id="auth-form" method="POST" action="/api/auth/login" onsubmit="return handleAuthForm(event);">
+      <input type="text" id="signup-name" name="name" placeholder="Nome" style="display:none;" autocomplete="name" maxlength="40">
+      <input type="email" id="auth-email" name="email" placeholder="Email" required autocomplete="username">
+      <input type="password" id="auth-password" name="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <div id="signup-services-group" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.2rem;">
+        <label style="color:#fff; font-size:1rem; margin-bottom:0.2rem;">Scegli servizi per cui richiedere accesso</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="archery-consultazione"> Tiro con l'arco - consultazione</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="archery-gare"> Tiro con l'arco - Prenotazione gare (solo membri societari)</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="archery-corde"> Tiro con l'arco - Ordinazione corde</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="3d-prints"> Stampa 3D - Ordinazione stampe</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="3d-custom"> Stampa 3D - Modelli personalizzati</label>
+        <label style="display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" name="services" value="electronics-schede"> Elettronica - Ordine schede</label>
+      </div>
+      <button type="submit" id="auth-submit">Accedi</button>
+    </form>
+    <div class="auth-links">
+      <span id="toggle-auth">Non hai un account? <a href="#" onclick="switchToSignup();return false;"><strong>Registrati</strong></a></span>
+      <span id="toggle-login" style="display:none;">Hai già un account? <a href="#" onclick="switchToLogin();return false;"><strong>Accedi</strong></a></span>
+    </div>
+  </div>
+  <footer class="main-footer">
+    <div class="footer-columns">
+      <div class="footer-col sitemap">
+        <h3>Mappa del sito</h3>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="login.html">Area riservata</a></li>
+        </ul>
+      </div>
+      <div class="footer-col newsletter">
+        <h3>Newsletter</h3>
+        <form class="newsletter-form" onsubmit="return false;">
+          <input type="email" placeholder="La tua email" required>
+          <button type="submit">Iscriviti</button>
+          <label class="privacy-checkbox-full">
+            <input type="checkbox" required>
+            <span class="checkmark"></span>
+            <span class="privacy-label">Accetto <a href="privacy.html" target="_blank" rel="noopener noreferrer">l'informativa sulla privacy</a></span>
+          </label>
+        </form>
+        <small>Ricevi aggiornamenti sui nuovi progetti e servizi!</small>
+      </div>
+      <div class="footer-col contacts">
+        <h3>Contatti & Social</h3>
+        <div class="footer-links-vertical">
+          <a href="https://github.com/TheIgorMC" class="footer-github" target="_blank" rel="noopener noreferrer">
+            <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle; margin-right:6px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+            TheIgorMC
+          </a>
+          <a href="https://www.fitarco-italia.org/arcieri/situazione.php?Codice=93229" target="_blank" rel="noopener noreferrer" class="footer-fitarco footer-btn">
+            <img src="media/fitarco.png" alt="FITARCO" style="height:22px; width:auto; border:none; vertical-align:middle; background:#fff; border-radius:4px; padding:1px; margin-right:6px;">
+            I miei risultati
+          </a>
+          <a href="https://www.printables.com/@TheIgorMC" target="_blank" rel="noopener noreferrer" class="footer-printables footer-btn">
+            <img src="media/printables.svg" alt="Prusa Printables" style="height:22px; width:auto; border:none; vertical-align:middle; margin-right:6px;">
+            I miei modelli 3D
+          </a>
+        </div>
+        <div class="footer-kofi-banner" style="margin-top:1.2rem; text-align:center;">
+          <a href="https://ko-fi.com/theigormc" target="_blank" rel="noopener noreferrer" class="footer-kofi">
+            <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi" style="height:32px; width:auto; border:none; vertical-align:middle; border-radius:6px;">
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025 Giovanni | Orion Electronics. Tutti i diritti riservati.</span>
+    </div>
+  </footer>
+</body>
+</html>
