@@ -4,8 +4,8 @@
     <div class="footer-col sitemap">
       <h3>Mappa del sito</h3>
       <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="login.html">Area riservata</a></li>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('login') }}">Area riservata</a></li>
       </ul>
     </div>
     <div class="footer-col newsletter">
@@ -16,7 +16,7 @@
         <label class="privacy-checkbox-full">
           <input type="checkbox" required>
           <span class="checkmark"></span>
-          <span class="privacy-label">Accetto <a href="privacy.html" target="_blank" rel="noopener noreferrer">l'informativa sulla privacy</a></span>
+          <span class="privacy-label">Accetto <a href="{{ url_for('privacy') }}" target="_blank" rel="noopener noreferrer">l'informativa sulla privacy</a></span>
         </label>
       </form>
       <small>Ricevi aggiornamenti sui nuovi progetti e servizi!</small>
@@ -29,11 +29,11 @@
           TheIgorMC
         </a>
         <a href="https://www.fitarco-italia.org/arcieri/situazione.php?Codice=93229" target="_blank" rel="noopener noreferrer" class="footer-fitarco footer-btn">
-          <img src="media/fitarco.png" alt="FITARCO" style="height:22px; width:auto; border:none; vertical-align:middle; background:#fff; border-radius:4px; padding:1px; margin-right:6px;">
+          <img src="{{ url_for('static', filename='media/fitarco.png') }}" alt="FITARCO" style="height:22px; width:auto; border:none; vertical-align:middle; background:#fff; border-radius:4px; padding:1px; margin-right:6px;">
           I miei risultati
         </a>
         <a href="https://www.printables.com/@TheIgorMC" target="_blank" rel="noopener noreferrer" class="footer-printables footer-btn">
-          <img src="media/printables.svg" alt="Prusa Printables" style="height:22px; width:auto; border:none; vertical-align:middle; margin-right:6px;">
+          <img src="{{ url_for('static', filename='media/printables.svg') }}" alt="Prusa Printables" style="height:22px; width:auto; border:none; vertical-align:middle; margin-right:6px;">
           I miei modelli 3D
         </a>
       </div>
