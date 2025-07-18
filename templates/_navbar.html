@@ -1,9 +1,9 @@
 <!-- _navbar.html: Shared navbar for all pages -->
 <nav class="navbar">
-  <div class="logo-container">
+<a href="{{ url_for('index') }}" class="logo-container" style="text-decoration:none;display:flex;align-items:center;">
     <img src="{{ url_for('static', filename='media/logoOrion.png') }}" alt="Orion Logo" class="logo-img">
-    <span class="logo-text">Orion Electronics <span class="logo-handwritten">(e non solo!)</span></span>
-  </div>
+    <span class="logo-text">Orion Project</span>
+</a>
   <div id="account-area">
     <button class="reserved-btn" id="login-btn" onclick="window.location.href='{{ url_for('login') }}'">Accedi/Registrati</button>
     <div id="user-info" style="display:none; align-items:center; gap:0.7rem;">

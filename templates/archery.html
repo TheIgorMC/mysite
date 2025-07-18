@@ -1,8 +1,26 @@
+
 {% extends 'base.html' %}
 {% block title %}Tiro con l'arco | Orion Project{% endblock %}
 {% block content %}
-<main style="padding:2rem;text-align:center;">
-  <h1>Tiro con l'arco</h1>
-  <p>Questa è la sezione riservata agli utenti autenticati per il tiro con l'arco.</p>
-</main>
+<div class="archery-services">
+    <section class="service-row">
+        <div class="service-text-block">
+            <h2>Consultazione risultati</h2>
+            <p>
+            Accedi rapidamente ai tuoi risultati e alle classifiche delle gare di tiro con l'arco.
+            Compara i tuoi progressi con quelli di altri arcieri, visualizza le statistiche e scopri
+            se stai migliorando nel tempo.
+            </p>
+            <div class="service-dev-note">Sezione in via di sviluppo</div>
+        </div>
+        <div class="service-filler"></div>
+        <div class="service-img-block">
+            <div class="clipped-wrapper">
+            <img src="{{ url_for('static', filename='media/statistics.jpg') }}" alt="Consultazione risultati">
+            </div>
+        </div>
+    </section>
+
+  
+</div>
 {% endblock %}
