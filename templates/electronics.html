@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Tiro con l'arco | Orion Electronics</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Elettronica | Orion Electronics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <script>
@@ -32,10 +32,12 @@
     });
   </script>
   <div id="navbar-container"></div>
+  {% block content %}
   <main style="padding:2rem;text-align:center;">
-    <h1>Tiro con l'arco</h1>
-    <p>Questa è la sezione riservata agli utenti autenticati per il tiro con l'arco.</p>
+    <h1>Elettronica</h1>
+    <p>Questa è la sezione riservata agli utenti autenticati per l'elettronica.</p>
   </main>
+  {% endblock %}
   <div id="footer-container"></div>
 </body>
 </html>

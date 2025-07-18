@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Stampa 3D | Orion Electronics</title>
-  <link rel="stylesheet" href="style.css">
+  <title>{% block title %}Stampa 3D | Orion Electronics{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <script>
@@ -32,10 +32,12 @@
     });
   </script>
   <div id="navbar-container"></div>
+  {% block content %}
   <main style="padding:2rem;text-align:center;">
     <h1>Stampa 3D</h1>
     <p>Questa è la sezione riservata agli utenti autenticati per la stampa 3D.</p>
   </main>
+  {% endblock %}
   <div id="footer-container"></div>
 </body>
 </html>
