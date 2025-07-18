@@ -1,101 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{% block title %}My Services{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <style>
-    /* ...existing code... */
-    .logo-handwritten {
-      font-size: 0.85em;
-      font-family: 'Pacifico', 'Comic Sans MS', cursive, sans-serif;
-      font-style: italic;
-      color: #b3b3b3;
-      margin-left: 0.4em;
-      vertical-align: middle;
-      letter-spacing: 0.5px;
-    }
-    /* ...existing code... */
-  </style>
-</head>
-<body>
-  <script>
-    // Directus user info fetch and navbar update
-    async function updateNavbarWithDirectusUser() {
-      try {
-        // Replace with your Directus API URL
-        const res = await fetch('https://your-directus-instance.com/users/me', {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const user = await res.json();
-          document.getElementById('login-btn').style.display = 'none';
-          document.getElementById('user-info').style.display = 'flex';
-          document.getElementById('user-name').textContent = user.data?.first_name || user.data?.email || 'Utente';
-          document.getElementById('user-avatar').src = user.data?.avatar ? user.data.avatar : 'static/media/default-avatar.png';
-        } else {
-          document.getElementById('login-btn').style.display = 'inline-block';
-          document.getElementById('user-info').style.display = 'none';
-        }
-      } catch (e) {
-        document.getElementById('login-btn').style.display = 'inline-block';
-        document.getElementById('user-info').style.display = 'none';
-      }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      updateNavbarWithDirectusUser();
-      // Gear icon dropdown
-      const gear = document.getElementById('account-gear');
-      const dropdown = document.getElementById('account-dropdown');
-      if (gear) {
-        gear.addEventListener('click', function(e) {
-          e.stopPropagation();
-          dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        });
-        document.addEventListener('click', function() {
-          dropdown.style.display = 'none';
-        });
-      }
-    });
-    // Dynamically load navbar and footer
-    function loadComponent(id, url) {
-      fetch(url).then(r => r.text()).then(html => {
-        document.getElementById(id).innerHTML = html;
-      });
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      loadComponent('navbar-container', 'navbar.html');
-      loadComponent('footer-container', 'footer.html');
-    });
-  </script>
-
-  <div id="navbar-container"></div>
-  {% block content %}
-  <header class="services-header-full">
-    <a href="{{ url_for('archery') }}" class="service-card-full img1" style="text-decoration:none;">
-      <img class="service-img-full" src="{{ url_for('static', filename='media/archery.jpg') }}" alt="Tiro con l'arco">
-      <div class="service-label">Tiro con l'arco</div>
-    </a>
-    <a href="{{ url_for('printing') }}" class="service-card-full img2" style="text-decoration:none;">
-      <img class="service-img-full" src="{{ url_for('static', filename='media/3dprinting.jpg') }}" alt="Stampa 3D">
-      <div class="service-label">Stampa 3D</div>
-    </a>
-    <a href="{{ url_for('electronics') }}" class="service-card-full img3" style="text-decoration:none;">
-      <img class="service-img-full" src="{{ url_for('static', filename='media/circuit.jpg') }}" alt="Elettronica">
-      <div class="service-label">Elettronica</div>
-    </a>
-  </header>
-  <section class="overlap-section">
-    <div class="overlap-content">
-      <h2>Chi sono</h2>
-      <p>Ciao! Sono Giovanni, appassionato di elettronica, stampa 3D e tiro con l'arco. 
-        Da anni mi dedico a trasformare idee in progetti concreti, unendo creatività e competenze tecniche. 
-        Se vuoi scoprire di più sui miei servizi o collaborare, sei nel posto giusto!</p>
-      <p>Questa pagina è in particolare nata per offrire una separazione tra i vari servizi, quindi scegli ciò a cui sei interessato e verrai
-        reindirizzato alla pagina dedicata. Se non trovi ciò che cerchi, non esitare a contattarmi!</p>
-    </div>
-  </section>
-  {% endblock %}
-  <div id="footer-container"></div>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}My Services{% endblock %}
+{% block content %}
+<header class="services-header-full">
+  <a href="{{ url_for('archery') }}" class="service-card-full img1" style="text-decoration:none;">
+    <img class="service-img-full" src="{{ url_for('static', filename='media/archery.jpg') }}" alt="Tiro con l'arco">
+    <div class="service-label">Tiro con l'arco</div>
+  </a>
+  <a href="{{ url_for('printing') }}" class="service-card-full img2" style="text-decoration:none;">
+    <img class="service-img-full" src="{{ url_for('static', filename='media/3dprinting.jpg') }}" alt="Stampa 3D">
+    <div class="service-label">Stampa 3D</div>
+  </a>
+  <a href="{{ url_for('electronics') }}" class="service-card-full img3" style="text-decoration:none;">
+    <img class="service-img-full" src="{{ url_for('static', filename='media/circuit.jpg') }}" alt="Elettronica">
+    <div class="service-label">Elettronica</div>
+  </a>
+</header>
+<section class="overlap-section">
+  <div class="overlap-content">
+    <h2>Chi sono</h2>
+    <p>Ciao! Sono Giovanni, appassionato di elettronica, stampa 3D e tiro con l'arco. 
+      Da anni mi dedico a trasformare idee in progetti concreti, unendo creatività e competenze tecniche. 
+      Se vuoi scoprire di più sui miei servizi o collaborare, sei nel posto giusto!</p>
+    <p>Questa pagina è in particolare nata per offrire una separazione tra i vari servizi, quindi scegli ciò a cui sei interessato e verrai
+      reindirizzato alla pagina dedicata. Se non trovi ciò che cerchi, non esitare a contattarmi!</p>
+  </div>
+</section>
+{% endblock %}

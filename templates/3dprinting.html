@@ -1,43 +1,8 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>{% block title %}Stampa 3D | Orion Electronics{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <script>
-    // Gear icon dropdown and dynamic navbar/footer loading
-    document.addEventListener('DOMContentLoaded', function() {
-      function loadComponent(id, url) {
-        fetch(url).then(r => r.text()).then(html => {
-          document.getElementById(id).innerHTML = html;
-        });
-      }
-      loadComponent('navbar-container', 'navbar.html');
-      loadComponent('footer-container', 'footer.html');
-      // Gear icon logic (delegated)
-      document.addEventListener('click', function(e) {
-        const gear = document.getElementById('account-gear');
-        const dropdown = document.getElementById('account-dropdown');
-        if (gear && dropdown) {
-          if (e.target === gear) {
-            e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-          } else {
-            dropdown.style.display = 'none';
-          }
-        }
-      });
-    });
-  </script>
-  <div id="navbar-container"></div>
-  {% block content %}
-  <main style="padding:2rem;text-align:center;">
-    <h1>Stampa 3D</h1>
-    <p>Questa è la sezione riservata agli utenti autenticati per la stampa 3D.</p>
-  </main>
-  {% endblock %}
-  <div id="footer-container"></div>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Stampa 3D | Orion Electronics{% endblock %}
+{% block content %}
+<main style="padding:2rem;text-align:center;">
+  <h1>Stampa 3D</h1>
+  <p>Questa è la sezione riservata agli utenti autenticati per la stampa 3D.</p>
+</main>
+{% endblock %}
