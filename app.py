@@ -18,6 +18,18 @@ def printing():
 def electronics():
     return render_template('electronics.html')
 
+@app.route('/statistics')
+def statistics():
+    return render_template('statistics.html')
+
+@app.route('/booking')
+def booking():
+    return render_template('booking.html')
+
+@app.route('/shop')
+def shop():
+    return render_template('shop.html')
+
 @app.route('/login')
 def login():
     return render_template('login.html')

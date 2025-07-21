@@ -167,6 +167,54 @@ body {
 .service-card-full .service-label {
   transition: opacity 0.3s linear;
 }
+
+/* Service descriptors for detailed services */
+.service-descriptor {
+  position: absolute;
+  left: 50%;
+  /* Start positioned just below the card, so it's initially hidden */
+  bottom: -100%; /* Adjust this based on the actual height of your descriptor content */
+  transform: translate(-50%, 0); /* Center horizontally */
+  background: rgba(17, 17, 17, 0.92); /* Same background as service-label */
+  color: #fff;
+  padding: 1.1rem 2.8rem;
+  border-radius: 0 0 1.2rem 1.2rem;
+  box-shadow: 0 2px 18px #0008;
+  text-align: center;
+  width: 100%;
+  height: auto; /* Allow height to adjust to content */
+  overflow: hidden; /* Hide content that slides out */
+  /* Combine transitions for a smoother effect */
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out, bottom 0.4s ease-out;
+  z-index: 1; /* Ensure it's below the service-label initially */
+  opacity: 0; /* Initially hidden */
+}
+
+.service-descriptor-heading {
+  font-size: 2rem; /* Make heading bold and slightly larger */
+  font-weight: 700; /* Bolder */
+  margin-bottom: 0.5rem; /* Space between heading and description */
+}
+
+.service-descriptor-description {
+  font-size: 1.4rem; /* Size for the description text */
+  opacity: 0; /* Initially hidden */
+  transition: opacity 0.3s ease-in-out; /* Fade in the description */
+}
+
+/* Hover effect for the service descriptor */
+.service-card-full:hover .service-descriptor {
+  bottom: 0; /* Slide up to the bottom of the card */
+  transform: translate(-50%, 0); /* Maintain horizontal centering */
+  opacity: 1; /* Become fully visible */
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out, bottom 0.4s ease-out;
+}
+
+/* When the service descriptor slides in, the description should become visible */
+.service-card-full:hover .service-descriptor .service-descriptor-description {
+  opacity: 1; /* Make description visible when hovered */
+}
+
 /* Overlap Section */
 .overlap-section {
   background: #222;
@@ -543,7 +591,7 @@ textarea:focus {
 .service-filler {
   width: 10%;
   transition: width 0.5s ease;
-  background-color: #fff;
+  background-color: transparent;
 }
 
 .service-row:hover .service-filler {
@@ -554,7 +602,7 @@ textarea:focus {
   width: 60%;  
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   transition: width 0.5s ease;
   clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
 }
@@ -562,7 +610,7 @@ textarea:focus {
 .service-img-block img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
   display: block;  
   filter: grayscale(100%);
   transform: scale(1);
