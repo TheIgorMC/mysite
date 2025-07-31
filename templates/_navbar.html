@@ -4,18 +4,27 @@
     <img src="{{ url_for('static', filename='media/logoOrion.png') }}" alt="Orion Logo" class="logo-img">
     <span class="logo-text">Orion Project</span>
 </a>
-  <div id="account-area">
-    <button class="reserved-btn" id="login-btn" onclick="window.location.href='{{ url_for('login') }}'">Accedi/Registrati</button>
-    <div id="user-info" style="display:none; align-items:center; gap:0.7rem;">
-      <img id="user-avatar" src="{{ url_for('static', filename='media/default-avatar.png') }}" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #595959;">
-      <span id="user-name" style="font-weight:600;color:#fff;">Username</span>
-      <button id="account-gear" style="background:none;border:none;cursor:pointer;padding:0;margin-left:0.2rem;">
-        <svg width="22" height="22" fill="#b3b3b3" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-2.06l1.77-1.02a1 1 0 0 0 .37-1.36l-1.68-2.91a1 1 0 0 0-1.28-.45l-1.77 1.02a7.03 7.03 0 0 0-1.52-.88l-.27-2A1 1 0 0 0 14 4h-3a1 1 0 0 0-1 .86l-.27 2a7.03 7.03 0 0 0-1.52.88l-1.77-1.02a1 1 0 0 0-1.28.45l-1.68-2.91a1 1 0 0 0 .37 1.36l1.77 1.02c-.06.32-.1.65-.1.99s.04.67.1.99l-1.77 1.02a1 1 0 0 0-.37 1.36l1.68 2.91a1 1 0 0 0 1.28.45l1.77-1.02c.47.34.98.63 1.52.88l.27 2A1 1 0 0 0 11 20h3a1 1 0 0 0 1-.86l.27-2c.54-.25 1.05-.54 1.52-.88l1.77 1.02a1 1 0 0 0 1.28-.45l1.68-2.91a1 1 0 0 0-.37-1.36l-1.77-1.02c.06-.32.1-.65.1-.99s-.04-.67-.1-.99z"></path></svg>
-      </button>
-      <div id="account-dropdown" style="display:none;position:absolute;right:2vw;top:60px;background:#181818;border:1px solid #222;border-radius:1rem;padding:1rem;min-width:180px;z-index:100;box-shadow:0 4px 24px #0008;">
-        <a href="#" style="color:#fff;text-decoration:none;display:block;padding:0.5rem 0;">Gestisci account</a>
-        <a href="#" style="color:#fff;text-decoration:none;display:block;padding:0.5rem 0;">Logout</a>
+  <div id="account-area" style="display:flex;align-items:center;gap:1.2rem;">
+    {% if current_user.is_authenticated %}
+      <div id="user-info" style="display:flex;align-items:center;gap:0.8rem;">
+        <img id="user-avatar" src="{{ url_for('static', filename='media/default-avatar.png') }}" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #595959;">
+        
+        <a href="{{ url_for('account') }}" style="color:#fff;font-weight:600;text-decoration:none;">
+          {{ current_user.name }}
+        </a>
+
+        <a href="{{ url_for('logout') }}" title="Logout" style="display:flex;align-items:center;">
+          <svg width="22" height="22" fill="#b3b3b3" viewBox="0 0 24 24" style="cursor:pointer;">
+            <path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9v2h9v14h-9v2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+          </svg>
+        </a>
       </div>
-    </div>
+    {% else %}
+      <button class="reserved-btn" id="login-btn" onclick="window.location.href='{{ url_for('login') }}'">
+        Accedi/Registrati
+      </button>
+    {% endif %}
   </div>
+
+
 </nav>
