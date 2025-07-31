@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, f
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 from flask_bcrypt import Bcrypt
+import re
 import os
 from dotenv import load_dotenv
 
@@ -79,6 +80,12 @@ def signup():
 def privacy():
     return render_template('privacy.html')
 
+@app.route('/account')
+@login_required
+def account():
+    return render_template("account.html", user=current_user)
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -93,12 +100,23 @@ def api_signup():
     email = request.form.get('email', '').strip().lower()
     password = request.form.get('password', '').strip()
 
+    # Check required fields
     if not name or not email or not password:
-        return jsonify({"success": False, "error": "Campi obbligatori mancanti."}), 400
+        return jsonify({"success": False, "error": "Tutti i campi sono obbligatori."}), 400
 
+    # Validate email format
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        return jsonify({"success": False, "error": "Email non valida."}), 400
+
+    # Optional: validate name format (2–40 chars, letters, accented, space, apostrophe)
+    if not re.match(r"^[\w\sàèéìòùÀÈÉÌÒÙ'’\-]{2,40}$", name):
+        return jsonify({"success": False, "error": "Il nome contiene caratteri non validi."}), 400
+
+    # Check if user already exists
     if User.query.filter_by(email=email).first():
-        return jsonify({"success": False, "error": "Utente già registrato."}), 400
+        return jsonify({"success": False, "error": "Un utente con questa email esiste già."}), 400
 
+    # Create user
     new_user = User(name=name, email=email)
     new_user.set_password(password)
     db.session.add(new_user)

@@ -5,6 +5,7 @@
   <div class="auth-container" style="background:#181818;border-radius:1.2rem;box-shadow:0 4px 32px rgba(0,0,0,0.18);padding:2.5rem 2rem 2rem 2rem;display:flex;flex-direction:column;align-items:center;border:1.5px solid #222;max-width:400px;width:100%;">
     <h2 id="auth-title" style="margin-bottom:1.5rem;color:#fff;">Accedi</h2>
     <form class="auth-form" id="auth-form" method="POST" action="/api/auth/login" onsubmit="return handleAuthForm(event);" style="width:100%;display:flex;flex-direction:column;gap:1.2rem;">
+      <div id="auth-error" style="display:none;color:#ff6f61;background:#331c1a;padding:0.6rem 1rem;border-radius:0.5rem;text-align:center;font-size:0.95rem;"></div>
       <input type="email" id="auth-email" name="email" placeholder="Email" required autocomplete="username" style="padding:0.7rem 1rem;border:none;border-radius:2rem;font-size:1rem;background:#fff;color:#111;transition:border 0.2s,background 0.2s;box-shadow:0 2px 8px #0003;">
       <input type="password" id="auth-password" name="password" placeholder="Password" required autocomplete="current-password" minlength="6" style="padding:0.7rem 1rem;border:none;border-radius:2rem;font-size:1rem;background:#fff;color:#111;transition:border 0.2s,background 0.2s;box-shadow:0 2px 8px #0003;">
       <div class="auth-links" style="margin-top:0.2rem;font-size:0.97rem;text-align:center;color:#b3b3b3;">
@@ -18,25 +19,37 @@
 function sanitizeInput(str) {
   return str.replace(/[<>]/g, '').replace(/script/gi, '');
 }
+
 function handleAuthForm(e) {
+  e.preventDefault();
+  const form = e.target;
   const email = document.getElementById('auth-email');
   const password = document.getElementById('auth-password');
+  const errorBox = document.getElementById('auth-error');
+  errorBox.style.display = "none";
+
   email.value = sanitizeInput(email.value);
   password.value = sanitizeInput(password.value);
-  if (!email.value || !password.value) {
-    alert('Compila tutti i campi.');
-    return false;
-  }
-  if (!/^\S+@\S+\.\S+$/.test(email.value)) {
-    alert('Inserisci una email valida.');
-    return false;
-  }
-  if (password.value.length < 6) {
-    alert('La password deve essere di almeno 6 caratteri.');
-    return false;
-  }
-  return true;
+
+  fetch("/api/auth/login", {
+    method: "POST",
+    body: new FormData(form),
+  }).then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = "/";
+      } else {
+        errorBox.textContent = data.error || "Errore durante il login.";
+        errorBox.style.display = "block";
+      }
+    }).catch(() => {
+      errorBox.textContent = "Errore di rete durante il login.";
+      errorBox.style.display = "block";
+    });
+
+  return false;
 }
+
 function switchToSignup() {
   window.location.href = "{{ url_for('signup') }}";
 }
