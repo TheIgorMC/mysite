@@ -7,7 +7,9 @@
   <div id="account-area" style="display:flex;align-items:center;gap:1.2rem;">
     {% if current_user.is_authenticated %}
       <div id="user-info" style="display:flex;align-items:center;gap:0.8rem;">
-        <img id="user-avatar" src="{{ url_for('static', filename='media/default-avatar.png') }}" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #595959;">
+        <a href="{{ url_for('account') }}" style="display:flex;align-items:center;" onmouseover="this.querySelector('img').style.borderColor='#fff'" onmouseout="this.querySelector('img').style.borderColor='#595959'">
+          <img id="user-avatar" src="{{ url_for('static', filename=current_user.profile_picture) }}" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #595959;cursor:pointer;transition:border-color 0.3s ease;">
+        </a>
         
         <a href="{{ url_for('account') }}" style="color:#fff;font-weight:600;text-decoration:none;">
           {{ current_user.name }}
