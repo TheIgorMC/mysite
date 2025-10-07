@@ -6,6 +6,30 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 
+def parse_date_safely(date_str, default='2000-01-01'):
+    """
+    Safely parse date strings in various formats.
+    Returns YYYY-MM-DD format or default if parsing fails.
+    """
+    if not date_str:
+        return default
+    
+    try:
+        # Try common date formats
+        for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d', '%m/%d/%Y']:
+            try:
+                date_obj = datetime.strptime(date_str, fmt)
+                return date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        
+        # If no format matches, try parsing as ISO format
+        date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        return date_obj.strftime('%Y-%m-%d')
+    except (ValueError, AttributeError):
+        print(f"Warning: Could not parse date '{date_str}', using default")
+        return default
+
 # Get the data directory path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 COMPETITION_DATA_FILE = os.path.join(DATA_DIR, 'competition_arrows.csv')
@@ -134,7 +158,7 @@ def calculate_percentile_stats(results: List[Dict], last_n: int = 10) -> Dict:
     # Sort by date (most recent first)
     sorted_results = sorted(
         results, 
-        key=lambda x: datetime.strptime(x.get('date', '2000-01-01'), '%Y-%m-%d'),
+        key=lambda x: parse_date_safely(x.get('date', ''), '2000-01-01'),
         reverse=True
     )
     

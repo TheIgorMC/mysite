@@ -73,17 +73,29 @@ async function onCategoryChange() {
     }
     
     try {
+        // Show loading in the select
+        typeSelect.innerHTML = '<option value="">Loading...</option>';
+        typeSelect.disabled = true;
+        
         const response = await fetch(`/archery/api/category/${category}/types`);
         const types = await response.json();
         
+        typeSelect.innerHTML = '<option value="">All Types</option>';
         types.forEach(type => {
             const option = document.createElement('option');
             option.value = type.id;
             option.textContent = type.name;
             typeSelect.appendChild(option);
         });
+        
+        typeSelect.disabled = false;
     } catch (error) {
         console.error('Error loading types for category:', error);
+        typeSelect.innerHTML = '<option value="">Error loading types</option>';
+        setTimeout(() => {
+            typeSelect.innerHTML = '<option value="">All Types</option>';
+            typeSelect.disabled = false;
+        }, 2000);
     }
 }
 
@@ -98,6 +110,15 @@ async function searchAthletes() {
     }
     
     try {
+        // Show loading state
+        resultsDiv.innerHTML = `
+            <div class="p-4 flex items-center justify-center">
+                <div class="w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-primary rounded-full animate-spin mr-2"></div>
+                <span class="text-gray-600 dark:text-gray-400 text-sm">Searching...</span>
+            </div>
+        `;
+        resultsDiv.classList.remove('hidden');
+        
         const response = await fetch(`/archery/api/search_athlete?name=${encodeURIComponent(query)}`);
         const athletes = await response.json();
         
@@ -116,7 +137,12 @@ async function searchAthletes() {
         resultsDiv.classList.remove('hidden');
     } catch (error) {
         console.error('Error searching athletes:', error);
-        resultsDiv.innerHTML = '<p class="p-4 text-red-500 dark:text-red-400">Error searching athletes</p>';
+        resultsDiv.innerHTML = `
+            <div class="p-4 text-red-500 dark:text-red-400 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span>Error searching athletes</span>
+            </div>
+        `;
         resultsDiv.classList.remove('hidden');
     }
 }
@@ -140,6 +166,11 @@ function selectAthlete(id, name) {
     // Hide search results
     document.getElementById('search-results').classList.add('hidden');
     document.getElementById('athlete-search').value = '';
+    
+    // If athletes were already analyzed, re-run analysis with new athlete
+    if (resultsChart && resultsChart.data.datasets.length > 0) {
+        analyzeResults();
+    }
 }
 
 function updateSelectedAthletes() {
@@ -164,6 +195,19 @@ function updateSelectedAthletes() {
 function removeAthlete(index) {
     selectedAthletes.splice(index, 1);
     updateSelectedAthletes();
+    
+    // If athletes were already analyzed, re-run analysis
+    if (resultsChart && resultsChart.data.datasets.length > 0) {
+        if (selectedAthletes.length > 0) {
+            analyzeResults();
+        } else {
+            // Clear chart and stats if no athletes left
+            resultsChart.data.labels = [];
+            resultsChart.data.datasets = [];
+            resultsChart.update();
+            document.getElementById('statistics-section').classList.add('hidden');
+        }
+    }
 }
 
 async function analyzeResults() {
@@ -180,9 +224,16 @@ async function analyzeResults() {
     
     const chartCanvas = document.getElementById('results-chart');
     const chartContainer = chartCanvas.parentElement;
+    const statsSection = document.getElementById('statistics-section');
+    const statsGrid = document.getElementById('statistics-grid');
     
     try {
-        showLoading(chartContainer);
+        // Show loading for chart
+        showLoading(chartContainer, 'Loading competition results...');
+        
+        // Show loading for statistics
+        statsSection.classList.remove('hidden');
+        showLoading(statsGrid, 'Loading statistics...');
         
         // Fetch results for all selected athletes
         const resultsPromises = selectedAthletes.map(athlete => 
@@ -200,13 +251,18 @@ async function analyzeResults() {
         // Update chart with data
         updateChart(allResults, includeAverage);
         
-        // Load statistics for first athlete
+        // Load statistics - different behavior for single vs multiple athletes
         if (selectedAthletes.length === 1) {
-            loadStatistics(selectedAthletes[0].id);
+            // Single athlete: show detailed statistics with career and filtered
+            await loadStatistics(selectedAthletes[0].id, competitionType, category, startDate, endDate);
+        } else {
+            // Multiple athletes: show comparison statistics
+            await loadComparisonStatistics(selectedAthletes, competitionType, category, startDate, endDate);
         }
     } catch (error) {
         console.error('Error analyzing results:', error);
         showError(chartContainer, 'Error loading results. Please try again.');
+        showError(statsGrid, 'Error loading statistics. Please try again.');
     }
 }
 
@@ -353,15 +409,90 @@ function updateChart(allResults, includeAverage = false) {
         'rgb(236, 72, 153)'    // pink
     ];
     
-    const datasets = allResults.map((athleteData, index) => {
-        const sortedResults = athleteData.results.sort((a, b) => 
-            new Date(a.date) - new Date(b.date)
-        );
+    // Helper function to normalize date strings to YYYY-MM-DD format
+    const normalizeDate = (dateStr) => {
+        if (!dateStr) return null;
         
-        // Use average per arrow if checkbox is checked and data is available
-        const dataPoints = includeAverage && sortedResults[0]?.average_per_arrow !== undefined
-            ? sortedResults.map(r => r.average_per_arrow)
-            : sortedResults.map(r => r.score);
+        try {
+            // Handle various date formats: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, etc.
+            let date;
+            
+            if (dateStr.includes('/')) {
+                // Format like DD/MM/YYYY or MM/DD/YYYY
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    // Assume DD/MM/YYYY (Italian format)
+                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            } else if (dateStr.includes('-')) {
+                // Format like YYYY-MM-DD or DD-MM-YYYY
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        // YYYY-MM-DD format
+                        date = new Date(dateStr);
+                    } else {
+                        // DD-MM-YYYY format
+                        date = new Date(parts[2], parts[1] - 1, parts[0]);
+                    }
+                }
+            } else {
+                // Try to parse as-is
+                date = new Date(dateStr);
+            }
+            
+            // Validate date
+            if (date && !isNaN(date.getTime())) {
+                // Return as YYYY-MM-DD for consistent sorting
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+        } catch (e) {
+            console.error('Error parsing date:', dateStr, e);
+        }
+        
+        return null;
+    };
+    
+    // Format date for display
+    const formatDateForDisplay = (normalizedDate) => {
+        if (!normalizedDate) return 'Invalid Date';
+        const date = new Date(normalizedDate);
+        return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+    
+    // Collect all unique dates from all athletes and sort them
+    const allDates = new Set();
+    allResults.forEach(athleteData => {
+        athleteData.results.forEach(result => {
+            const normalized = normalizeDate(result.date);
+            if (normalized) {
+                allDates.add(normalized);
+            }
+        });
+    });
+    
+    // Sort all unique dates chronologically
+    const sortedDates = Array.from(allDates).sort();
+    
+    // Create datasets with data points aligned to the common date axis
+    const datasets = allResults.map((athleteData, index) => {
+        // Create a map of date -> value for this athlete
+        const athleteDateMap = new Map();
+        athleteData.results.forEach(result => {
+            const normalized = normalizeDate(result.date);
+            if (normalized) {
+                const value = includeAverage && result.average_per_arrow !== undefined
+                    ? result.average_per_arrow
+                    : result.score;
+                athleteDateMap.set(normalized, value);
+            }
+        });
+        
+        // Create data array aligned with sortedDates (null for missing dates)
+        const dataPoints = sortedDates.map(date => athleteDateMap.get(date) || null);
         
         return {
             label: athleteData.athleteName,
@@ -369,14 +500,13 @@ function updateChart(allResults, includeAverage = false) {
             borderColor: colors[index % colors.length],
             backgroundColor: colors[index % colors.length] + '20',
             tension: 0.1,
-            borderWidth: 2
+            borderWidth: 2,
+            spanGaps: true // Connect line across null values
         };
     });
     
-    // Use dates from first athlete as labels
-    const labels = allResults[0]?.results
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map(r => new Date(r.date).toLocaleDateString('it-IT'));
+    // Format dates for display
+    const labels = sortedDates.map(formatDateForDisplay);
     
     // Update Y-axis label based on what we're showing
     const yAxisLabel = includeAverage ? 'Average per Arrow' : 'Score';
@@ -387,44 +517,184 @@ function updateChart(allResults, includeAverage = false) {
     resultsChart.update();
 }
 
-async function loadStatistics(athleteId) {
+async function loadStatistics(athleteId, competitionType, category, startDate, endDate) {
     try {
-        const response = await fetch(`/archery/api/athlete/${athleteId}/statistics`);
-        const stats = await response.json();
+        // Build URL with filters
+        let url = `/archery/api/athlete/${athleteId}/statistics?`;
+        if (competitionType) url += `competition_type=${encodeURIComponent(competitionType)}&`;
+        if (category) url += `category=${encodeURIComponent(category)}&`;
+        if (startDate) url += `start_date=${startDate}&`;
+        if (endDate) url += `end_date=${endDate}&`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
         
         const statsSection = document.getElementById('statistics-section');
         const statsGrid = document.getElementById('statistics-grid');
         
-        statsGrid.innerHTML = `
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Total Competitions</h3>
-                <p class="text-4xl font-bold text-primary">${stats.total_competitions || 0}</p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Medals</h3>
-                <div class="space-y-2">
-                    <p class="text-lg"><span class="font-bold text-yellow-500">🥇</span> ${stats.gold_medals || 0}</p>
-                    <p class="text-lg"><span class="font-bold text-gray-400">🥈</span> ${stats.silver_medals || 0}</p>
-                    <p class="text-lg"><span class="font-bold text-orange-600">🥉</span> ${stats.bronze_medals || 0}</p>
-                </div>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Average Position</h3>
-                <p class="text-4xl font-bold text-accent">${stats.avg_position ? stats.avg_position.toFixed(1) : 'N/A'}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Top ${stats.avg_percentile || 'N/A'}%</p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Best Score</h3>
-                <p class="text-4xl font-bold text-primary">${stats.best_score || 'N/A'}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">${stats.best_score_competition || ''}</p>
-            </div>
-        `;
+        const hasFilters = competitionType || category || startDate || endDate;
+        const career = data.career;
+        const filtered = data.filtered;
         
+        // Helper function to create a stat card
+        const createStatCard = (title, value, subtitle = '', type = 'career') => {
+            const bgClass = type === 'filtered' ? 'bg-accent/10 dark:bg-accent/20 border-2 border-accent' : '';
+            const badge = type === 'filtered' ? '<span class="text-xs bg-accent text-white px-2 py-1 rounded-full ml-2">Filtered</span>' : '';
+            return `
+                <div class="bg-white dark:bg-gray-800 ${bgClass} rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        ${title}${badge}
+                    </h3>
+                    <p class="text-4xl font-bold text-primary">${value}</p>
+                    ${subtitle ? `<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">${subtitle}</p>` : ''}
+                </div>
+            `;
+        };
+        
+        let careerHtml = '<div class="col-span-full mb-4"><h3 class="text-xl font-bold text-gray-900 dark:text-white">Career Statistics</h3></div>';
+        
+        // Career Statistics
+        careerHtml += createStatCard('Total Competitions', career.total_competitions || 0, '', 'career');
+        
+        careerHtml += createStatCard('Medals', 
+            `<div class="space-y-2">
+                <p class="text-lg"><span class="font-bold text-yellow-500">🥇</span> ${career.gold_medals || 0}</p>
+                <p class="text-lg"><span class="font-bold text-gray-400">🥈</span> ${career.silver_medals || 0}</p>
+                <p class="text-lg"><span class="font-bold text-orange-600">🥉</span> ${career.bronze_medals || 0}</p>
+            </div>`, '', 'career');
+        
+        careerHtml += createStatCard('Average Position', 
+            career.avg_position ? career.avg_position.toFixed(1) : 'N/A',
+            `Top ${career.avg_percentile || 'N/A'}%`, 'career');
+        
+        careerHtml += createStatCard('Best Score', 
+            career.best_score || 'N/A',
+            career.best_score_competition || '', 'career');
+        
+        // Filtered Statistics (if filters are applied)
+        let filteredHtml = '';
+        if (hasFilters && filtered) {
+            filteredHtml += '<div class="col-span-full mt-6 mb-4 border-t-2 border-gray-300 dark:border-gray-600 pt-4"><h3 class="text-xl font-bold text-accent dark:text-accent">Filtered Period Statistics</h3></div>';
+            
+            filteredHtml += createStatCard('Competitions', filtered.total_competitions || 0, '', 'filtered');
+            
+            filteredHtml += createStatCard('Medals',
+                `<div class="space-y-2">
+                    <p class="text-lg"><span class="font-bold text-yellow-500">🥇</span> ${filtered.gold_medals || 0}</p>
+                    <p class="text-lg"><span class="font-bold text-gray-400">🥈</span> ${filtered.silver_medals || 0}</p>
+                    <p class="text-lg"><span class="font-bold text-orange-600">🥉</span> ${filtered.bronze_medals || 0}</p>
+                </div>`, '', 'filtered');
+            
+            filteredHtml += createStatCard('Avg Position',
+                filtered.avg_position ? filtered.avg_position.toFixed(1) : 'N/A',
+                `Top ${filtered.avg_percentile || 'N/A'}%`, 'filtered');
+            
+            filteredHtml += createStatCard('Best Score',
+                filtered.best_score || 'N/A',
+                filtered.best_score_competition || '', 'filtered');
+        }
+        
+        statsGrid.innerHTML = careerHtml + filteredHtml;
         statsSection.classList.remove('hidden');
     } catch (error) {
         console.error('Error loading statistics:', error);
     }
 }
+
+async function loadComparisonStatistics(athletes, competitionType, category, startDate, endDate) {
+    try {
+        // Build URL with filters for each athlete
+        const statsPromises = athletes.map(athlete => {
+            let url = `/archery/api/athlete/${athlete.id}/statistics?`;
+            if (competitionType) url += `competition_type=${encodeURIComponent(competitionType)}&`;
+            if (category) url += `category=${encodeURIComponent(category)}&`;
+            if (startDate) url += `start_date=${startDate}&`;
+            if (endDate) url += `end_date=${endDate}&`;
+            return fetch(url).then(r => r.json()).then(data => ({ ...data, athleteName: athlete.name }));
+        });
+        
+        const allStats = await Promise.all(statsPromises);
+        
+        const statsSection = document.getElementById('statistics-section');
+        const statsGrid = document.getElementById('statistics-grid');
+        
+        const hasFilters = competitionType || category || startDate || endDate;
+        
+        // Create comparison table
+        let html = `
+            <div class="col-span-full">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    ${hasFilters ? 'Filtered' : 'Career'} Statistics Comparison
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+                        <thead class="text-xs uppercase bg-gray-200 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3">Athlete</th>
+                                <th class="px-4 py-3 text-center">Competitions</th>
+                                <th class="px-4 py-3 text-center">🥇</th>
+                                <th class="px-4 py-3 text-center">🥈</th>
+                                <th class="px-4 py-3 text-center">🥉</th>
+                                <th class="px-4 py-3 text-center">Avg Position</th>
+                                <th class="px-4 py-3 text-center">Best Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        allStats.forEach((athleteStats, index) => {
+            const stats = hasFilters && athleteStats.filtered ? athleteStats.filtered : athleteStats.career;
+            const bgClass = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750';
+            
+            html += `
+                <tr class="${bgClass} border-b dark:border-gray-700">
+                    <td class="px-4 py-3 font-semibold">${athleteStats.athleteName}</td>
+                    <td class="px-4 py-3 text-center">${stats.total_competitions || 0}</td>
+                    <td class="px-4 py-3 text-center text-yellow-500 font-bold">${stats.gold_medals || 0}</td>
+                    <td class="px-4 py-3 text-center text-gray-400 font-bold">${stats.silver_medals || 0}</td>
+                    <td class="px-4 py-3 text-center text-orange-600 font-bold">${stats.bronze_medals || 0}</td>
+                    <td class="px-4 py-3 text-center">${stats.avg_position ? stats.avg_position.toFixed(1) : 'N/A'}</td>
+                    <td class="px-4 py-3 text-center font-bold text-primary">${stats.best_score || 'N/A'}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        // Add individual highlight cards below table
+        html += '<div class="col-span-full mt-6"><h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Individual Highlights</h4></div>';
+        
+        allStats.forEach(athleteStats => {
+            const stats = hasFilters && athleteStats.filtered ? athleteStats.filtered : athleteStats.career;
+            html += `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-primary">
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">${athleteStats.athleteName}</h4>
+                    <div class="space-y-2 text-sm">
+                        <p class="text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold">Best Score:</span> ${stats.best_score || 'N/A'}
+                            ${stats.best_score_competition ? `<br><span class="text-xs text-gray-500">${stats.best_score_competition}</span>` : ''}
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold">Performance:</span> 
+                            Top ${stats.avg_percentile || 'N/A'}% (Avg Position: ${stats.avg_position ? stats.avg_position.toFixed(1) : 'N/A'})
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold">Podiums:</span> ${stats.top_finishes || 0} out of ${stats.recent_competitions_analyzed || 0} recent
+                        </p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        statsGrid.innerHTML = html;
+        statsSection.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading comparison statistics:', error);
+    }
+}
+

@@ -79,15 +79,38 @@ function addToCart(productId, productName, price) {
 }
 
 // Utility functions
-function showLoading(element) {
+function showLoading(element, message = 'Loading...') {
     if (element) {
-        element.innerHTML = '<div class="flex items-center justify-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i></div>';
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const textColor = isDarkMode ? 'text-gray-300' : 'text-gray-700';
+        const spinnerColor = isDarkMode ? 'text-primary' : 'text-primary';
+        
+        element.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12">
+                <div class="relative">
+                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-700 border-t-primary rounded-full animate-spin"></div>
+                </div>
+                <p class="mt-4 text-sm font-medium ${textColor}">${message}</p>
+            </div>
+        `;
     }
+}
+
+function hideLoading(element) {
+    // This function is called when content is ready to be displayed
+    // The calling code should immediately replace the content
 }
 
 function showError(element, message) {
     if (element) {
-        element.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">${message}</div>`;
+        element.innerHTML = `
+            <div class="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
     }
 }
 
