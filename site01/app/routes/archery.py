@@ -55,13 +55,17 @@ def search_athlete():
 @bp.route('/api/athlete/<athlete_id>/results')
 def get_athlete_results(athlete_id):
     """Get athlete results"""
+    # API parameters - only use parameters that exist in API spec
     competition_type = request.args.get('competition_type')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
-    category = request.args.get('category')  # indoor/outdoor filter
+    
+    # LOCAL filter parameters - NOT sent to API
+    category = request.args.get('category')  # Filter locally using CSV
     include_average = request.args.get('include_average', 'false').lower() == 'true'
     
     client = OrionAPIClient()
+    # Call API with ONLY valid parameters (no category!)
     results = client.get_athlete_results(
         athlete_id,
         competition_type=competition_type,
@@ -72,7 +76,7 @@ def get_athlete_results(athlete_id):
     if not results:
         return jsonify([])
     
-    # Transform API response
+    # Transform API response to standard format
     transformed = [
         {
             'athlete': result.get('atleta'),
@@ -89,11 +93,11 @@ def get_athlete_results(athlete_id):
         for result in results
     ]
     
-    # Filter by category if requested
+    # Filter by category LOCALLY using CSV data (not API)
     if category:
         transformed = filter_by_category(transformed, category)
     
-    # Add average per arrow if requested
+    # Add average per arrow if requested (local calculation using CSV)
     if include_average:
         transformed = calculate_average_per_competition(transformed, include_average=True)
     
@@ -167,8 +171,9 @@ def get_athlete_statistics(athlete_id):
 
 @bp.route('/api/competition_types')
 def get_competition_types():
-    """Get available competition types"""
+    """Get available competition types from API /api/event_types"""
     client = OrionAPIClient()
+    # This calls /api/event_types which is the authoritative source
     types = client.get_competition_types()
     
     # API returns: ["1/2 FITA", "12+12", ...]
@@ -188,34 +193,71 @@ def get_competition_types():
 @bp.route('/api/categories')
 def get_competition_categories():
     """Get available categories (Indoor, FITA, H&F, etc.) from local CSV data"""
-    # Get categories from local CSV file, not from API
-    categories = get_categories()
-    
-    transformed = [
-        {
-            'id': category,
-            'name': category
-        }
-        for category in categories
-    ]
-    
-    return jsonify(transformed)
+    try:
+        # Get categories from local CSV file, not from API
+        categories = get_categories()
+        
+        if not categories:
+            # Return empty array if no categories found
+            return jsonify([])
+        
+        transformed = [
+            {
+                'id': category,
+                'name': category
+            }
+            for category in categories
+        ]
+        
+        return jsonify(transformed)
+    except Exception as e:
+        # Log error and return empty array
+        print(f"Error getting categories: {e}")
+        return jsonify([]), 500
 
 @bp.route('/api/category/<category>/types')
 def get_types_by_category(category):
-    """Get competition types for a specific category from local CSV data"""
-    # Get types from local CSV file, not from API
-    types = get_competition_types_by_category(category)
+    """Get competition types for a specific category
     
-    transformed = [
-        {
-            'id': comp_type,
-            'name': comp_type
-        }
-        for comp_type in types
-    ]
-    
-    return jsonify(transformed)
+    This works by:
+    1. Getting ALL event types from the API
+    2. Filtering them using local CSV data to find which ones belong to this category
+    """
+    try:
+        client = OrionAPIClient()
+        # Get ALL types from API first
+        all_types = client.get_competition_types()
+        
+        if not all_types:
+            return jsonify([])
+        
+        # Filter using local CSV to find which types belong to this category
+        types_in_category = get_competition_types_by_category(category)
+        
+        if not types_in_category:
+            return jsonify([])
+        
+        # Only include types that:
+        # 1. Are in the CSV for this category
+        # 2. Are also returned by the API (so they actually exist)
+        filtered_types = [
+            t for t in all_types 
+            if t in types_in_category
+        ]
+        
+        transformed = [
+            {
+                'id': comp_type,
+                'name': comp_type
+            }
+            for comp_type in filtered_types
+        ]
+        
+        return jsonify(transformed)
+    except Exception as e:
+        # Log error and return empty array
+        print(f"Error getting types for category {category}: {e}")
+        return jsonify([]), 500
 
 @bp.route('/competitions')
 @login_required

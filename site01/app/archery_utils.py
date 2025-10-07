@@ -26,17 +26,36 @@ def load_competition_data() -> List[Dict]:
         with open(COMPETITION_DATA_FILE, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Handle empty values for arrow_count and max_score
+                arrow_count = None
+                max_score = None
+                
+                try:
+                    if row['arrow_count'] and row['arrow_count'].strip():
+                        arrow_count = int(row['arrow_count'])
+                except (ValueError, KeyError):
+                    pass
+                
+                try:
+                    if row['max_score'] and row['max_score'].strip():
+                        max_score = int(row['max_score'])
+                except (ValueError, KeyError):
+                    pass
+                
                 competition_data.append({
                     'type': row['competition_type'],
                     'category': row['category'],
-                    'arrow_count': int(row['arrow_count']),
-                    'max_score': int(row['max_score'])
+                    'arrow_count': arrow_count,
+                    'max_score': max_score
                 })
         
         _competition_data_cache = competition_data
     except FileNotFoundError:
         # Return empty list if file doesn't exist
         pass
+    except Exception as e:
+        # Log error but don't crash
+        print(f"Error loading competition data: {e}")
     
     return competition_data
 
@@ -73,18 +92,7 @@ def get_categories() -> List[str]:
     """Get list of unique categories"""
     data = load_competition_data()
     categories = set(comp['category'] for comp in data)
-    
-    # Map internal categories to display names
-    category_map = {
-        'indoor': 'Indoor',
-        'outdoor': 'Outdoor',
-        'field': '3D/Field',
-        'other': 'Other'
-    }
-    
-    # Return sorted, mapped categories
-    mapped = [category_map.get(cat.lower(), cat) for cat in categories]
-    return sorted(list(set(mapped)))
+    return sorted(list(categories))
 
 def get_competition_types_by_category(category: str) -> List[str]:
     """Get all competition types for a specific category"""
