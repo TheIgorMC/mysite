@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:5000"
+    volumes:
+      - ./app.db:/app/app.db
+      - ./app/static/uploads:/app/app/static/uploads
+    environment:
+      - FLASK_CONFIG=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=sqlite:///app.db
+      - API_BASE_URL=${API_BASE_URL}
+      - CF_ACCESS_ID=${CF_ACCESS_ID}
+      - CF_ACCESS_SECRET=${CF_ACCESS_SECRET}
+    restart: unless-stopped
+    networks:
+      - orion-network
+
+networks:
+  orion-network:
+    driver: bridge

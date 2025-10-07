@@ -1,0 +1,203 @@
+"""
+Database Models
+"""
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+from app import db, login_manager
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+class User(UserMixin, db.Model):
+    """User model for authentication and authorization"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(256))
+    first_name = db.Column(db.String(64))
+    last_name = db.Column(db.String(64))
+    avatar = db.Column(db.String(256), default='default-avatar.png')
+    
+    # Authorization flags
+    is_admin = db.Column(db.Boolean, default=False)
+    is_club_member = db.Column(db.Boolean, default=False)  # For ASD Compagnia Arcieri Carraresi
+    club_name = db.Column(db.String(128))
+    
+    # Preferences
+    preferred_language = db.Column(db.String(2), default='it')
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    
+    # Relationships
+    competition_subscriptions = db.relationship('CompetitionSubscription', 
+                                               back_populates='user', 
+                                               lazy='dynamic')
+    
+    def set_password(self, password):
+        """Hash and set password"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Check if password matches hash"""
+        return check_password_hash(self.password_hash, password)
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+class Competition(db.Model):
+    """Competition model for archery events"""
+    __tablename__ = 'competitions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    external_id = db.Column(db.String(64), unique=True, index=True)  # ID from external API
+    name = db.Column(db.String(256), nullable=False)
+    location = db.Column(db.String(256))
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    
+    # Competition details
+    competition_type = db.Column(db.String(64))  # Indoor, Outdoor, Field, 3D, etc.
+    category = db.Column(db.String(64))
+    
+    # Subscription status
+    invite_published = db.Column(db.Boolean, default=False)
+    subscription_open = db.Column(db.Boolean, default=False)
+    subscription_deadline = db.Column(db.DateTime)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    subscriptions = db.relationship('CompetitionSubscription', 
+                                   back_populates='competition', 
+                                   lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Competition {self.name}>'
+
+class CompetitionSubscription(db.Model):
+    """User subscriptions to competitions"""
+    __tablename__ = 'competition_subscriptions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id'), nullable=False)
+    
+    # Subscription details
+    turn = db.Column(db.String(64))  # Selected turn/shift
+    status = db.Column(db.String(32), default='pending')  # pending, confirmed, cancelled
+    interest_only = db.Column(db.Boolean, default=False)  # True if only expressing interest
+    
+    # Additional info
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', back_populates='competition_subscriptions')
+    competition = db.relationship('Competition', back_populates='subscriptions')
+    
+    def __repr__(self):
+        return f'<Subscription {self.user_id} -> {self.competition_id}>'
+
+class Result(db.Model):
+    """Archery competition results"""
+    __tablename__ = 'results'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    athlete_id = db.Column(db.String(64), index=True)  # External athlete ID
+    athlete_name = db.Column(db.String(128))
+    competition_id = db.Column(db.String(64), index=True)
+    competition_name = db.Column(db.String(256))
+    competition_type = db.Column(db.String(64))
+    date = db.Column(db.DateTime)
+    
+    # Results
+    score = db.Column(db.Integer)
+    position = db.Column(db.Integer)
+    total_participants = db.Column(db.Integer)
+    
+    # Medals
+    medal = db.Column(db.String(16))  # gold, silver, bronze
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Result {self.athlete_name} - {self.competition_name}>'
+
+class Newsletter(db.Model):
+    """Newsletter subscriptions"""
+    __tablename__ = 'newsletter_subscriptions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    subscribed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<Newsletter {self.email}>'
+
+class Product(db.Model):
+    """Shop products"""
+    __tablename__ = 'products'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name_it = db.Column(db.String(256), nullable=False)
+    name_en = db.Column(db.String(256), nullable=False)
+    description_it = db.Column(db.Text)
+    description_en = db.Column(db.Text)
+    
+    # Product details
+    category = db.Column(db.String(64))  # archery, 3dprinting, electronics
+    price = db.Column(db.Float)
+    currency = db.Column(db.String(3), default='EUR')
+    
+    # Images
+    main_image = db.Column(db.String(256))
+    images = db.Column(db.Text)  # JSON array of image URLs
+    
+    # Availability
+    in_stock = db.Column(db.Boolean, default=True)
+    stock_quantity = db.Column(db.Integer)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<Product {self.name_en}>'
+
+class GalleryItem(db.Model):
+    """Gallery items for 3D printing and electronics projects"""
+    __tablename__ = 'gallery_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title_it = db.Column(db.String(256), nullable=False)
+    title_en = db.Column(db.String(256), nullable=False)
+    description_it = db.Column(db.Text)
+    description_en = db.Column(db.Text)
+    
+    # Item details
+    category = db.Column(db.String(64))  # 3dprinting, electronics
+    main_image = db.Column(db.String(256))
+    images = db.Column(db.Text)  # JSON array of image URLs
+    
+    # External links
+    external_url = db.Column(db.String(512))  # Link to Printables, GitHub, etc.
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_featured = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<GalleryItem {self.title_en}>'

@@ -1,0 +1,146 @@
+example Zorzi
+[
+  {
+    "tessera": "145388",
+    "nome": "Zorzi Alberto Cesare",
+    "classe": null,
+    "societa_codice": "04139"
+  },
+  {
+    "tessera": "147450",
+    "nome": "Zorzi Alessio",
+    "classe": null,
+    "societa_codice": "06077"
+  },
+  {
+    "tessera": "150523",
+    "nome": "Zorzi Alex",
+    "classe": null,
+    "societa_codice": "09093"
+  },
+
+
+event_types:
+[
+  "1/2 FITA",
+  "1/2 FITA - O.R. Individuale - O.R. Squadre",
+  "12+12",
+  "12+12 - Gara GP Campagna",
+  "12+12 - O.R. Individuale",
+  "12+12 - O.R. Individuale - Gara GP Campagna",
+  "12+12 - O.R. Individuale - O.R. Squadre",
+  "12+12 - O.R. Individuale - O.R. Squadre - Gara GP Campagna",
+  "12+12 - O.R. Squadre",
+  "1440 Round (FITA)",
+
+societa
+[
+  {
+    "codice": "13010",
+    "nome": "A.S.D. Aquilana Arcieri",
+    "provincia": "AQ",
+    "regione": "Abruzzo"
+  },
+  {
+    "codice": "13041",
+    "nome": "A.S.D. ARCIERI ABRUZZESI",
+    "provincia": "CH",
+    "regione": "Abruzzo"
+  },
+  {
+    "codice": "13039",
+    "nome": "A.S.D. ARCIERI ANXANON",
+    "provincia": "CH",
+    "regione": "Abruzzo"
+  },
+
+qualifiche
+[
+  {
+    "codice": "NazionaleIndoor2026",
+    "descrizione": "Campionato Italiano Indoor 2026",
+    "data_inizio": "2025-01-21",
+    "data_fine": "2026-01-12",
+    "regione": null
+  },
+  {
+    "codice": "NazionaleIndoor2025",
+    "descrizione": "Campionato Italiano Indoor 2025",
+    "data_inizio": "2024-01-29",
+    "data_fine": "2025-01-19",
+    "regione": null
+  }
+
+stats
+{
+  "labels": [
+    "2012-04-28",
+    "2012-05-20",
+    ...
+    ...
+    "2025-01-18",
+    "2025-07-06"
+  ],
+  "datasets": [
+    {
+      "label": "93229",
+      "data": [
+        275,
+        352,
+        401,
+        ...
+        ...
+        525,
+        527,
+        540
+      ]
+    }
+  ]
+}
+
+
+best
+{
+  "athlete": "93229",
+  "event_type": null,
+  "best_score": 1057
+}
+
+results (with athlete/{tessera}/results)
+[
+  {
+    "atleta": "CESAROTTO GIOVANNI IGOR",
+    "codice_societa_atleta": "06084",
+    "nome_societa_atleta": "A.S.D.COMPAGNIA ARCIERI CARRARESI",
+    "nome_gara": "10 Torneo Carraresi",
+    "tipo_gara": "70/60mt Round - 50mt Round",
+    "data_gara": "2025-07-06",
+    "codice_societa_organizzatrice": "06084",
+    "nome_societa_organizzatrice": "A.S.D.COMPAGNIA ARCIERI CARRARESI",
+    "posizione": 3,
+    "punteggio": 540
+  },
+  {
+    "atleta": "CESAROTTO GIOVANNI IGOR",
+    "codice_societa_atleta": "06084",
+    "nome_societa_atleta": "A.S.D.COMPAGNIA ARCIERI CARRARESI",
+    "nome_gara": "Campionato Regionale Indoor",
+    "tipo_gara": "18 m",
+    "data_gara": "2025-01-18",
+    "codice_societa_organizzatrice": "06014",
+    "nome_societa_organizzatrice": "A.S.D. Societa' Arcieri del Castello",
+    "posizione": 13,
+    "punteggio": 527
+  },
+  {
+    "atleta": "CESAROTTO GIOVANNI IGOR",
+    "codice_societa_atleta": "06084",
+    "nome_societa_atleta": "A.S.D.COMPAGNIA ARCIERI CARRARESI",
+    "nome_gara": "13° Trofeo Niche Città di Este",
+    "tipo_gara": "18 m",
+    "data_gara": "2024-12-21",
+    "codice_societa_organizzatrice": "06082",
+    "nome_societa_organizzatrice": "A.S.D. Arcieri Niche",
+    "posizione": 13,
+    "punteggio": 525
+  },

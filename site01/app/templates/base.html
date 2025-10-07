@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('language', 'it') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Orion Project - Passion, Precision, Innovation">
+    <title>{% block title %}{{ t('site.title') }}{% endblock %}</title>
+    
+    <!-- Inline theme script to prevent flash -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#8b5cf6',
+                            DEFAULT: '#7c3aed',
+                            dark: '#6d28d9'
+                        },
+                        accent: {
+                            light: '#fb923c',
+                            DEFAULT: '#f97316',
+                            dark: '#ea580c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Theme Script (load early) -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="flex flex-col min-h-screen dark:bg-gray-900 dark:text-gray-100">
+    <!-- Top Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition-colors duration-300">
+        <nav class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('main.index') }}" class="flex items-center">
+                        <img src="{{ url_for('static', filename='media/logoOrion.png') }}" 
+                             alt="Orion Logo" 
+                             class="h-12 w-auto invert dark:invert-0">
+                        <span class="ml-3 text-xl font-bold text-gray-800 dark:text-white hidden sm:block">Orion Project</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="{{ url_for('main.index') }}" 
+                       class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary transition">
+                        {{ t('nav.home') }}
+                    </a>
+                    
+                    <!-- Archery Link (No Dropdown) -->
+                    <a href="{{ url_for('archery.index') }}" 
+                       class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary transition">
+                        {{ t('nav.archery') }}
+                    </a>
+                    
+                    <a href="{{ url_for('printing.index') }}" 
+                       class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary transition">
+                        {{ t('nav.printing') }}
+                    </a>
+                    
+                    <a href="{{ url_for('electronics.index') }}" 
+                       class="nav-link text-gray-700 dark:text-gray-300 hover:text-primary transition">
+                        {{ t('nav.electronics') }}
+                    </a>
+                </div>
+                
+                <!-- Right side icons -->
+                <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" 
+                            class="text-gray-700 dark:text-gray-300 hover:text-primary transition p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            aria-label="Toggle theme">
+                        <i id="theme-icon" class="fas fa-moon text-xl"></i>
+                    </button>
+                    
+                    <!-- Language Selector -->
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url_for('main.set_language', lang='it') }}" 
+                           class="text-sm {% if session.get('language') == 'it' %}font-bold text-primary{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                            IT
+                        </a>
+                        <span class="text-gray-400 dark:text-gray-600">|</span>
+                        <a href="{{ url_for('main.set_language', lang='en') }}" 
+                           class="text-sm {% if session.get('language') == 'en' %}font-bold text-primary{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                            EN
+                        </a>
+                    </div>
+                    
+                    <!-- Shop Cart -->
+                    <a href="{{ url_for('shop.cart') }}" 
+                       class="text-gray-700 dark:text-gray-300 hover:text-primary transition relative">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        <span class="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" 
+                              id="cart-count">0</span>
+                    </a>
+                    
+                    <!-- User Area -->
+                    {% if current_user.is_authenticated %}
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary transition rounded-lg px-2 py-1">
+                            <img src="{{ url_for('static', filename='media/' + current_user.avatar) }}" 
+                                 alt="{{ current_user.username }}" 
+                                 class="h-8 w-8 rounded-full object-cover">
+                            <span class="hidden sm:block">{{ current_user.username }}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 overflow-hidden">
+                            <a href="{{ url_for('auth.settings') }}" 
+                               class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <i class="fas fa-cog mr-2"></i>{{ t('nav.settings') }}
+                            </a>
+                            <a href="{{ url_for('auth.logout') }}" 
+                               class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-red-600 dark:text-red-400">
+                                <i class="fas fa-sign-out-alt mr-2"></i>{{ t('nav.logout') }}
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" 
+                       class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
+                        {{ t('nav.login') }}
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Mobile Menu Button -->
+                    <button id="mobile-menu-btn" class="md:hidden text-gray-700">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
+                <a href="{{ url_for('main.index') }}" 
+                   class="block py-2 text-gray-700 hover:text-blue-600 transition">
+                    {{ t('nav.home') }}
+                </a>
+                <a href="{{ url_for('archery.index') }}" 
+                   class="block py-2 text-gray-700 hover:text-blue-600 transition">
+                    {{ t('nav.archery') }}
+                </a>
+                <a href="{{ url_for('printing.index') }}" 
+                   class="block py-2 text-gray-700 hover:text-blue-600 transition">
+                    {{ t('nav.printing') }}
+                </a>
+                <a href="{{ url_for('electronics.index') }}" 
+                   class="block py-2 text-gray-700 hover:text-blue-600 transition">
+                    {{ t('nav.electronics') }}
+                </a>
+            </div>
+        </nav>
+    </header>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mx-auto px-4 mt-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} bg-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-100 border border-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-400 text-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-700 px-4 py-3 rounded mb-4 dark:bg-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-900 dark:border-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-700 dark:text-{% if category == 'error' %}red{% elif category == 'success' %}green{% else %}purple{% endif %}-200">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 dark:bg-gray-950 text-white mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Sections - Centered -->
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-4">{{ t('footer.sections') }}</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('archery.index') }}" class="hover:text-primary transition">{{ t('nav.archery') }}</a></li>
+                        <li><a href="{{ url_for('printing.index') }}" class="hover:text-primary transition">{{ t('nav.printing') }}</a></li>
+                        <li><a href="{{ url_for('electronics.index') }}" class="hover:text-primary transition">{{ t('nav.electronics') }}</a></li>
+                        <li><a href="{{ url_for('shop.index') }}" class="hover:text-primary transition">{{ t('nav.shop') }}</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Newsletter - Centered -->
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-4">{{ t('footer.newsletter') }}</h3>
+                    <p class="text-gray-400 mb-4">{{ t('footer.newsletter_desc') }}</p>
+                    <form id="newsletter-form" class="flex max-w-md mx-auto">
+                        <input type="email" 
+                               id="newsletter-email"
+                               placeholder="{{ t('footer.email_placeholder') }}" 
+                               class="flex-grow px-4 py-2 rounded-l-lg text-gray-900 dark:bg-gray-700 dark:text-white"
+                               required>
+                        <button type="submit" 
+                                class="bg-primary px-4 py-2 rounded-r-lg hover:bg-primary-dark transition">
+                            {{ t('footer.subscribe') }}
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Useful Links - Centered -->
+                <div class="text-center">
+                    <h3 class="text-lg font-bold mb-4">{{ t('footer.useful_links') }}</h3>
+                    <div class="space-y-2 flex flex-col items-center">
+                        <a href="{{ config.PRINTABLES_URL }}" target="_blank" 
+                           class="flex items-center hover:text-primary transition">
+                            <img src="{{ url_for('static', filename='media/printables.svg') }}" 
+                                 alt="Printables" class="h-6 w-6 mr-2 bg-white rounded p-1">
+                            {{ t('footer.printables') }}
+                        </a>
+                        <a href="{{ config.GITHUB_URL }}" target="_blank" 
+                           class="flex items-center hover:text-primary transition">
+                            <i class="fab fa-github text-2xl mr-2"></i>
+                            {{ t('footer.github') }}
+                        </a>
+                        <a href="{{ config.FITARCO_URL }}" target="_blank" 
+                           class="flex items-center hover:text-primary transition">
+                            <img src="{{ url_for('static', filename='media/fitarco.png') }}" 
+                                 alt="FITARCO" class="h-6 w-6 mr-2">
+                            {{ t('footer.fitarco') }}
+                        </a>
+                        <a href="{{ config.KOFI_URL }}" target="_blank" 
+                           class="flex items-center hover:text-accent transition">
+                            <i class="fas fa-coffee text-xl mr-2"></i>
+                            {{ t('footer.kofi') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>{{ t('footer.copyright', year=config.ORGANIZATION_START_YEAR if config.ORGANIZATION_START_YEAR == now.year else config.ORGANIZATION_START_YEAR|string + '-' + now.year|string) }}</p>
+                <p class="mt-2">
+                    <a href="#" class="hover:text-blue-400 transition">{{ t('footer.privacy') }}</a> | 
+                    <a href="#" class="hover:text-blue-400 transition">{{ t('footer.terms') }}</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

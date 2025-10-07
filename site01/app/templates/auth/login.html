@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('auth.login') }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center">
+    <div class="container mx-auto px-4">
+        <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">{{ t('auth.login') }}</h1>
+            
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ t('auth.username') }}
+                    </label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required 
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ t('auth.password') }}
+                    </label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           required 
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="mb-6 flex items-center">
+                    <input type="checkbox" 
+                           id="remember_me" 
+                           name="remember_me" 
+                           class="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded">
+                    <label for="remember_me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {{ t('auth.remember_me') }}
+                    </label>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition">
+                    {{ t('auth.login') }}
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ t('auth.no_account') }} 
+                    <a href="{{ url_for('auth.register') }}" class="text-primary hover:text-primary-dark font-medium">
+                        {{ t('auth.register') }}
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

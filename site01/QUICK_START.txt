@@ -1,0 +1,86 @@
+# Quick Start Commands for Testing
+
+## Copy Media Files First!
+Copy-Item -Path "..\media\*" -Destination "site01\app\static\media\" -Recurse
+
+## Local Development Setup
+
+# Navigate to site01
+cd site01
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+.\venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env file from example
+Copy-Item .env.example .env
+
+# Initialize database
+python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all(); print('Database initialized!')"
+
+# Run the application
+python run.py
+
+# Open browser to http://localhost:5000
+
+## Create Admin User (Optional)
+
+python
+# Then in Python shell:
+from app import create_app, db
+from app.models import User
+app = create_app()
+app.app_context().push()
+admin = User(username='admin', email='admin@orion-project.it', is_admin=True, is_club_member=True)
+admin.set_password('admin123')
+db.session.add(admin)
+db.session.commit()
+print('Admin user created!')
+exit()
+
+## Docker Deployment
+
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Open browser to http://localhost:8080
+
+# To stop:
+docker-compose down
+
+## Testing Mobile Responsiveness
+
+# Method 1: Browser DevTools
+# - Open http://localhost:5000
+# - Press F12 for DevTools
+# - Press Ctrl+Shift+M for device toolbar
+# - Select different device sizes
+
+# Method 2: Test on actual device (same network)
+# - Find your IP: ipconfig
+# - On mobile browser: http://YOUR_IP:5000
+
+## Useful Flask Commands
+
+# Access Flask shell
+python -c "from app import create_app; app = create_app(); app.app_context().push(); import code; code.interact(local=locals())"
+
+# Check routes
+python -c "from app import create_app; app = create_app(); print('\\n'.join([str(rule) for rule in app.url_map.iter_rules()]))"
+
+## Troubleshooting
+
+# If you get import errors:
+pip install --upgrade -r requirements.txt
+
+# If database is corrupted:
+Remove-Item app.db
+python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+
+# If port 5000 is in use:
+# Edit run.py and change port to 5001 or another available port

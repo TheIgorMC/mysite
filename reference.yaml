@@ -1,0 +1,29 @@
+services:
+  archery-api:
+    build: ./archery_api # invece di image: usiamo build
+    container_name: archery-api
+    restart: unless-stopped
+    environment:
+      - DB_HOST=orangepi3b
+      - DB_PORT=3306
+      - DB_USER=dbuser
+      - DB_PASSWORD=db password
+      - DB_NAME=orion_db
+      - TZ=Europe/Rome
+    ports:
+      - 9090:80 # API accessibili da Grav via http://board:9090/api/...
+  grav:
+    image: lscr.io/linuxserver/grav:latest
+    container_name: grav
+    restart: unless-stopped
+    ports:
+      - 6080:80 # ← replace YOUR_PORT with the host port you want e.g. 8080:80
+    volumes:
+      - /mnt/emmc/grav:/config # persistent config + site data
+    environment:
+      - PUID=1000 # user id to run container as (match host if possible)
+      - PGID=1000 # group id
+      - CF_ACCESS_ID= the access id
+      - CF_ACCESS_SECRET= the access secret
+      - TZ=Europe/Rome # set your timezone
+networks: {}

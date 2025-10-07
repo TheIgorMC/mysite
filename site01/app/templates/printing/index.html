@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('printing.title') }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900">
+    <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">{{ t('printing.title') }}</h1>
+        
+        <!-- Gallery Display First -->
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">{{ t('printing.gallery') }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for item in gallery_items[:8] %}
+                <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                    <img src="{{ url_for('static', filename='uploads/' + item.image_path) if item.image_path else url_for('static', filename='media/3dprinting.jpg') }}" 
+                         alt="{{ item.title }}" 
+                         class="w-full h-64 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <h3 class="text-white font-bold text-lg">{{ item.title }}</h3>
+                            {% if item.description %}
+                            <p class="text-gray-300 text-sm">{{ item.description[:50] }}...</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-8">
+                <a href="{{ url_for('printing.gallery') }}" 
+                   class="inline-block bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-dark transition">
+                    View Full Gallery
+                </a>
+            </div>
+        </div>
+        
+        <!-- Navigation Cards Below -->
+        <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">{{ t('printing.services') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <!-- Gallery Card -->
+            <a href="{{ url_for('printing.gallery') }}" class="interest-card group">
+                <div class="relative overflow-hidden rounded-xl shadow-2xl transition-all duration-500 transform group-hover:scale-105">
+                    <img src="{{ url_for('static', filename='media/3dprinting.jpg') }}" 
+                         alt="Gallery" 
+                         class="w-full h-80 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                            <h3 class="text-2xl font-bold text-white mb-2">{{ t('printing.gallery') }}</h3>
+                            <p class="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                Explore my 3D printing projects and creations
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- Quote Request -->
+            <a href="{{ url_for('printing.quote') }}" class="interest-card group">
+                <div class="relative overflow-hidden rounded-xl shadow-2xl transition-all duration-500 transform group-hover:scale-105">
+                    <img src="{{ url_for('static', filename='media/3dprinting.jpg') }}" 
+                         alt="Quote" 
+                         class="w-full h-80 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                            <h3 class="text-2xl font-bold text-white mb-2">{{ t('printing.quote') }}</h3>
+                            <p class="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                Request a custom quote for your project
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- Shop -->
+            <a href="{{ url_for('shop.index', category='3dprinting') }}" class="interest-card group">
+                <div class="relative overflow-hidden rounded-xl shadow-2xl transition-all duration-500 transform group-hover:scale-105">
+                    <img src="{{ url_for('static', filename='media/3dprinting.jpg') }}" 
+                         alt="Shop" 
+                         class="w-full h-80 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                            <h3 class="text-2xl font-bold text-white mb-2">{{ t('printing.shop') }}</h3>
+                            <p class="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                Browse and purchase 3D printed items
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

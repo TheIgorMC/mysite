@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-7xl">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">
+            <i class="fas fa-shield-alt text-primary mr-3"></i>Admin Panel
+        </h1>
+        
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button onclick="showTab('users')" 
+                        id="tab-users"
+                        class="px-6 py-3 rounded-lg bg-primary text-white font-semibold">
+                    <i class="fas fa-users mr-2"></i>Users
+                </button>
+                <button onclick="showTab('gallery')" 
+                        id="tab-gallery"
+                        class="px-6 py-3 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold">
+                    <i class="fas fa-images mr-2"></i>Gallery
+                </button>
+                <button onclick="showTab('shop')" 
+                        id="tab-shop"
+                        class="px-6 py-3 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold">
+                    <i class="fas fa-shopping-cart mr-2"></i>Shop
+                </button>
+            </div>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="content-users" class="tab-content">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">User Management</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Username</th>
+                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Email</th>
+                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Name</th>
+                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Club Member</th>
+                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Admin</th>
+                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center">
+                                        <img src="{{ url_for('static', filename='media/' + user.avatar) }}" 
+                                             alt="{{ user.username }}" 
+                                             class="h-10 w-10 rounded-full object-cover mr-3">
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ user.username }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{{ user.email }}</td>
+                                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">
+                                    {{ user.first_name or '' }} {{ user.last_name or '' }}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <form method="POST" action="{{ url_for('main.toggle_club_member', user_id=user.id) }}" class="inline">
+                                        <button type="submit" 
+                                                class="{% if user.is_club_member %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-600{% endif %}">
+                                            <i class="fas fa-certificate text-xl"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    {% if user.id != current_user.id %}
+                                    <form method="POST" action="{{ url_for('main.toggle_admin', user_id=user.id) }}" class="inline">
+                                        <button type="submit" 
+                                                class="{% if user.is_admin %}text-primary{% else %}text-gray-400 dark:text-gray-600{% endif %}">
+                                            <i class="fas fa-shield-alt text-xl"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <i class="fas fa-shield-alt text-xl text-primary"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    {% if user.id != current_user.id %}
+                                    <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this user?')" 
+                                          class="inline">
+                                        <button type="submit" 
+                                                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gallery Tab -->
+        <div id="content-gallery" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Add Gallery Item</h2>
+                
+                <form method="POST" action="{{ url_for('main.add_gallery_item') }}" enctype="multipart/form-data">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Title
+                            </label>
+                            <input type="text" 
+                                   name="title" 
+                                   required
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Category
+                            </label>
+                            <select name="category" 
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="3dprinting">3D Printing</option>
+                                <option value="electronics">Electronics</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Description
+                        </label>
+                        <textarea name="description" 
+                                  rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Image
+                        </label>
+                        <input type="file" 
+                               name="image" 
+                               accept="image/*"
+                               required
+                               class="w-full text-sm text-gray-500 dark:text-gray-400
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-lg file:border-0
+                                      file:text-sm file:font-semibold
+                                      file:bg-primary file:text-white
+                                      hover:file:bg-primary-dark
+                                      file:cursor-pointer cursor-pointer">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition">
+                        <i class="fas fa-plus mr-2"></i>Add Item
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Gallery Items List -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Gallery Items</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% for item in gallery_items %}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <img src="{{ url_for('static', filename='uploads/' + item.image_path) }}" 
+                             alt="{{ item.title }}" 
+                             class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-900 dark:text-white mb-1">{{ item.title }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ item.category }}</p>
+                            <div class="flex gap-2">
+                                <form method="POST" action="{{ url_for('main.toggle_gallery_item', item_id=item.id) }}" class="inline">
+                                    <button type="submit" 
+                                            class="text-sm px-3 py-1 rounded {% if item.is_active %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">
+                                        {% if item.is_active %}Active{% else %}Inactive{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('main.delete_gallery_item', item_id=item.id) }}" 
+                                      onsubmit="return confirm('Delete this item?')" 
+                                      class="inline">
+                                    <button type="submit" 
+                                            class="text-sm px-3 py-1 rounded bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Shop Tab -->
+        <div id="content-shop" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Shop Management</h2>
+                <p class="text-gray-600 dark:text-gray-400">Shop management features coming soon...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active state from all buttons
+    document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.className = 'px-6 py-3 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold';
+    });
+    
+    // Show selected tab
+    document.getElementById('content-' + tabName).classList.remove('hidden');
+    
+    // Set active button
+    document.getElementById('tab-' + tabName).className = 'px-6 py-3 rounded-lg bg-primary text-white font-semibold';
+}
+</script>
+{% endblock %}

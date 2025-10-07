@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('shop.title') }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900">
+    <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">{{ t('shop.title') }}</h1>
+        
+        <!-- Category Filter -->
+        <div class="flex justify-center mb-8">
+            <div class="inline-flex rounded-lg shadow-sm" role="group">
+                <a href="{{ url_for('shop.index', category='all') }}" 
+                   class="px-6 py-2 text-sm font-medium {% if category == 'all' %}bg-primary text-white{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %} border border-gray-200 dark:border-gray-600 rounded-l-lg transition">
+                    {{ t('shop.all') }}
+                </a>
+                <a href="{{ url_for('shop.index', category='archery') }}" 
+                   class="px-6 py-2 text-sm font-medium {% if category == 'archery' %}bg-primary text-white{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %} border-t border-b border-gray-200 dark:border-gray-600 transition">
+                    {{ t('shop.archery') }}
+                </a>
+                <a href="{{ url_for('shop.index', category='3dprinting') }}" 
+                   class="px-6 py-2 text-sm font-medium {% if category == '3dprinting' %}bg-primary text-white{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %} border-t border-b border-gray-200 dark:border-gray-600 transition">
+                    {{ t('shop.printing') }}
+                </a>
+                <a href="{{ url_for('shop.index', category='electronics') }}" 
+                   class="px-6 py-2 text-sm font-medium {% if category == 'electronics' %}bg-primary text-white{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %} border border-gray-200 dark:border-gray-600 rounded-r-lg transition">
+                    {{ t('shop.electronics') }}
+                </a>
+            </div>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for product in products %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <img src="{{ url_for('static', filename='uploads/' + (product.main_image or 'placeholder.jpg')) }}" 
+                     alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
+                     class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="text-lg font-bold mb-2 truncate text-gray-900 dark:text-white">
+                        {{ product.name_it if session.get('language') == 'it' else product.name_en }}
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                        {{ product.description_it[:100] if session.get('language') == 'it' else product.description_en[:100] }}...
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-primary">
+                            {{ formatCurrency(product.price) }}
+                        </span>
+                        {% if product.in_stock %}
+                        <button onclick="addToCart({{ product.id }}, '{{ product.name_en }}', {{ product.price }})" 
+                                class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
+                            <i class="fas fa-cart-plus"></i>
+                        </button>
+                        {% else %}
+                        <span class="text-red-600 dark:text-red-400 text-sm">{{ t('shop.out_of_stock') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-500 dark:text-gray-400 text-lg">No products available in this category</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
