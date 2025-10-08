@@ -30,10 +30,11 @@ COPY --from=builder /root/.local /root/.local
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Cache busting - change this to force rebuild
+# Cache busting - change CACHE_BUST value in docker-compose.yml to force rebuild from this point
 ARG CACHE_BUST=1
+RUN echo "Cache bust: ${CACHE_BUST}"
 
-# Copy application code
+# Copy application code (this layer will be rebuilt when CACHE_BUST changes)
 COPY site01/ ./site01/
 
 # Set Python path to include site01 directory
