@@ -100,6 +100,44 @@ See [URGENT_FIX.md](URGENT_FIX.md) for details.
 
 ---
 
+### Issue: "table users already exists"
+
+**Error:**
+```
+sqlite3.OperationalError: table users already exists
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) table users already exists
+```
+
+**Cause:** Multiple Gunicorn workers trying to create tables simultaneously, or tables already exist from previous deployment.
+
+**Solution:**
+This is **already fixed** in the latest code! The app now checks if tables exist before trying to create them.
+
+**To apply the fix:**
+```bash
+# Pull latest code
+git pull origin main
+
+# Rebuild
+docker-compose down
+docker-compose build
+docker-compose up -d
+```
+
+**Alternative - Delete and recreate database:**
+```bash
+# Stop containers
+docker-compose down
+
+# Delete database volume
+docker volume rm mysite_orion-data
+
+# Start (will create fresh database)
+docker-compose up -d
+```
+
+---
+
 ### Issue: Worker Failed to Boot (Import Errors)
 
 **Symptoms:**

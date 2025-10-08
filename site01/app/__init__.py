@@ -51,8 +51,21 @@ def create_app(config_name='default'):
     from app.template_utils import register_template_utilities
     register_template_utilities(app)
     
-    # Create database tables
+    # Create database tables if they don't exist
+    # Using inspector to check if tables exist first (avoids race conditions with multiple workers)
     with app.app_context():
-        db.create_all()
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            
+            # Only create tables if database is empty
+            if not tables:
+                from app import models
+                db.create_all()
+                app.logger.info("Database tables created")
+        except Exception as e:
+            # Tables might already exist or be created by another worker
+            app.logger.debug(f"Database check: {e}")
     
     return app
