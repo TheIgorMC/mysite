@@ -5,11 +5,20 @@ Welcome to the Archery Analysis System documentation! This folder contains all t
 ## 📚 Quick Navigation
 
 ### Getting Started
-- [Project README](README.md) - Main project information
+- [Project README](../../README.md) - Main project information
 - [Quick Start Guide](QUICK_START.txt) - Get up and running quickly
 - [Setup Guide](SETUP_GUIDE.md) - Detailed installation instructions
 - [Project Summary](PROJECT_SUMMARY.md) - Complete project summary
 - [Project Overview](OVERVIEW.md) - High-level overview
+
+### Deployment & Operations
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Complete debugging guide
+- **[Force Rebuild](FORCE_REBUILD.md)** - How to force rebuilds in Dockge
+- **[Emergency Rebuild](EMERGENCY_REBUILD.md)** - Manual rebuild via SSH
+- **[Quick Rebuild](REBUILD.md)** - Quick rebuild reference
+- **[Import Fix](IMPORT_FIX.md)** - Config import fix details
+- **[Fix Summary](FIX_SUMMARY.md)** - Complete deployment fix summary
+- **[Urgent Fix](URGENT_FIX.md)** - Naming conflict resolution
 
 ### Architecture & Design
 - [System Architecture](ARCHITECTURE.md) - Overall system design

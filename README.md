@@ -157,7 +157,23 @@ mysite/
 
 Comprehensive documentation is available in the `site01/docs/` directory:
 
+### 📖 Essential Guides
 - **[Documentation Index](site01/docs/INDEX.md)** - Navigation to all docs
+- **[Troubleshooting](site01/docs/TROUBLESHOOTING.md)** - Complete debugging guide
+- **[Force Rebuild](site01/docs/FORCE_REBUILD.md)** - How to force rebuilds in Dockge
+
+### 🚀 Deployment
+- **[Quick Start](QUICKSTART.md)** - 5-minute deployment guide
+- **[Deployment Guide](DEPLOYMENT.md)** - Complete deployment instructions
+- **[Dockge Setup](DOCKGE_SETUP.md)** - Dockge-specific guide
+- **[Deployment Checklist](CHECKLIST.md)** - Pre-deployment verification
+
+### 🔧 Troubleshooting & Fixes
+- **[Emergency Rebuild](site01/docs/EMERGENCY_REBUILD.md)** - Manual rebuild via SSH
+- **[Import Fix](site01/docs/IMPORT_FIX.md)** - Config import fix details
+- **[Fix Summary](site01/docs/FIX_SUMMARY.md)** - Complete deployment fix summary
+
+### 📚 Features & Implementation
 - **[Features](site01/docs/features/)** - Feature documentation
   - Statistics system
   - Date handling

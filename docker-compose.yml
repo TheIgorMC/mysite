@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Change this number to force rebuild (increment it each time)
+        CACHE_BUST: 2
     container_name: orion-project
     restart: unless-stopped
     ports:

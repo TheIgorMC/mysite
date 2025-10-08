@@ -30,6 +30,9 @@ COPY --from=builder /root/.local /root/.local
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
+# Cache busting - change this to force rebuild
+ARG CACHE_BUST=1
+
 # Copy application code
 COPY site01/ ./site01/
 
