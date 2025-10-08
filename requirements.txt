@@ -1,0 +1,45 @@
+# Core Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Production Server
+gunicorn==21.2.0
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+
+# Authentication
+Flask-Login==0.6.3
+
+# Forms & Validation
+Flask-WTF==1.2.1
+WTForms==3.1.1
+
+# HTTP Requests
+requests==2.31.0
+urllib3==2.1.0
+
+# Email (optional)
+Flask-Mail==0.9.1
+
+# Date/Time Handling
+python-dateutil==2.8.2
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# JSON Handling
+orjson==3.9.10
+
+# Security
+cryptography==41.0.7
+
+# Caching (optional but recommended)
+Flask-Caching==2.1.0
+
+# CORS (if you add API endpoints later)
+Flask-CORS==4.0.0
+
+# Rate Limiting (recommended for production)
+Flask-Limiter==3.5.0

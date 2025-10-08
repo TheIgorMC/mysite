@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  orion-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orion-project
+    restart: unless-stopped
+    ports:
+      - "6080:5000"
+    environment:
+      # Flask Configuration
+      - FLASK_APP=site01.app
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      
+      # Database (SQLite stored in volume)
+      - DATABASE_URL=sqlite:////app/data/orion.db
+      
+      # Session Configuration
+      - SESSION_COOKIE_SECURE=true
+      - SESSION_COOKIE_HTTPONLY=true
+      - SESSION_COOKIE_SAMESITE=Lax
+      
+      # Default Language
+      - DEFAULT_LANGUAGE=it
+      
+      # API Configuration
+      - ORION_API_URL=https://api.orion-project.it:443
+      
+      # Cloudflare Access (if needed)
+      - CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID:-}
+      - CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET:-}
+      
+      # Email Configuration (optional)
+      - MAIL_SERVER=${MAIL_SERVER:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      
+    volumes:
+      # Persistent data
+      - orion-data:/app/data
+      - orion-logs:/app/site01/logs
+      
+      # Optional: Mount uploads directory if you add file upload features
+      # - orion-uploads:/app/site01/static/uploads
+      
+    networks:
+      - orion-network
+    
+    labels:
+      # Dockge labels for better management
+      - "com.dockge.description=Orion Project - Archery Analysis & 3D Printing Platform"
+      - "com.dockge.icon=🎯"
+      
+      # Optional: Traefik labels if using reverse proxy
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.orion.rule=Host(`orion.yourdomain.com`)"
+      # - "traefik.http.routers.orion.entrypoints=websecure"
+      # - "traefik.http.routers.orion.tls.certresolver=letsencrypt"
+      # - "traefik.http.services.orion.loadbalancer.server.port=5000"
+
+volumes:
+  orion-data:
+    driver: local
+  orion-logs:
+    driver: local
+
+networks:
+  orion-network:
+    driver: bridge

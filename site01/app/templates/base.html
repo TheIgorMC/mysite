@@ -53,6 +53,74 @@
     <!-- Theme Script (load early) -->
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     
+    <!-- Translations for JavaScript -->
+    <script>
+        window.translations = {
+            common: {
+                loading: "{{ t('common.loading') }}",
+                searching: "{{ t('common.searching') }}",
+                error: "{{ t('common.error') }}",
+                please_try_again: "{{ t('common.please_try_again') }}",
+                no_results: "{{ t('common.no_results') }}"
+            },
+            errors: {
+                loading_data: "{{ t('errors.loading_data') }}",
+                loading_results: "{{ t('errors.loading_results') }}",
+                loading_statistics: "{{ t('errors.loading_statistics') }}",
+                loading_types: "{{ t('errors.loading_types') }}",
+                searching_athletes: "{{ t('errors.searching_athletes') }}"
+            },
+            messages: {
+                loading_competition_results: "{{ t('messages.loading_competition_results') }}",
+                loading_statistics: "{{ t('messages.loading_statistics') }}",
+                loading_types: "{{ t('messages.loading_types') }}",
+                no_athletes_found: "{{ t('messages.no_athletes_found') }}",
+                athlete_already_selected: "{{ t('messages.athlete_already_selected') }}",
+                max_athletes: "{{ t('messages.max_athletes') }}",
+                add_athletes_to_compare: "{{ t('messages.add_athletes_to_compare') }}",
+                select_at_least_one: "{{ t('messages.select_at_least_one') }}",
+                newsletter_success: "{{ t('messages.newsletter_success') }}",
+                newsletter_error: "{{ t('messages.newsletter_error') }}",
+                product_added: "{{ t('messages.product_added') }}"
+            },
+            archery: {
+                total_competitions: "{{ t('archery.total_competitions') }}",
+                competitions_short: "{{ t('archery.competitions_short') }}",
+                medals: "{{ t('archery.medals') }}",
+                avg_position: "{{ t('archery.avg_position') }}",
+                avg_pos_short: "{{ t('archery.avg_pos_short') }}",
+                best_score: "{{ t('archery.best_score') }}",
+                career_statistics: "{{ t('archery.career_statistics') }}",
+                filtered_statistics: "{{ t('archery.filtered_statistics') }}",
+                statistics_comparison: "{{ t('archery.statistics_comparison') }}",
+                career_comparison: "{{ t('archery.career_comparison') }}",
+                filtered_comparison: "{{ t('archery.filtered_comparison') }}",
+                athlete: "{{ t('archery.athlete') }}",
+                individual_highlights: "{{ t('archery.individual_highlights') }}",
+                performance: "{{ t('archery.performance') }}",
+                podiums: "{{ t('archery.podiums') }}",
+                recent: "{{ t('archery.recent') }}",
+                out_of: "{{ t('archery.out_of') }}",
+                top_percent: "{{ t('archery.top_percent') }}",
+                competition_results: "{{ t('archery.competition_results') }}",
+                score: "{{ t('archery.score') }}",
+                average_per_arrow: "{{ t('archery.average_per_arrow') }}",
+                all_types: "{{ t('archery.all_types') }}"
+            }
+        };
+        
+        // Helper function to get translations in JavaScript
+        function t(key) {
+            const keys = key.split('.');
+            let value = window.translations;
+            for (const k of keys) {
+                value = value?.[k];
+                if (value === undefined) return key;
+            }
+            return value || key;
+        }
+    </script>
+    
     {% block extra_head %}{% endblock %}
 </head>
 <body class="flex flex-col min-h-screen dark:bg-gray-900 dark:text-gray-100">

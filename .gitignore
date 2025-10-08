@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+site01/logs/
+
+# Uploads
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# Docker
+docker-compose.override.yml
+
+# Backups
+*.tar.gz
+*.zip
+backup/
+backups/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Node (if you add npm later)
+node_modules/
+package-lock.json

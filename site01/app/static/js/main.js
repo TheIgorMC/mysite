@@ -31,14 +31,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('Successfully subscribed to newsletter!');
+                    alert(t('messages.newsletter_success'));
                     newsletterForm.reset();
                 } else {
-                    alert(data.error || 'An error occurred. Please try again.');
+                    alert(data.error || t('messages.newsletter_error'));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                alert(t('messages.newsletter_error'));
             }
         });
     }
@@ -75,11 +75,14 @@ function addToCart(productId, productName, price) {
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
     
-    alert('Product added to cart!');
+    alert(t('messages.product_added'));
 }
 
 // Utility functions
-function showLoading(element, message = 'Loading...') {
+function showLoading(element, message) {
+    // Use default message if not provided
+    const loadingMessage = message || t('common.loading');
+    
     if (element) {
         const isDarkMode = document.documentElement.classList.contains('dark');
         const textColor = isDarkMode ? 'text-gray-300' : 'text-gray-700';
@@ -90,7 +93,7 @@ function showLoading(element, message = 'Loading...') {
                 <div class="relative">
                     <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-700 border-t-primary rounded-full animate-spin"></div>
                 </div>
-                <p class="mt-4 text-sm font-medium ${textColor}">${message}</p>
+                <p class="mt-4 text-sm font-medium ${textColor}">${loadingMessage}</p>
             </div>
         `;
     }

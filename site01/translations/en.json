@@ -44,16 +44,34 @@
     "add_athlete": "Add Athlete",
     "statistics": "Statistics",
     "total_competitions": "Total Competitions",
+    "competitions_short": "Competitions",
     "medals": "Medals",
     "gold": "Gold",
     "silver": "Silver",
     "bronze": "Bronze",
     "avg_position": "Average Position",
+    "avg_pos_short": "Avg Position",
     "best_score": "Best Score",
     "competition_types": "Competition Types",
+    "competition_results": "Competition Results Over Time",
+    "score": "Score",
+    "average_per_arrow": "Average per Arrow",
+    "all_types": "All Types",
     "category": "Category",
     "show_average": "Show Average per Arrow",
-    "average_info": "Calculates average score per arrow based on competition type"
+    "average_info": "Calculates average score per arrow based on competition type",
+    "career_statistics": "Career Statistics",
+    "filtered_statistics": "Filtered Period Statistics",
+    "statistics_comparison": "Statistics Comparison",
+    "career_comparison": "Career Statistics Comparison",
+    "filtered_comparison": "Filtered Statistics Comparison",
+    "athlete": "Athlete",
+    "individual_highlights": "Individual Highlights",
+    "performance": "Performance",
+    "podiums": "Podiums",
+    "recent": "recent",
+    "out_of": "out of",
+    "top_percent": "Top"
   },
   "competitions": {
     "title": "Competition Management",
@@ -146,6 +164,30 @@
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
-    "info": "Information"
+    "info": "Information",
+    "searching": "Searching...",
+    "please_try_again": "Please try again.",
+    "no_results": "No results found"
+  },
+  "errors": {
+    "loading_data": "Error loading data",
+    "loading_results": "Error loading results",
+    "loading_statistics": "Error loading statistics",
+    "loading_types": "Error loading types",
+    "searching_athletes": "Error searching athletes",
+    "generic": "An error occurred"
+  },
+  "messages": {
+    "loading_competition_results": "Loading competition results...",
+    "loading_statistics": "Loading statistics...",
+    "loading_types": "Loading types...",
+    "no_athletes_found": "No athletes found",
+    "athlete_already_selected": "Athlete already selected",
+    "max_athletes": "Maximum 5 athletes can be compared",
+    "add_athletes_to_compare": "Add athletes to compare",
+    "select_at_least_one": "Please select at least one athlete",
+    "newsletter_success": "Successfully subscribed to newsletter!",
+    "newsletter_error": "An error occurred. Please try again.",
+    "product_added": "Product added to cart!"
   }
 }

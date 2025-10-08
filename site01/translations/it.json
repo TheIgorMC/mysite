@@ -44,16 +44,34 @@
     "add_athlete": "Aggiungi Atleta",
     "statistics": "Statistiche",
     "total_competitions": "Gare Totali",
+    "competitions_short": "Gare",
     "medals": "Medaglie",
     "gold": "Oro",
     "silver": "Argento",
     "bronze": "Bronzo",
     "avg_position": "Posizione Media",
+    "avg_pos_short": "Pos. Media",
     "best_score": "Miglior Punteggio",
     "competition_types": "Tipi di Gara",
+    "competition_results": "Risultati Gare nel Tempo",
+    "score": "Punteggio",
+    "average_per_arrow": "Media per Freccia",
+    "all_types": "Tutti i Tipi",
     "category": "Categoria",
     "show_average": "Mostra Media per Freccia",
-    "average_info": "Calcola il punteggio medio per freccia in base al tipo di gara"
+    "average_info": "Calcola il punteggio medio per freccia in base al tipo di gara",
+    "career_statistics": "Statistiche Carriera",
+    "filtered_statistics": "Statistiche Periodo Filtrato",
+    "statistics_comparison": "Confronto Statistiche",
+    "career_comparison": "Confronto Statistiche Carriera",
+    "filtered_comparison": "Confronto Statistiche Filtrate",
+    "athlete": "Atleta",
+    "individual_highlights": "Evidenze Individuali",
+    "performance": "Prestazione",
+    "podiums": "Podi",
+    "recent": "recenti",
+    "out_of": "su",
+    "top_percent": "Top"
   },
   "competitions": {
     "title": "Gestione Gare",
@@ -146,6 +164,30 @@
     "error": "Errore",
     "success": "Successo",
     "warning": "Attenzione",
-    "info": "Informazione"
+    "info": "Informazione",
+    "searching": "Ricerca in corso...",
+    "please_try_again": "Riprova.",
+    "no_results": "Nessun risultato trovato"
+  },
+  "errors": {
+    "loading_data": "Errore nel caricamento dei dati",
+    "loading_results": "Errore nel caricamento dei risultati",
+    "loading_statistics": "Errore nel caricamento delle statistiche",
+    "loading_types": "Errore nel caricamento dei tipi",
+    "searching_athletes": "Errore nella ricerca degli atleti",
+    "generic": "Si è verificato un errore"
+  },
+  "messages": {
+    "loading_competition_results": "Caricamento risultati gare...",
+    "loading_statistics": "Caricamento statistiche...",
+    "loading_types": "Caricamento tipi...",
+    "no_athletes_found": "Nessun atleta trovato",
+    "athlete_already_selected": "Atleta già selezionato",
+    "max_athletes": "Si possono confrontare massimo 5 atleti",
+    "add_athletes_to_compare": "Aggiungi atleti da confrontare",
+    "select_at_least_one": "Seleziona almeno un atleta",
+    "newsletter_success": "Iscrizione alla newsletter avvenuta con successo!",
+    "newsletter_error": "Si è verificato un errore. Riprova.",
+    "product_added": "Prodotto aggiunto al carrello!"
   }
 }

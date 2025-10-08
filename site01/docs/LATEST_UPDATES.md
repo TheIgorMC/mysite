@@ -2,7 +2,29 @@
 
 ## 🎉 What's New
 
-### 1. ⏳ Loading Indicators (ADDED)
+### 1. 🌍 Internationalization Fixed (JUST ADDED!)
+**All text now properly translates between English and Italian!**
+
+#### The Problem
+Some text was appearing only in English because JavaScript files had hardcoded strings.
+
+#### The Solution
+✅ Added 23+ translation keys to both `en.json` and `it.json`
+✅ Implemented JavaScript translation system with `t()` function
+✅ Replaced ALL hardcoded strings in JavaScript files
+✅ Created comprehensive i18n documentation
+
+#### Now Works
+- Loading messages: "Loading..." / "Caricamento..."
+- Error messages: "Error loading data" / "Errore nel caricamento dei dati"
+- User alerts: "Athlete already selected" / "Atleta già selezionato"
+- All UI text properly translates
+
+**📚 Full Guide:** [Internationalization Documentation](features/internationalization.md)
+
+---
+
+### 2. ⏳ Loading Indicators
 **Every API call now has a beautiful loading state!**
 
 #### Before vs After
@@ -17,8 +39,8 @@
 **After:** ✅ Clear visual feedback at every step
 ```
 [Click Analyze]
-🔄 Loading competition results...
-🔄 Loading statistics...
+🔄 Loading competition results... (Caricamento risultati gare...)
+🔄 Loading statistics... (Caricamento statistiche...)
 [Results appear smoothly]
 ```
 

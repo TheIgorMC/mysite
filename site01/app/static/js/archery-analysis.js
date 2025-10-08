@@ -64,7 +64,7 @@ async function onCategoryChange() {
     const typeSelect = document.getElementById('competition-type');
     
     // Clear current types
-    typeSelect.innerHTML = '<option value="">All Types</option>';
+    typeSelect.innerHTML = `<option value="">${t('archery.all_types')}</option>`;
     
     if (!category) {
         // Load all types if no category selected
@@ -74,13 +74,13 @@ async function onCategoryChange() {
     
     try {
         // Show loading in the select
-        typeSelect.innerHTML = '<option value="">Loading...</option>';
+        typeSelect.innerHTML = `<option value="">${t('common.loading')}</option>`;
         typeSelect.disabled = true;
         
         const response = await fetch(`/archery/api/category/${category}/types`);
         const types = await response.json();
         
-        typeSelect.innerHTML = '<option value="">All Types</option>';
+        typeSelect.innerHTML = `<option value="">${t('archery.all_types')}</option>`;
         types.forEach(type => {
             const option = document.createElement('option');
             option.value = type.id;
@@ -91,9 +91,9 @@ async function onCategoryChange() {
         typeSelect.disabled = false;
     } catch (error) {
         console.error('Error loading types for category:', error);
-        typeSelect.innerHTML = '<option value="">Error loading types</option>';
+        typeSelect.innerHTML = `<option value="">${t('errors.loading_types')}</option>`;
         setTimeout(() => {
-            typeSelect.innerHTML = '<option value="">All Types</option>';
+            typeSelect.innerHTML = `<option value="">${t('archery.all_types')}</option>`;
             typeSelect.disabled = false;
         }, 2000);
     }
@@ -114,7 +114,7 @@ async function searchAthletes() {
         resultsDiv.innerHTML = `
             <div class="p-4 flex items-center justify-center">
                 <div class="w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-primary rounded-full animate-spin mr-2"></div>
-                <span class="text-gray-600 dark:text-gray-400 text-sm">Searching...</span>
+                <span class="text-gray-600 dark:text-gray-400 text-sm">${t('common.searching')}</span>
             </div>
         `;
         resultsDiv.classList.remove('hidden');
@@ -123,7 +123,7 @@ async function searchAthletes() {
         const athletes = await response.json();
         
         if (athletes.length === 0) {
-            resultsDiv.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No athletes found</p>';
+            resultsDiv.innerHTML = `<p class="p-4 text-gray-500 dark:text-gray-400">${t('messages.no_athletes_found')}</p>`;
         } else {
             resultsDiv.innerHTML = athletes.map(athlete => `
                 <div class="p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 text-gray-900 dark:text-white" 
@@ -140,7 +140,7 @@ async function searchAthletes() {
         resultsDiv.innerHTML = `
             <div class="p-4 text-red-500 dark:text-red-400 flex items-center">
                 <i class="fas fa-exclamation-circle mr-2"></i>
-                <span>Error searching athletes</span>
+                <span>${t('errors.searching_athletes')}</span>
             </div>
         `;
         resultsDiv.classList.remove('hidden');
@@ -150,13 +150,13 @@ async function searchAthletes() {
 function selectAthlete(id, name) {
     // Check if already selected
     if (selectedAthletes.find(a => a.id === id)) {
-        alert('Athlete already selected');
+        alert(t('messages.athlete_already_selected'));
         return;
     }
     
     // Check max 5 athletes
     if (selectedAthletes.length >= 5) {
-        alert('Maximum 5 athletes can be compared');
+        alert(t('messages.max_athletes'));
         return;
     }
     
@@ -177,7 +177,7 @@ function updateSelectedAthletes() {
     const container = document.getElementById('selected-athletes');
     
     if (selectedAthletes.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm">Add athletes to compare</p>';
+        container.innerHTML = `<p class="text-gray-400 dark:text-gray-500 text-sm">${t('messages.add_athletes_to_compare')}</p>`;
         return;
     }
     
@@ -212,7 +212,7 @@ function removeAthlete(index) {
 
 async function analyzeResults() {
     if (selectedAthletes.length === 0) {
-        alert('Please select at least one athlete');
+        alert(t('messages.select_at_least_one'));
         return;
     }
     
@@ -229,11 +229,11 @@ async function analyzeResults() {
     
     try {
         // Show loading for chart
-        showLoading(chartContainer, 'Loading competition results...');
+        showLoading(chartContainer, t('messages.loading_competition_results'));
         
         // Show loading for statistics
         statsSection.classList.remove('hidden');
-        showLoading(statsGrid, 'Loading statistics...');
+        showLoading(statsGrid, t('messages.loading_statistics'));
         
         // Fetch results for all selected athletes
         const resultsPromises = selectedAthletes.map(athlete => 
@@ -261,8 +261,8 @@ async function analyzeResults() {
         }
     } catch (error) {
         console.error('Error analyzing results:', error);
-        showError(chartContainer, 'Error loading results. Please try again.');
-        showError(statsGrid, 'Error loading statistics. Please try again.');
+        showError(chartContainer, `${t('errors.loading_results')}. ${t('common.please_try_again')}`);
+        showError(statsGrid, `${t('errors.loading_statistics')}. ${t('common.please_try_again')}`);
     }
 }
 
@@ -316,7 +316,7 @@ function initializeChart() {
                 },
                 title: {
                     display: true,
-                    text: 'Competition Results Over Time',
+                    text: t('archery.competition_results'),
                     color: textColor,
                     font: {
                         size: 16,
@@ -329,7 +329,7 @@ function initializeChart() {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Score',
+                        text: t('archery.score'),
                         color: textColor,
                         font: {
                             weight: 'bold'
@@ -509,7 +509,7 @@ function updateChart(allResults, includeAverage = false) {
     const labels = sortedDates.map(formatDateForDisplay);
     
     // Update Y-axis label based on what we're showing
-    const yAxisLabel = includeAverage ? 'Average per Arrow' : 'Score';
+    const yAxisLabel = includeAverage ? t('archery.average_per_arrow') : t('archery.score');
     
     resultsChart.data.labels = labels;
     resultsChart.data.datasets = datasets;
@@ -551,45 +551,45 @@ async function loadStatistics(athleteId, competitionType, category, startDate, e
             `;
         };
         
-        let careerHtml = '<div class="col-span-full mb-4"><h3 class="text-xl font-bold text-gray-900 dark:text-white">Career Statistics</h3></div>';
+        let careerHtml = `<div class="col-span-full mb-4"><h3 class="text-xl font-bold text-gray-900 dark:text-white">${t('archery.career_statistics')}</h3></div>`;
         
         // Career Statistics
-        careerHtml += createStatCard('Total Competitions', career.total_competitions || 0, '', 'career');
+        careerHtml += createStatCard(t('archery.total_competitions'), career.total_competitions || 0, '', 'career');
         
-        careerHtml += createStatCard('Medals', 
+        careerHtml += createStatCard(t('archery.medals'), 
             `<div class="space-y-2">
                 <p class="text-lg"><span class="font-bold text-yellow-500">🥇</span> ${career.gold_medals || 0}</p>
                 <p class="text-lg"><span class="font-bold text-gray-400">🥈</span> ${career.silver_medals || 0}</p>
                 <p class="text-lg"><span class="font-bold text-orange-600">🥉</span> ${career.bronze_medals || 0}</p>
             </div>`, '', 'career');
         
-        careerHtml += createStatCard('Average Position', 
+        careerHtml += createStatCard(t('archery.avg_position'), 
             career.avg_position ? career.avg_position.toFixed(1) : 'N/A',
-            `Top ${career.avg_percentile || 'N/A'}%`, 'career');
+            `${t('archery.top_percent')} ${career.avg_percentile || 'N/A'}%`, 'career');
         
-        careerHtml += createStatCard('Best Score', 
+        careerHtml += createStatCard(t('archery.best_score'), 
             career.best_score || 'N/A',
             career.best_score_competition || '', 'career');
         
         // Filtered Statistics (if filters are applied)
         let filteredHtml = '';
         if (hasFilters && filtered) {
-            filteredHtml += '<div class="col-span-full mt-6 mb-4 border-t-2 border-gray-300 dark:border-gray-600 pt-4"><h3 class="text-xl font-bold text-accent dark:text-accent">Filtered Period Statistics</h3></div>';
+            filteredHtml += `<div class="col-span-full mt-6 mb-4 border-t-2 border-gray-300 dark:border-gray-600 pt-4"><h3 class="text-xl font-bold text-accent dark:text-accent">${t('archery.filtered_statistics')}</h3></div>`;
             
-            filteredHtml += createStatCard('Competitions', filtered.total_competitions || 0, '', 'filtered');
+            filteredHtml += createStatCard(t('archery.competitions_short'), filtered.total_competitions || 0, '', 'filtered');
             
-            filteredHtml += createStatCard('Medals',
+            filteredHtml += createStatCard(t('archery.medals'),
                 `<div class="space-y-2">
                     <p class="text-lg"><span class="font-bold text-yellow-500">🥇</span> ${filtered.gold_medals || 0}</p>
                     <p class="text-lg"><span class="font-bold text-gray-400">🥈</span> ${filtered.silver_medals || 0}</p>
                     <p class="text-lg"><span class="font-bold text-orange-600">🥉</span> ${filtered.bronze_medals || 0}</p>
                 </div>`, '', 'filtered');
             
-            filteredHtml += createStatCard('Avg Position',
+            filteredHtml += createStatCard(t('archery.avg_pos_short'),
                 filtered.avg_position ? filtered.avg_position.toFixed(1) : 'N/A',
-                `Top ${filtered.avg_percentile || 'N/A'}%`, 'filtered');
+                `${t('archery.top_percent')} ${filtered.avg_percentile || 'N/A'}%`, 'filtered');
             
-            filteredHtml += createStatCard('Best Score',
+            filteredHtml += createStatCard(t('archery.best_score'),
                 filtered.best_score || 'N/A',
                 filtered.best_score_competition || '', 'filtered');
         }
@@ -624,19 +624,19 @@ async function loadComparisonStatistics(athletes, competitionType, category, sta
         let html = `
             <div class="col-span-full">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    ${hasFilters ? 'Filtered' : 'Career'} Statistics Comparison
+                    ${hasFilters ? t('archery.filtered_comparison') : t('archery.career_comparison')}
                 </h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
                         <thead class="text-xs uppercase bg-gray-200 dark:bg-gray-700">
                             <tr>
-                                <th class="px-4 py-3">Athlete</th>
-                                <th class="px-4 py-3 text-center">Competitions</th>
+                                <th class="px-4 py-3">${t('archery.athlete')}</th>
+                                <th class="px-4 py-3 text-center">${t('archery.competitions_short')}</th>
                                 <th class="px-4 py-3 text-center">🥇</th>
                                 <th class="px-4 py-3 text-center">🥈</th>
                                 <th class="px-4 py-3 text-center">🥉</th>
-                                <th class="px-4 py-3 text-center">Avg Position</th>
-                                <th class="px-4 py-3 text-center">Best Score</th>
+                                <th class="px-4 py-3 text-center">${t('archery.avg_pos_short')}</th>
+                                <th class="px-4 py-3 text-center">${t('archery.best_score')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -667,7 +667,7 @@ async function loadComparisonStatistics(athletes, competitionType, category, sta
         `;
         
         // Add individual highlight cards below table
-        html += '<div class="col-span-full mt-6"><h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Individual Highlights</h4></div>';
+        html += `<div class="col-span-full mt-6"><h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('archery.individual_highlights')}</h4></div>`;
         
         allStats.forEach(athleteStats => {
             const stats = hasFilters && athleteStats.filtered ? athleteStats.filtered : athleteStats.career;
@@ -676,15 +676,15 @@ async function loadComparisonStatistics(athletes, competitionType, category, sta
                     <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">${athleteStats.athleteName}</h4>
                     <div class="space-y-2 text-sm">
                         <p class="text-gray-700 dark:text-gray-300">
-                            <span class="font-semibold">Best Score:</span> ${stats.best_score || 'N/A'}
+                            <span class="font-semibold">${t('archery.best_score')}:</span> ${stats.best_score || 'N/A'}
                             ${stats.best_score_competition ? `<br><span class="text-xs text-gray-500">${stats.best_score_competition}</span>` : ''}
                         </p>
                         <p class="text-gray-700 dark:text-gray-300">
-                            <span class="font-semibold">Performance:</span> 
-                            Top ${stats.avg_percentile || 'N/A'}% (Avg Position: ${stats.avg_position ? stats.avg_position.toFixed(1) : 'N/A'})
+                            <span class="font-semibold">${t('archery.performance')}:</span> 
+                            ${t('archery.top_percent')} ${stats.avg_percentile || 'N/A'}% (${t('archery.avg_pos_short')}: ${stats.avg_position ? stats.avg_position.toFixed(1) : 'N/A'})
                         </p>
                         <p class="text-gray-700 dark:text-gray-300">
-                            <span class="font-semibold">Podiums:</span> ${stats.top_finishes || 0} out of ${stats.recent_competitions_analyzed || 0} recent
+                            <span class="font-semibold">${t('archery.podiums')}:</span> ${stats.top_finishes || 0} ${t('archery.out_of')} ${stats.recent_competitions_analyzed || 0} ${t('archery.recent')}
                         </p>
                     </div>
                 </div>

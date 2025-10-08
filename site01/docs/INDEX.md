@@ -23,6 +23,7 @@ Welcome to the Archery Analysis System documentation! This folder contains all t
 - **[Date Handling](features/date-handling.md)** - Date normalization system
 - **[Date Fix Summary](features/date-fix-summary.md)** - Date handling improvements
 - **[Loading States](features/loading-states.md)** - Loading indicators implementation
+- **[Internationalization](features/internationalization.md)** - Bilingual EN/IT translation system
 - [Archery Analysis Features](ARCHERY_ANALYSIS_FEATURES.md) - Complete feature list
 
 ### API Documentation
