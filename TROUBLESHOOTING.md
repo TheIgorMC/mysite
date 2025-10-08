@@ -72,12 +72,40 @@ curl http://your-orangepi-ip:6080
 
 ## 🐛 Common Issues & Solutions
 
-### Issue: Worker Failed to Boot
+### Issue: "Failed to find attribute 'app' in 'app'"
+
+**Error:**
+```
+Failed to find attribute 'app' in 'app'.
+gunicorn.errors.HaltServer: <HaltServer 'App failed to load.' 4>
+```
+
+**Cause:** Naming conflict between `app.py` file and `app/` package directory.
+
+**Solution:**
+This is **already fixed** in the latest code! The entry point is now `wsgi.py` instead of `app.py`.
+
+**To apply the fix:**
+```bash
+# In Dockge: Click Down → Update/Rebuild → Up
+# Or via SSH:
+cd ~/dockge/stacks/orion-project
+git pull
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+See [URGENT_FIX.md](URGENT_FIX.md) for details.
+
+---
+
+### Issue: Worker Failed to Boot (Import Errors)
 
 **Symptoms:**
 - Container keeps restarting
 - Error: "Worker failed to boot"
-- Import errors in logs
+- `ModuleNotFoundError: No module named 'config'`
 
 **Solutions:**
 
@@ -92,7 +120,7 @@ curl http://your-orangepi-ip:6080
    docker-compose exec orion-web ls -la /app/site01/
    docker-compose exec orion-web ls -la /app/site01/app/
    ```
-   Should show `config.py`, `app.py`, and `app/` directory
+   Should show `config.py`, `wsgi.py`, and `app/` directory
 
 3. **Test imports manually**
    ```bash

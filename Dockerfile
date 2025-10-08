@@ -49,5 +49,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Set working directory to site01 for proper imports
 WORKDIR /app/site01
 
-# Run the application
-CMD ["python", "-m", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "app:app"]
+# Run the application with wsgi.py as entry point
+CMD ["python", "-m", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "wsgi:app"]
