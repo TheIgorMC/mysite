@@ -8,20 +8,17 @@
         <!-- Custom 404 Image with Light/Dark variants -->
         <div class="mb-8 flex justify-center">
             <!-- Light mode image -->
-            <img src="{{ url_for('static', filename='../media/404l.png') }}" 
+            <img src="{{ url_for('static', filename='media/404l.png') }}" 
                  alt="404 - Page Not Found" 
                  class="w-96 h-96 object-contain dark:hidden">
             
             <!-- Dark mode image -->
-            <img src="{{ url_for('static', filename='../media/404d.png') }}" 
+            <img src="{{ url_for('static', filename='media/404d.png') }}" 
                  alt="404 - Page Not Found" 
                  class="w-96 h-96 object-contain hidden dark:block">
         </div>
 
         <!-- Error Message -->
-        <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4">
-            404
-        </h1>
         <h2 class="text-3xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             {{ t('errors.404Title') }}
         </h2>
