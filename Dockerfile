@@ -33,11 +33,11 @@ ENV PATH=/root/.local/bin:$PATH
 # Copy application code
 COPY site01/ ./site01/
 
-# Set Python path
-ENV PYTHONPATH=/app
+# Set Python path to include site01 directory
+ENV PYTHONPATH=/app:/app/site01
 
 # Create necessary directories
-RUN mkdir -p /app/site01/instance /app/site01/logs
+RUN mkdir -p /app/site01/instance /app/site01/logs /app/data
 
 # Expose port
 EXPOSE 5000
@@ -46,5 +46,8 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5000/ || exit 1
 
+# Set working directory to site01 for proper imports
+WORKDIR /app/site01
+
 # Run the application
-CMD ["python", "-m", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "site01.app:app"]
+CMD ["python", "-m", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "app:app"]

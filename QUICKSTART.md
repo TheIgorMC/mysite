@@ -31,7 +31,22 @@ docker-compose up -d
 ```
 
 ### Step 6: Access
-Open browser to: `http://your-orangepi-ip:5000`
+Open browser to: `http://your-orangepi-ip:6080`
+
+(Port 6080 is the default. Change it in `docker-compose.yml` if needed)
+
+---
+
+## 🔧 If You See Import Errors
+
+If container won't start with `ModuleNotFoundError`:
+
+```bash
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+docker-compose logs -f
+```
 
 ---
 
