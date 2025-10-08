@@ -24,6 +24,8 @@ instance/
 .env
 .env.local
 .env.*.local
+site01/.env
+*/.env
 
 # IDE
 .vscode/

@@ -29,12 +29,13 @@ services:
       # Default Language
       - DEFAULT_LANGUAGE=it
       
-      # API Configuration
-      - ORION_API_URL=https://api.orion-project.it:443
+      # API Configuration (must match config.py variables)
+      - API_BASE_URL=${API_BASE_URL:-https://api.orion-project.it}
+      - API_PORT=${API_PORT:-443}
       
-      # Cloudflare Access (if needed)
-      - CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID:-}
-      - CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET:-}
+      # Cloudflare Access (must match config.py variables)
+      - CF_ACCESS_ID=${CF_ACCESS_ID:-}
+      - CF_ACCESS_SECRET=${CF_ACCESS_SECRET:-}
       
       # Email Configuration (optional)
       - MAIL_SERVER=${MAIL_SERVER:-}
