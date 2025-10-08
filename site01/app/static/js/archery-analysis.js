@@ -206,6 +206,7 @@ function removeAthlete(index) {
             resultsChart.data.datasets = [];
             resultsChart.update();
             document.getElementById('statistics-section').classList.add('hidden');
+            hideResetZoomButton();
         }
     }
 }
@@ -322,6 +323,27 @@ function initializeChart() {
                         size: 16,
                         weight: 'bold'
                     }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy',
+                        modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            speed: 0.1
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy',
+                    },
+                    limits: {
+                        x: {min: 'original', max: 'original'},
+                        y: {min: 'original', max: 'original'}
+                    }
                 }
             },
             scales: {
@@ -354,6 +376,11 @@ function initializeChart() {
                         borderColor: gridColor
                     }
                 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
             }
         }
     });
@@ -515,6 +542,9 @@ function updateChart(allResults, includeAverage = false) {
     resultsChart.data.datasets = datasets;
     resultsChart.options.scales.y.title.text = yAxisLabel;
     resultsChart.update();
+    
+    // Show reset zoom button when chart has data
+    showResetZoomButton();
 }
 
 async function loadStatistics(athleteId, competitionType, category, startDate, endDate) {
@@ -698,3 +728,25 @@ async function loadComparisonStatistics(athletes, competitionType, category, sta
     }
 }
 
+// Reset chart zoom function
+function resetChartZoom() {
+    if (resultsChart) {
+        resultsChart.resetZoom();
+    }
+}
+
+// Show reset button when chart has data
+function showResetZoomButton() {
+    const resetBtn = document.getElementById('reset-zoom-btn');
+    if (resetBtn && resultsChart && resultsChart.data.datasets.length > 0) {
+        resetBtn.classList.remove('hidden');
+    }
+}
+
+// Hide reset button when chart is empty
+function hideResetZoomButton() {
+    const resetBtn = document.getElementById('reset-zoom-btn');
+    if (resetBtn) {
+        resetBtn.classList.add('hidden');
+    }
+}

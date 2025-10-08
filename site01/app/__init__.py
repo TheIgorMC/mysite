@@ -51,6 +51,9 @@ def create_app(config_name='default'):
     from app.template_utils import register_template_utilities
     register_template_utilities(app)
     
+    # Register error handlers
+    register_error_handlers(app)
+    
     # Create database tables if they don't exist
     # Using inspector to check if tables exist first (avoids race conditions with multiple workers)
     with app.app_context():
@@ -68,4 +71,21 @@ def create_app(config_name='default'):
             # Tables might already exist or be created by another worker
             app.logger.debug(f"Database check: {e}")
     
+    return app
+
+def register_error_handlers(app):
+    """Register error handlers"""
+    from flask import render_template
+    
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        return render_template('errors/500.html', error_details=str(error) if app.debug else None), 500
+    
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        return render_template('errors/404.html'), 403  # Use 404 template for 403
     return app

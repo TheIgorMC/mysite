@@ -75,6 +75,10 @@ html {
     animation: spin 1s linear infinite;
 }
 
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
 /* Card hover effects */
 .hover-lift {
     transition: transform 0.3s ease, box-shadow 0.3s ease;

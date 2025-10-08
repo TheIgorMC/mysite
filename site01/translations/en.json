@@ -119,7 +119,19 @@
     "out_of_stock": "Out of Stock",
     "price": "Price",
     "cart": "Cart",
-    "checkout": "Checkout"
+    "checkout": "Checkout",
+    "cartDescription": "Review your items and proceed to checkout",
+    "emptyCart": "Your cart is empty",
+    "emptyCartDescription": "Start adding items to your cart to see them here",
+    "continueShopping": "Continue Shopping",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "calculatedAtCheckout": "Calculated at checkout",
+    "total": "Total",
+    "proceedToCheckout": "Proceed to Checkout",
+    "confirmRemove": "Remove this item from cart?",
+    "checkoutComingSoon": "Checkout functionality coming soon!"
   },
   "auth": {
     "login": "Login",
@@ -175,7 +187,16 @@
     "loading_statistics": "Error loading statistics",
     "loading_types": "Error loading types",
     "searching_athletes": "Error searching athletes",
-    "generic": "An error occurred"
+    "generic": "An error occurred",
+    "404Title": "Page Not Found",
+    "404Message": "The page you're looking for doesn't exist or has been moved.",
+    "500Title": "Internal Server Error",
+    "500Message": "Something went wrong on our end. We're working to fix it!",
+    "goHome": "Go to Homepage",
+    "goBack": "Go Back",
+    "helpfulLinks": "Here are some helpful links:",
+    "tryAgain": "Try Again",
+    "persistentIssue": "If the problem persists, please contact support."
   },
   "messages": {
     "loading_competition_results": "Loading competition results...",

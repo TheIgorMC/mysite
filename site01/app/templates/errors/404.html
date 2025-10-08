@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('errors.404Title') }} - {{ t('site.title') }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-16">
+    <div class="max-w-2xl w-full text-center">
+        <!-- Custom 404 Image with Light/Dark variants -->
+        <div class="mb-8 flex justify-center">
+            <!-- Light mode image -->
+            <img src="{{ url_for('static', filename='../media/404l.png') }}" 
+                 alt="404 - Page Not Found" 
+                 class="w-96 h-96 object-contain dark:hidden">
+            
+            <!-- Dark mode image -->
+            <img src="{{ url_for('static', filename='../media/404d.png') }}" 
+                 alt="404 - Page Not Found" 
+                 class="w-96 h-96 object-contain hidden dark:block">
+        </div>
+
+        <!-- Error Message -->
+        <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4">
+            404
+        </h1>
+        <h2 class="text-3xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            {{ t('errors.404Title') }}
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+            {{ t('errors.404Message') }}
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ url_for('main.index') }}" class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                {{ t('errors.goHome') }}
+            </a>
+            <button onclick="history.back()" class="inline-flex items-center justify-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                {{ t('errors.goBack') }}
+            </button>
+        </div>
+
+        <!-- Helpful Links -->
+        <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {{ t('errors.helpfulLinks') }}
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="{{ url_for('archery.index') }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                    {{ t('nav.archery') }}
+                </a>
+                <a href="{{ url_for('printing.index') }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                    {{ t('nav.printing') }}
+                </a>
+                <a href="{{ url_for('electronics.index') }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                    {{ t('nav.electronics') }}
+                </a>
+                <a href="{{ url_for('shop.index') }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                    {{ t('nav.shop') }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

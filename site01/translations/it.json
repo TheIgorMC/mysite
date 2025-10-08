@@ -119,7 +119,19 @@
     "out_of_stock": "Non Disponibile",
     "price": "Prezzo",
     "cart": "Carrello",
-    "checkout": "Procedi al Pagamento"
+    "checkout": "Procedi al Pagamento",
+    "cartDescription": "Rivedi i tuoi articoli e procedi al pagamento",
+    "emptyCart": "Il tuo carrello è vuoto",
+    "emptyCartDescription": "Inizia ad aggiungere articoli al carrello per vederli qui",
+    "continueShopping": "Continua gli Acquisti",
+    "orderSummary": "Riepilogo Ordine",
+    "subtotal": "Subtotale",
+    "shipping": "Spedizione",
+    "calculatedAtCheckout": "Calcolata al checkout",
+    "total": "Totale",
+    "proceedToCheckout": "Procedi al Pagamento",
+    "confirmRemove": "Rimuovere questo articolo dal carrello?",
+    "checkoutComingSoon": "Funzionalità di checkout in arrivo!"
   },
   "auth": {
     "login": "Accedi",
@@ -175,7 +187,16 @@
     "loading_statistics": "Errore nel caricamento delle statistiche",
     "loading_types": "Errore nel caricamento dei tipi",
     "searching_athletes": "Errore nella ricerca degli atleti",
-    "generic": "Si è verificato un errore"
+    "generic": "Si è verificato un errore",
+    "404Title": "Pagina Non Trovata",
+    "404Message": "La pagina che stai cercando non esiste o è stata spostata.",
+    "500Title": "Errore Interno del Server",
+    "500Message": "Qualcosa è andato storto. Stiamo lavorando per risolverlo!",
+    "goHome": "Vai alla Homepage",
+    "goBack": "Torna Indietro",
+    "helpfulLinks": "Ecco alcuni link utili:",
+    "tryAgain": "Riprova",
+    "persistentIssue": "Se il problema persiste, contatta il supporto."
   },
   "messages": {
     "loading_competition_results": "Caricamento risultati gare...",

@@ -45,13 +45,14 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         {{ t('archery.select_period') }}
                     </label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center gap-2">
                         <input type="date" 
                                id="start-date" 
-                               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">-</span>
                         <input type="date" 
                                id="end-date" 
-                               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                     </div>
                 </div>
                 
@@ -101,9 +102,21 @@
         
         <!-- Results Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{{ t('archery.competition_types') }}</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('archery.competition_types') }}</h2>
+                <button id="reset-zoom-btn" 
+                        onclick="resetChartZoom()"
+                        class="hidden px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition text-sm">
+                    <i class="fas fa-search-minus mr-2"></i>Reset Zoom
+                </button>
+            </div>
             <div class="relative h-96">
                 <canvas id="results-chart"></canvas>
+            </div>
+            <div class="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                <i class="fas fa-info-circle mr-1"></i>
+                <span class="hidden md:inline">Use mouse wheel to zoom, Ctrl+drag to pan, or click the reset button</span>
+                <span class="md:hidden">Pinch to zoom, drag to pan, or tap the reset button</span>
             </div>
         </div>
         
