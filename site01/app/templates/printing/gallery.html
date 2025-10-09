@@ -9,28 +9,29 @@
         
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {% for item in items %}
-            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+            <a href="{{ url_for('printing.item_detail', item_id=item.id) }}" 
+               class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 block">
                 <img src="{{ url_for('static', filename='uploads/' + (item.main_image or '')) if item.main_image else url_for('static', filename='media/3dprinting.jpg') }}" 
                      alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
                      class="w-full h-64 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300">
                     <div class="absolute bottom-0 left-0 right-0 p-4">
                         <h3 class="text-white font-bold text-lg">{{ item.title_it if session.get('language') == 'it' else item.title_en }}</h3>
-                        {% if session.get('language') == 'it' and item.description_it %}
-                        <p class="text-gray-300 text-sm mt-1">{{ item.description_it }}</p>
-                        {% elif item.description_en %}
-                        <p class="text-gray-300 text-sm mt-1">{{ item.description_en }}</p>
+                        {% if item.tags %}
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            {% for tag in item.tags.split(',')[:3] %}
+                            <span class="text-xs px-2 py-0.5 bg-primary/80 text-white rounded">
+                                {{ tag.strip() }}
+                            </span>
+                            {% endfor %}
+                        </div>
                         {% endif %}
-                        {% if item.external_url %}
-                        <a href="{{ item.external_url }}" 
-                           target="_blank"
-                           class="text-primary-light hover:text-white text-sm inline-flex items-center mt-2">
-                            <i class="fas fa-external-link-alt mr-1"></i>{{ t('common.view_project') }}
-                        </a>
-                        {% endif %}
+                        <div class="text-primary-light text-sm inline-flex items-center mt-2">
+                            <i class="fas fa-arrow-right mr-1"></i>{{ t('common.view_details') if session.get('language') == 'it' else 'View Details' }}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
             {% else %}
             <div class="col-span-full text-center py-12">
                 <i class="fas fa-images text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>

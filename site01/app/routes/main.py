@@ -205,7 +205,7 @@ def add_product():
     price = request.form.get('price')
     description_en = request.form.get('description_en')
     description_it = request.form.get('description_it')
-    stock = request.form.get('stock', 0)
+    stock_quantity = request.form.get('stock', 0)
     tags = request.form.get('tags', '')
     
     # Handle image upload
@@ -234,9 +234,9 @@ def add_product():
         price=float(price),
         description_en=description_en,
         description_it=description_it,
-        stock=int(stock),
+        stock_quantity=int(stock_quantity),
         tags=tags,
-        image=image_filename,
+        main_image=image_filename,
         is_active=True
     )
     
@@ -272,8 +272,8 @@ def delete_product(product_id):
     # Delete the image file
     import os
     from flask import current_app
-    if product.image:
-        image_path = os.path.join(current_app.root_path, 'static', 'uploads', product.image)
+    if product.main_image:
+        image_path = os.path.join(current_app.root_path, 'static', 'uploads', product.main_image)
         if os.path.exists(image_path):
             os.remove(image_path)
     

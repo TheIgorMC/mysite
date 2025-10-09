@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name_it if session.get('language') == 'it' else product.name_en }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-6xl">
+        <!-- Back button -->
+        <a href="{{ url_for('shop.index', category=product.category) }}" 
+           class="inline-flex items-center text-primary hover:text-primary-dark mb-6 transition">
+            <i class="fas fa-arrow-left mr-2"></i>{{ t('common.back') }}
+        </a>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <!-- Image -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                {% if product.main_image %}
+                <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                     alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
+                     class="w-full h-auto object-cover">
+                {% else %}
+                <div class="w-full h-96 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <i class="fas fa-image text-6xl text-gray-400"></i>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Details -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+                <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                    {{ product.name_it if session.get('language') == 'it' else product.name_en }}
+                </h1>
+                
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                        <i class="fas fa-tag mr-1"></i>{{ product.category }}
+                    </span>
+                    {% if product.in_stock %}
+                    <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>{{ t('shop.in_stock') }}
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-full text-sm font-medium">
+                        <i class="fas fa-times-circle mr-1"></i>{{ t('shop.out_of_stock') }}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Price -->
+                <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-bold text-primary">€{{ "%.2f"|format(product.price) }}</span>
+                        {% if product.stock_quantity %}
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
+                            ({{ product.stock_quantity }} {{ t('common.available') if session.get('language') == 'it' else 'available' }})
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if product.description_it or product.description_en %}
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                        {{ t('common.description') if session.get('language') == 'it' else 'Description' }}
+                    </h2>
+                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                        {{ product.description_it if session.get('language') == 'it' else product.description_en }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if product.tags %}
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Tags</h2>
+                    <div class="flex flex-wrap gap-2">
+                        {% for tag in product.tags.split(',') %}
+                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                            {{ tag.strip() }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Add to Cart Button -->
+                {% if product.in_stock %}
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button onclick="addToCart({{ product.id }}, '{{ product.name_en }}', {{ product.price }})"
+                            class="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold flex items-center justify-center gap-2">
+                        <i class="fas fa-shopping-cart"></i>{{ t('shop.add_to_cart') }}
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Related Products -->
+        {% if related_products %}
+        <div class="mt-12">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+                {{ t('common.related_products') if session.get('language') == 'it' else 'Related Products' }}
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for related in related_products[:4] %}
+                <a href="{{ url_for('shop.product_detail', product_id=related.id) }}" 
+                   class="group block bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    {% if related.main_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + related.main_image) }}" 
+                         alt="{{ related.name_it if session.get('language') == 'it' else related.name_en }}" 
+                         class="w-full h-48 object-cover grayscale group-hover:grayscale-0 transition-all">
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <i class="fas fa-image text-3xl text-gray-400"></i>
+                    </div>
+                    {% endif %}
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-primary transition line-clamp-2 mb-2">
+                            {{ related.name_it if session.get('language') == 'it' else related.name_en }}
+                        </h3>
+                        <p class="text-lg font-bold text-primary">€{{ "%.2f"|format(related.price) }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -189,7 +189,12 @@
     "please_try_again": "Riprova.",
     "no_results": "Nessun risultato trovato",
     "no_items": "Nessun elemento ancora",
-    "view_project": "Visualizza Progetto"
+    "view_project": "Visualizza Progetto",
+    "view_details": "Vedi Dettagli",
+    "description": "Descrizione",
+    "available": "disponibili",
+    "related_projects": "Progetti Correlati",
+    "related_products": "Prodotti Correlati"
   },
   "errors": {
     "loading_data": "Errore nel caricamento dei dati",
