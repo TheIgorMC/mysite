@@ -72,8 +72,14 @@
                             €{{ "%.2f"|format(product.price) }}
                         </span>
                         {% if product.in_stock %}
-                        <button onclick="addToCart({{ product.id }}, '{{ product.name_en }}', {{ product.price }})" 
-                                class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
+                        <button 
+                            data-product-id="{{ product.id }}"
+                            data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
+                            data-product-price="{{ product.price }}"
+                            data-product-image="/static/uploads/shop/{{ product.main_image }}"
+                            data-product-desc="{{ (product.description_it if session.get('language') == 'it' else product.description_en)|truncate(100) }}"
+                            onclick="addToCartFromButton(this)"
+                            class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
                             <i class="fas fa-cart-plus"></i>
                         </button>
                         {% else %}

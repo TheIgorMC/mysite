@@ -96,8 +96,14 @@
                 <!-- Add to Cart Button -->
                 {% if product.in_stock %}
                 <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <button onclick="addToCart({{ product.id }}, '{{ product.name_en }}', {{ product.price }})"
-                            class="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold flex items-center justify-center gap-2">
+                    <button 
+                        data-product-id="{{ product.id }}"
+                        data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
+                        data-product-price="{{ product.price }}"
+                        data-product-image="/static/uploads/shop/{{ product.main_image }}"
+                        data-product-desc="{{ (product.description_it if session.get('language') == 'it' else product.description_en)|truncate(100) }}"
+                        onclick="addToCartFromButton(this)"
+                        class="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold flex items-center justify-center gap-2">
                         <i class="fas fa-shopping-cart"></i>{{ t('shop.add_to_cart') }}
                     </button>
                 </div>

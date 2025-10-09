@@ -150,13 +150,13 @@ async function searchAthletes() {
 function selectAthlete(id, name) {
     // Check if already selected
     if (selectedAthletes.find(a => a.id === id)) {
-        alert(t('messages.athlete_already_selected'));
+        showNotification(t('messages.athlete_already_selected'), 'warning');
         return;
     }
     
     // Check max 5 athletes
     if (selectedAthletes.length >= 5) {
-        alert(t('messages.max_athletes'));
+        showNotification(t('messages.max_athletes'), 'warning');
         return;
     }
     
@@ -213,7 +213,7 @@ function removeAthlete(index) {
 
 async function analyzeResults() {
     if (selectedAthletes.length === 0) {
-        alert(t('messages.select_at_least_one'));
+        showNotification(t('messages.select_at_least_one'), 'warning');
         return;
     }
     

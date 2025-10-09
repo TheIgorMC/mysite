@@ -224,7 +224,7 @@ const cart = new ShoppingCart();
 
 // Checkout button handler
 document.getElementById('checkout-btn').addEventListener('click', () => {
-    alert(window.translations.shop?.checkoutComingSoon || 'Checkout functionality coming soon!');
+    showNotification(window.translations.shop?.checkoutComingSoon || 'Checkout functionality coming soon!', 'info');
 });
 </script>
 {% endblock %}

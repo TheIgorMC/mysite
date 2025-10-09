@@ -253,6 +253,11 @@
         </nav>
     </header>
     
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2" style="pointer-events: none;">
+        <!-- Notifications will be inserted here -->
+    </div>
+    
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

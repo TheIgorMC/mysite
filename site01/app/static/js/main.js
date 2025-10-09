@@ -31,14 +31,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert(t('messages.newsletter_success'));
+                    showNotification(t('messages.newsletter_success'), 'success');
                     newsletterForm.reset();
                 } else {
-                    alert(data.error || t('messages.newsletter_error'));
+                    showNotification(data.error || t('messages.newsletter_error'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert(t('messages.newsletter_error'));
+                showNotification(t('messages.newsletter_error'), 'error');
             }
         });
     }
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Cart management
 function updateCartCount() {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
     const cartCount = document.getElementById('cart-count');
     if (cartCount) {
         const total = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -57,8 +57,8 @@ function updateCartCount() {
     }
 }
 
-function addToCart(productId, productName, price) {
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+function addToCart(productId, productName, price, imageUrl = '', description = '') {
+    let cart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
     
     const existingItem = cart.find(item => item.id === productId);
     if (existingItem) {
@@ -68,14 +68,90 @@ function addToCart(productId, productName, price) {
             id: productId,
             name: productName,
             price: price,
-            quantity: 1
+            quantity: 1,
+            image: imageUrl,
+            description: description
         });
     }
     
-    localStorage.setItem('cart', JSON.stringify(cart));
+    localStorage.setItem('shopping_cart', JSON.stringify(cart));
     updateCartCount();
     
-    alert(t('messages.product_added'));
+    // Show notification instead of alert
+    showNotification(t('messages.product_added'), 'success');
+}
+
+// Helper function to add to cart from button with data attributes
+function addToCartFromButton(button) {
+    const id = parseInt(button.dataset.productId);
+    const name = button.dataset.productName;
+    const price = parseFloat(button.dataset.productPrice);
+    const image = button.dataset.productImage;
+    const description = button.dataset.productDesc || '';
+    
+    addToCart(id, name, price, image, description);
+}
+
+// Toast Notification System
+function showNotification(message, type = 'success', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.pointerEvents = 'auto';
+    
+    // Set color scheme based on type
+    let bgColor, borderColor, iconClass;
+    switch(type) {
+        case 'success':
+            bgColor = 'bg-green-500 dark:bg-green-600';
+            borderColor = 'border-green-600 dark:border-green-700';
+            iconClass = 'fa-check-circle';
+            break;
+        case 'error':
+            bgColor = 'bg-red-500 dark:bg-red-600';
+            borderColor = 'border-red-600 dark:border-red-700';
+            iconClass = 'fa-exclamation-circle';
+            break;
+        case 'warning':
+            bgColor = 'bg-yellow-500 dark:bg-yellow-600';
+            borderColor = 'border-yellow-600 dark:border-yellow-700';
+            iconClass = 'fa-exclamation-triangle';
+            break;
+        case 'info':
+            bgColor = 'bg-blue-500 dark:bg-blue-600';
+            borderColor = 'border-blue-600 dark:border-blue-700';
+            iconClass = 'fa-info-circle';
+            break;
+        default:
+            bgColor = 'bg-gray-700 dark:bg-gray-800';
+            borderColor = 'border-gray-800 dark:border-gray-900';
+            iconClass = 'fa-bell';
+    }
+    
+    notification.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-lg border-l-4 ${borderColor} flex items-center gap-3 min-w-[300px] max-w-md transform transition-all duration-300 ease-out opacity-0 translate-x-full`;
+    
+    notification.innerHTML = `
+        <i class="fas ${iconClass} text-xl"></i>
+        <span class="flex-1 font-medium">${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-2 hover:bg-white/20 rounded p-1 transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Trigger animation
+    setTimeout(() => {
+        notification.classList.remove('opacity-0', 'translate-x-full');
+    }, 10);
+    
+    // Auto remove after duration
+    setTimeout(() => {
+        notification.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, duration);
 }
 
 // Utility functions
