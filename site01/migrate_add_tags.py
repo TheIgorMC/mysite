@@ -129,6 +129,9 @@ if __name__ == "__main__":
     print("Adding tags support for Gallery Items and Products")
     print("="*60)
     print()
+    print("⚠️  IMPORTANT: Stop your Flask application before running this migration!")
+    print("   The app will crash if it tries to use the new columns before migration.")
+    print()
     
     success = migrate_database()
     
