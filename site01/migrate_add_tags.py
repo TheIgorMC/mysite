@@ -14,12 +14,13 @@ import sqlite3
 def migrate_database():
     """Add tags column to Product and GalleryItem tables if not exists"""
     
-    # Get the database path
-    db_path = os.path.join(os.path.dirname(__file__), 'instance', 'site.db')
+    # Get the database path - production database location
+    db_path = '/data/orion.db'
     
     if not os.path.exists(db_path):
         print(f"Error: Database not found at {db_path}")
-        print("Please make sure you're running this script from the site01 directory")
+        print("Please make sure the database exists at /data/orion.db")
+        print("If your database is in a different location, edit this script to update db_path")
         return False
     
     print(f"Connecting to database: {db_path}")
