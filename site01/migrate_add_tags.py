@@ -36,35 +36,35 @@ def migrate_database():
         
         migrations_performed = []
         
-        # Add tags column to Product table if it exists and doesn't have the column
-        if 'product' in tables:
-            cursor.execute("PRAGMA table_info(product)")
+        # Add tags column to products table if it exists and doesn't have the column
+        if 'products' in tables:
+            cursor.execute("PRAGMA table_info(products)")
             columns = [row[1] for row in cursor.fetchall()]
             
             if 'tags' not in columns:
-                print("\n[Product] Adding 'tags' column...")
-                cursor.execute("ALTER TABLE product ADD COLUMN tags TEXT")
-                migrations_performed.append("Added 'tags' column to Product table")
-                print("✓ Successfully added 'tags' column to Product table")
+                print("\n[products] Adding 'tags' column...")
+                cursor.execute("ALTER TABLE products ADD COLUMN tags TEXT")
+                migrations_performed.append("Added 'tags' column to products table")
+                print("✓ Successfully added 'tags' column to products table")
             else:
-                print("\n[Product] 'tags' column already exists, skipping")
+                print("\n[products] 'tags' column already exists, skipping")
         else:
-            print("\n[Product] Table not found, skipping")
+            print("\n[products] Table not found, skipping")
         
-        # Add tags column to GalleryItem table if it exists and doesn't have the column
-        if 'gallery_item' in tables:
-            cursor.execute("PRAGMA table_info(gallery_item)")
+        # Add tags column to gallery_items table if it exists and doesn't have the column
+        if 'gallery_items' in tables:
+            cursor.execute("PRAGMA table_info(gallery_items)")
             columns = [row[1] for row in cursor.fetchall()]
             
             if 'tags' not in columns:
-                print("\n[GalleryItem] Adding 'tags' column...")
-                cursor.execute("ALTER TABLE gallery_item ADD COLUMN tags TEXT")
-                migrations_performed.append("Added 'tags' column to GalleryItem table")
-                print("✓ Successfully added 'tags' column to GalleryItem table")
+                print("\n[gallery_items] Adding 'tags' column...")
+                cursor.execute("ALTER TABLE gallery_items ADD COLUMN tags TEXT")
+                migrations_performed.append("Added 'tags' column to gallery_items table")
+                print("✓ Successfully added 'tags' column to gallery_items table")
             else:
-                print("\n[GalleryItem] 'tags' column already exists, skipping")
+                print("\n[gallery_items] 'tags' column already exists, skipping")
         else:
-            print("\n[GalleryItem] Table not found, skipping")
+            print("\n[gallery_items] Table not found, skipping")
         
         # Commit changes
         conn.commit()
