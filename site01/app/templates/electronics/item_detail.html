@@ -5,8 +5,8 @@
 {% block content %}
 <section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
     <div class="container mx-auto px-4 max-w-6xl">
-        <!-- Back button -->
-        <a href="{{ url_for('electronics.gallery') }}" 
+        <!-- Smart Back button -->
+        <a href="javascript:history.back()" 
            class="inline-flex items-center text-primary hover:text-primary-dark mb-6 transition">
             <i class="fas fa-arrow-left mr-2"></i>{{ t('common.back') }}
         </a>
