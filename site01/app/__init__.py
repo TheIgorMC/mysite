@@ -54,6 +54,9 @@ def create_app(config_name='default'):
     # Register error handlers
     register_error_handlers(app)
     
+    # Register CLI commands
+    register_cli_commands(app)
+    
     # Create database tables if they don't exist
     # Using inspector to check if tables exist first (avoids race conditions with multiple workers)
     with app.app_context():
@@ -89,3 +92,85 @@ def register_error_handlers(app):
     def forbidden_error(error):
         return render_template('errors/404.html'), 403  # Use 404 template for 403
     return app
+
+def register_cli_commands(app):
+    """Register Flask CLI commands"""
+    import click
+    
+    @app.cli.command()
+    @click.option('--username', prompt=True, help='Admin username')
+    @click.option('--email', prompt=True, help='Admin email')
+    @click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True, help='Admin password')
+    @click.option('--first-name', default='', help='First name')
+    @click.option('--last-name', default='', help='Last name')
+    def create_admin(username, email, password, first_name, last_name):
+        """Create an admin user"""
+        from app.models import User
+        
+        # Check if username exists
+        if User.query.filter_by(username=username).first():
+            click.echo(f'❌ Error: Username "{username}" already exists')
+            return
+        
+        # Check if email exists
+        if User.query.filter_by(email=email).first():
+            click.echo(f'❌ Error: Email "{email}" already exists')
+            return
+        
+        # Create admin user
+        admin = User(
+            username=username,
+            email=email,
+            first_name=first_name or None,
+            last_name=last_name or None,
+            is_admin=True,
+            is_club_member=False,
+            preferred_language='it'
+        )
+        admin.set_password(password)
+        
+        try:
+            db.session.add(admin)
+            db.session.commit()
+            click.echo(f'✅ Admin user "{username}" created successfully!')
+            click.echo(f'   Email: {email}')
+            click.echo(f'   Admin: Yes')
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f'❌ Error creating admin: {e}')
+    
+    @app.cli.command()
+    def list_users():
+        """List all users"""
+        from app.models import User
+        
+        users = User.query.all()
+        if not users:
+            click.echo('No users found')
+            return
+        
+        click.echo('\n=== Users ===')
+        for user in users:
+            admin_badge = '👑 ADMIN' if user.is_admin else ''
+            club_badge = '🏹 CLUB' if user.is_club_member else ''
+            click.echo(f'{user.id:3d}. {user.username:20s} ({user.email:30s}) {admin_badge} {club_badge}')
+        click.echo('')
+    
+    @app.cli.command()
+    @click.argument('user_id', type=int)
+    def make_admin(user_id):
+        """Make a user an admin"""
+        from app.models import User
+        
+        user = User.query.get(user_id)
+        if not user:
+            click.echo(f'❌ User with ID {user_id} not found')
+            return
+        
+        if user.is_admin:
+            click.echo(f'ℹ️  User "{user.username}" is already an admin')
+            return
+        
+        user.is_admin = True
+        db.session.commit()
+        click.echo(f'✅ User "{user.username}" is now an admin!')
