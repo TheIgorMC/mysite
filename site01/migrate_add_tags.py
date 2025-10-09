@@ -15,7 +15,7 @@ def migrate_database():
     """Add tags column to Product and GalleryItem tables if not exists"""
     
     # Get the database path - production database location
-    db_path = '/data/orion.db'
+    db_path = '/app/data/orion.db'
     
     if not os.path.exists(db_path):
         print(f"Error: Database not found at {db_path}")
