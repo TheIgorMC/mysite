@@ -45,6 +45,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize cart count from localStorage
     updateCartCount();
+    
+    // Update cart count when page becomes visible (e.g., returning from another tab)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateCartCount();
+        }
+    });
+    
+    // Listen for storage changes (when cart is updated in another tab/window)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'shopping_cart') {
+            updateCartCount();
+        }
+    });
 });
 
 // Cart management

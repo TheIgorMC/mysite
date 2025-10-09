@@ -136,6 +136,10 @@ class ShoppingCart {
 
     saveCart() {
         localStorage.setItem('shopping_cart', JSON.stringify(this.items));
+        // Update the cart counter in navigation
+        if (typeof updateCartCount === 'function') {
+            updateCartCount();
+        }
     }
 
     addItem(product) {

@@ -186,8 +186,8 @@ def delete_gallery_item(item_id):
     # Delete the image file
     import os
     from flask import current_app
-    if item.image_path:
-        image_path = os.path.join(current_app.root_path, 'static', 'uploads', item.image_path)
+    if item.main_image:
+        image_path = os.path.join(current_app.root_path, 'static', 'uploads', 'gallery', item.main_image)
         if os.path.exists(image_path):
             os.remove(image_path)
     
