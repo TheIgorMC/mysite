@@ -94,18 +94,25 @@
   "printing": {
     "title": "Stampa 3D",
     "gallery": "Galleria Progetti",
+    "gallery_desc": "Esplora i miei progetti di stampa 3D e creazioni",
     "quote": "Richiedi Preventivo",
+    "quote_desc": "Richiedi un preventivo personalizzato per il tuo progetto",
     "shop": "Negozio",
+    "shop_desc": "Sfoglia e acquista oggetti stampati in 3D",
     "services": "Servizi",
     "view_project": "Visualizza Progetto",
+    "view_full_gallery": "Visualizza Galleria Completa",
     "request_custom": "Richiedi Personalizzazione"
   },
   "electronics": {
     "title": "Elettronica",
     "gallery": "Galleria Progetti",
+    "gallery_desc": "Esplora i miei progetti elettronici e design",
     "shop": "Negozio",
+    "shop_desc": "Sfoglia e acquista progetti elettronici",
     "services": "Servizi",
-    "view_details": "Dettagli"
+    "view_details": "Dettagli",
+    "view_full_gallery": "Visualizza Galleria Completa"
   },
   "shop": {
     "title": "Negozio",
@@ -117,6 +124,7 @@
     "add_to_cart": "Aggiungi al Carrello",
     "in_stock": "Disponibile",
     "out_of_stock": "Non Disponibile",
+    "no_products": "Nessun prodotto disponibile in questa categoria",
     "price": "Prezzo",
     "cart": "Carrello",
     "checkout": "Procedi al Pagamento",
@@ -179,7 +187,9 @@
     "info": "Informazione",
     "searching": "Ricerca in corso...",
     "please_try_again": "Riprova.",
-    "no_results": "Nessun risultato trovato"
+    "no_results": "Nessun risultato trovato",
+    "no_items": "Nessun elemento ancora",
+    "view_project": "Visualizza Progetto"
   },
   "errors": {
     "loading_data": "Errore nel caricamento dei dati",

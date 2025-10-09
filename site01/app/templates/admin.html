@@ -111,51 +111,115 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Title
+                                Title (English) *
                             </label>
                             <input type="text" 
-                                   name="title" 
+                                   name="title_en" 
                                    required
+                                   placeholder="Project title in English"
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Category
+                                Title (Italian) *
                             </label>
-                            <select name="category" 
-                                    required
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="3dprinting">3D Printing</option>
-                                <option value="electronics">Electronics</option>
-                            </select>
+                            <input type="text" 
+                                   name="title_it" 
+                                   required
+                                   placeholder="Titolo del progetto in italiano"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Description
+                            Category *
                         </label>
-                        <textarea name="description" 
-                                  rows="3"
-                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                        <select name="category" 
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Select category...</option>
+                            <option value="3dprinting">3D Printing</option>
+                            <option value="electronics">Electronics</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Description (English)
+                            </label>
+                            <textarea name="description_en" 
+                                      rows="3"
+                                      placeholder="Project description in English"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Description (Italian)
+                            </label>
+                            <textarea name="description_it" 
+                                      rows="3"
+                                      placeholder="Descrizione del progetto in italiano"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                        </div>
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Image
+                            External URL (Optional)
                         </label>
-                        <input type="file" 
-                               name="image" 
-                               accept="image/*"
-                               required
-                               class="w-full text-sm text-gray-500 dark:text-gray-400
-                                      file:mr-4 file:py-2 file:px-4
-                                      file:rounded-lg file:border-0
-                                      file:text-sm file:font-semibold
-                                      file:bg-primary file:text-white
-                                      hover:file:bg-primary-dark
-                                      file:cursor-pointer cursor-pointer">
+                        <input type="url" 
+                               name="external_url"
+                               placeholder="https://printables.com/model/... or GitHub link"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Link to Printables, GitHub, or other external resource</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tags (Optional)
+                        </label>
+                        <input type="text" 
+                               name="tags"
+                               placeholder="arduino, led, beginner, compact"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Comma-separated tags for easier searching (e.g., arduino, sensor, ESP32)</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Image (Optional)
+                        </label>
+                        
+                        <!-- Drag and Drop Zone -->
+                        <div id="gallery-drop-zone" 
+                             class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary transition cursor-pointer bg-gray-50 dark:bg-gray-700">
+                            <input type="file" 
+                                   id="gallery-image-input"
+                                   name="image" 
+                                   accept="image/*"
+                                   class="hidden">
+                            <div id="gallery-drop-zone-content">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 dark:text-gray-500 mb-3"></i>
+                                <p class="text-gray-600 dark:text-gray-400 mb-2">
+                                    <span class="font-semibold text-primary">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                            </div>
+                            <div id="gallery-image-preview" class="hidden">
+                                <img id="gallery-preview-img" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg mb-2">
+                                <p id="gallery-preview-name" class="text-sm text-gray-600 dark:text-gray-400"></p>
+                                <button type="button" 
+                                        onclick="clearGalleryImage()"
+                                        class="mt-2 text-sm text-red-600 hover:text-red-700">
+                                    <i class="fas fa-times mr-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Upload a project image (optional)</p>
                     </div>
                     
                     <button type="submit" 
@@ -172,13 +236,39 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {% for item in gallery_items %}
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <img src="{{ url_for('static', filename='uploads/' + item.image_path) }}" 
-                             alt="{{ item.title }}" 
+                        {% if item.main_image %}
+                        <img src="{{ url_for('static', filename='uploads/' + item.main_image) }}" 
+                             alt="{{ item.title_en }}" 
                              class="w-full h-48 object-cover">
+                        {% else %}
+                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <i class="fas fa-image text-4xl text-gray-400"></i>
+                        </div>
+                        {% endif %}
                         <div class="p-4">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-1">{{ item.title }}</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ item.category }}</p>
-                            <div class="flex gap-2">
+                            <h3 class="font-bold text-gray-900 dark:text-white mb-1">
+                                {{ item.title_it if session.get('language') == 'it' else item.title_en }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fas fa-tag mr-1"></i>{{ item.category }}
+                            </p>
+                            {% if item.tags %}
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                {% for tag in item.tags.split(',') %}
+                                <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                                    {{ tag.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if item.external_url %}
+                            <a href="{{ item.external_url }}" 
+                               target="_blank"
+                               class="text-xs text-primary hover:text-primary-dark mb-2 inline-flex items-center">
+                                <i class="fas fa-external-link-alt mr-1"></i>View Project
+                            </a>
+                            {% endif %}
+                            <div class="flex gap-2 mt-2">
                                 <form method="POST" action="{{ url_for('main.toggle_gallery_item', item_id=item.id) }}" class="inline">
                                     <button type="submit" 
                                             class="text-sm px-3 py-1 rounded {% if item.is_active %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">
@@ -203,9 +293,206 @@
         
         <!-- Shop Tab -->
         <div id="content-shop" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Add Product</h2>
+                
+                <form method="POST" action="{{ url_for('main.add_product') }}" enctype="multipart/form-data">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Name (English) *
+                            </label>
+                            <input type="text" 
+                                   name="name_en" 
+                                   required
+                                   placeholder="Product name in English"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Name (Italian) *
+                            </label>
+                            <input type="text" 
+                                   name="name_it" 
+                                   required
+                                   placeholder="Nome del prodotto in italiano"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Category *
+                            </label>
+                            <select name="category" 
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">Select category...</option>
+                                <option value="3dprinting">3D Printing</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="archery">Archery</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Price (€) *
+                            </label>
+                            <input type="number" 
+                                   name="price" 
+                                   required
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="19.99"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Description (English)
+                            </label>
+                            <textarea name="description_en" 
+                                      rows="3"
+                                      placeholder="Product description in English"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Description (Italian)
+                            </label>
+                            <textarea name="description_it" 
+                                      rows="3"
+                                      placeholder="Descrizione del prodotto in italiano"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Stock Quantity *
+                            </label>
+                            <input type="number" 
+                                   name="stock" 
+                                   required
+                                   min="0"
+                                   value="0"
+                                   placeholder="10"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Tags (Optional)
+                            </label>
+                            <input type="text" 
+                                   name="tags"
+                                   placeholder="pla, multicolor, fast-shipping"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Product Image (Optional)
+                        </label>
+                        
+                        <!-- Drag and Drop Zone -->
+                        <div id="shop-drop-zone" 
+                             class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary transition cursor-pointer bg-gray-50 dark:bg-gray-700">
+                            <input type="file" 
+                                   id="shop-image-input"
+                                   name="image" 
+                                   accept="image/*"
+                                   class="hidden">
+                            <div id="shop-drop-zone-content">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 dark:text-gray-500 mb-3"></i>
+                                <p class="text-gray-600 dark:text-gray-400 mb-2">
+                                    <span class="font-semibold text-primary">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                            </div>
+                            <div id="shop-image-preview" class="hidden">
+                                <img id="shop-preview-img" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg mb-2">
+                                <p id="shop-preview-name" class="text-sm text-gray-600 dark:text-gray-400"></p>
+                                <button type="button" 
+                                        onclick="clearShopImage()"
+                                        class="mt-2 text-sm text-red-600 hover:text-red-700">
+                                    <i class="fas fa-times mr-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Upload a product image (optional)</p>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition">
+                        <i class="fas fa-plus mr-2"></i>Add Product
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Products List -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Shop Management</h2>
-                <p class="text-gray-600 dark:text-gray-400">Shop management features coming soon...</p>
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Products</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% for product in products %}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        {% if product.image %}
+                        <img src="{{ url_for('static', filename='uploads/' + product.image) }}" 
+                             alt="{{ product.name_en }}" 
+                             class="w-full h-48 object-cover">
+                        {% else %}
+                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <i class="fas fa-image text-4xl text-gray-400"></i>
+                        </div>
+                        {% endif %}
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-900 dark:text-white mb-1">
+                                {{ product.name_it if session.get('language') == 'it' else product.name_en }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fas fa-tag mr-1"></i>{{ product.category }}
+                            </p>
+                            <p class="text-lg font-bold text-primary mb-2">€{{ "%.2f"|format(product.price) }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fas fa-box mr-1"></i>Stock: {{ product.stock }}
+                            </p>
+                            {% if product.tags %}
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                {% for tag in product.tags.split(',') %}
+                                <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                                    {{ tag.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="flex gap-2 mt-2">
+                                <form method="POST" action="{{ url_for('main.toggle_product', product_id=product.id) }}" class="inline">
+                                    <button type="submit" 
+                                            class="text-sm px-3 py-1 rounded {% if product.is_active %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">
+                                        {% if product.is_active %}Active{% else %}Inactive{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('main.delete_product', product_id=product.id) }}" 
+                                      onsubmit="return confirm('Delete this product?')" 
+                                      class="inline">
+                                    <button type="submit" 
+                                            class="text-sm px-3 py-1 rounded bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
@@ -228,6 +515,180 @@ function showTab(tabName) {
     
     // Set active button
     document.getElementById('tab-' + tabName).className = 'px-6 py-3 rounded-lg bg-primary text-white font-semibold';
+}
+
+// Drag and Drop functionality for Gallery Images
+const galleryDropZone = document.getElementById('gallery-drop-zone');
+const galleryImageInput = document.getElementById('gallery-image-input');
+const galleryDropContent = document.getElementById('gallery-drop-zone-content');
+const galleryPreview = document.getElementById('gallery-image-preview');
+const galleryPreviewImg = document.getElementById('gallery-preview-img');
+const galleryPreviewName = document.getElementById('gallery-preview-name');
+
+// Click to select file
+galleryDropZone.addEventListener('click', () => {
+    galleryImageInput.click();
+});
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    galleryDropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop zone when item is dragged over it
+['dragenter', 'dragover'].forEach(eventName => {
+    galleryDropZone.addEventListener(eventName, () => {
+        galleryDropZone.classList.add('border-primary', 'bg-blue-50', 'dark:bg-blue-900');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    galleryDropZone.addEventListener(eventName, () => {
+        galleryDropZone.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-900');
+    }, false);
+});
+
+// Handle dropped files
+galleryDropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleGalleryFiles(files);
+}, false);
+
+// Handle selected files
+galleryImageInput.addEventListener('change', (e) => {
+    handleGalleryFiles(e.target.files);
+});
+
+function handleGalleryFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+        }
+        
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            galleryPreviewImg.src = e.target.result;
+            galleryPreviewName.textContent = file.name;
+            galleryDropContent.classList.add('hidden');
+            galleryPreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        
+        // Update the file input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        galleryImageInput.files = dataTransfer.files;
+    }
+}
+
+function clearGalleryImage() {
+    galleryImageInput.value = '';
+    galleryPreviewImg.src = '';
+    galleryPreviewName.textContent = '';
+    galleryDropContent.classList.remove('hidden');
+    galleryPreview.classList.add('hidden');
+}
+
+// Drag and Drop functionality for Shop Images
+const shopDropZone = document.getElementById('shop-drop-zone');
+const shopImageInput = document.getElementById('shop-image-input');
+const shopDropContent = document.getElementById('shop-drop-zone-content');
+const shopPreview = document.getElementById('shop-image-preview');
+const shopPreviewImg = document.getElementById('shop-preview-img');
+const shopPreviewName = document.getElementById('shop-preview-name');
+
+// Click to select file
+shopDropZone.addEventListener('click', () => {
+    shopImageInput.click();
+});
+
+// Prevent default drag behaviors for shop
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    shopDropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+// Highlight drop zone when item is dragged over it
+['dragenter', 'dragover'].forEach(eventName => {
+    shopDropZone.addEventListener(eventName, () => {
+        shopDropZone.classList.add('border-primary', 'bg-blue-50', 'dark:bg-blue-900');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    shopDropZone.addEventListener(eventName, () => {
+        shopDropZone.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-900');
+    }, false);
+});
+
+// Handle dropped files
+shopDropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleShopFiles(files);
+}, false);
+
+// Handle selected files
+shopImageInput.addEventListener('change', (e) => {
+    handleShopFiles(e.target.files);
+});
+
+function handleShopFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+        }
+        
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            shopPreviewImg.src = e.target.result;
+            shopPreviewName.textContent = file.name;
+            shopDropContent.classList.add('hidden');
+            shopPreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        
+        // Update the file input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        shopImageInput.files = dataTransfer.files;
+    }
+}
+
+function clearShopImage() {
+    shopImageInput.value = '';
+    shopPreviewImg.src = '';
+    shopPreviewName.textContent = '';
+    shopDropContent.classList.remove('hidden');
+    shopPreview.classList.add('hidden');
 }
 </script>
 {% endblock %}

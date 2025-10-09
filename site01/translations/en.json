@@ -94,18 +94,25 @@
   "printing": {
     "title": "3D Printing",
     "gallery": "Project Gallery",
+    "gallery_desc": "Explore my 3D printing projects and creations",
     "quote": "Request Quote",
+    "quote_desc": "Request a custom quote for your project",
     "shop": "Shop",
+    "shop_desc": "Browse and purchase 3D printed items",
     "services": "Services",
     "view_project": "View Project",
+    "view_full_gallery": "View Full Gallery",
     "request_custom": "Request Customization"
   },
   "electronics": {
     "title": "Electronics",
     "gallery": "Project Gallery",
+    "gallery_desc": "Explore my electronics projects and designs",
     "shop": "Shop",
+    "shop_desc": "Browse and purchase electronics projects",
     "services": "Services",
-    "view_details": "Details"
+    "view_details": "Details",
+    "view_full_gallery": "View Full Gallery"
   },
   "shop": {
     "title": "Shop",
@@ -117,6 +124,7 @@
     "add_to_cart": "Add to Cart",
     "in_stock": "In Stock",
     "out_of_stock": "Out of Stock",
+    "no_products": "No products available in this category",
     "price": "Price",
     "cart": "Cart",
     "checkout": "Checkout",
@@ -179,7 +187,9 @@
     "info": "Information",
     "searching": "Searching...",
     "please_try_again": "Please try again.",
-    "no_results": "No results found"
+    "no_results": "No results found",
+    "no_items": "No items yet",
+    "view_project": "View Project"
   },
   "errors": {
     "loading_data": "Error loading data",

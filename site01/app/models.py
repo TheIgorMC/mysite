@@ -159,6 +159,7 @@ class Product(db.Model):
     category = db.Column(db.String(64))  # archery, 3dprinting, electronics
     price = db.Column(db.Float)
     currency = db.Column(db.String(3), default='EUR')
+    tags = db.Column(db.Text)  # Comma-separated tags for search/filtering
     
     # Images
     main_image = db.Column(db.String(256))
@@ -188,6 +189,7 @@ class GalleryItem(db.Model):
     
     # Item details
     category = db.Column(db.String(64))  # 3dprinting, electronics
+    tags = db.Column(db.Text)  # Comma-separated tags for search/filtering
     main_image = db.Column(db.String(256))
     images = db.Column(db.Text)  # JSON array of image URLs
     

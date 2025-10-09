@@ -30,7 +30,7 @@
             <div class="text-center mt-8">
                 <a href="{{ url_for('electronics.gallery') }}" 
                    class="inline-block bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-dark transition">
-                    View Full Gallery
+                    {{ t('electronics.view_full_gallery') }}
                 </a>
             </div>
         </div>
@@ -48,7 +48,7 @@
                         <div class="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                             <h3 class="text-2xl font-bold text-white mb-2">{{ t('electronics.gallery') }}</h3>
                             <p class="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                                Explore my electronics projects and designs
+                                {{ t('electronics.gallery_desc') }}
                             </p>
                         </div>
                     </div>
@@ -65,7 +65,7 @@
                         <div class="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                             <h3 class="text-2xl font-bold text-white mb-2">{{ t('electronics.shop') }}</h3>
                             <p class="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                                Browse and purchase electronics projects
+                                {{ t('electronics.shop_desc') }}
                             </p>
                         </div>
                     </div>
