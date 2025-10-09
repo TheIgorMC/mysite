@@ -102,7 +102,8 @@
     "services": "Services",
     "view_project": "View Project",
     "view_full_gallery": "View Full Gallery",
-    "request_custom": "Request Customization"
+    "request_custom": "Request Customization",
+    "available_for_purchase": "Available for Purchase"
   },
   "electronics": {
     "title": "Electronics",
@@ -139,7 +140,8 @@
     "total": "Total",
     "proceedToCheckout": "Proceed to Checkout",
     "confirmRemove": "Remove this item from cart?",
-    "checkoutComingSoon": "Checkout functionality coming soon!"
+    "checkoutComingSoon": "Checkout functionality coming soon!",
+    "view_project": "View Project Gallery"
   },
   "auth": {
     "login": "Login",

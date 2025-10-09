@@ -102,7 +102,8 @@
     "services": "Servizi",
     "view_project": "Visualizza Progetto",
     "view_full_gallery": "Visualizza Galleria Completa",
-    "request_custom": "Richiedi Personalizzazione"
+    "request_custom": "Richiedi Personalizzazione",
+    "available_for_purchase": "Disponibile per l'Acquisto"
   },
   "electronics": {
     "title": "Elettronica",

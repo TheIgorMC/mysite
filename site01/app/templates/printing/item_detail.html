@@ -61,6 +61,29 @@
                 </div>
                 {% endif %}
                 
+                <!-- Linked Products -->
+                {% if item.products %}
+                <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                        {{ t('gallery.available_for_purchase') if session.get('language') == 'it' else 'Available for Purchase' }}
+                    </h2>
+                    <div class="space-y-2">
+                        {% for product in item.products %}
+                        <a href="{{ url_for('shop.product_detail', product_id=product.id) }}" 
+                           class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-white">
+                                    {{ product.name_it if session.get('language') == 'it' else product.name_en }}
+                                </p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">€{{ "%.2f"|format(product.price) }}</p>
+                            </div>
+                            <i class="fas fa-shopping-cart text-primary"></i>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
                 {% if item.external_url %}
                 <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
                     <a href="{{ item.external_url }}" 

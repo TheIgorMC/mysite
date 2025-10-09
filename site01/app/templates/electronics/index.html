@@ -12,19 +12,26 @@
             <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">{{ t('electronics.gallery') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {% for item in gallery_items[:8] %}
-                <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                    <img src="{{ url_for('static', filename='uploads/' + item.image_path) if item.image_path else url_for('static', filename='media/circuit.jpg') }}" 
-                         alt="{{ item.title }}" 
+                <a href="{{ url_for('electronics.item_detail', item_id=item.id) }}" 
+                   class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 block">
+                    <img src="{{ url_for('static', filename='uploads/' + (item.main_image or '')) if item.main_image else url_for('static', filename='media/circuit.jpg') }}" 
+                         alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
                          class="w-full h-64 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300">
                         <div class="absolute bottom-0 left-0 right-0 p-4">
-                            <h3 class="text-white font-bold text-lg">{{ item.title }}</h3>
-                            {% if item.description %}
-                            <p class="text-gray-300 text-sm">{{ item.description[:50] }}...</p>
+                            <h3 class="text-white font-bold text-lg">{{ item.title_it if session.get('language') == 'it' else item.title_en }}</h3>
+                            {% if item.tags %}
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                {% for tag in item.tags.split(',')[:3] %}
+                                <span class="text-xs px-2 py-0.5 bg-primary/80 text-white rounded">
+                                    {{ tag.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             </div>
             <div class="text-center mt-8">

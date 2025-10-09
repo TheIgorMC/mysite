@@ -82,6 +82,17 @@
                 </div>
                 {% endif %}
                 
+                <!-- Link to Gallery Item -->
+                {% if product.gallery_item %}
+                <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <a href="{% if product.gallery_item.category == '3dprinting' %}{{ url_for('printing.item_detail', item_id=product.gallery_item.id) }}{% else %}{{ url_for('electronics.item_detail', item_id=product.gallery_item.id) }}{% endif %}" 
+                       class="inline-flex items-center text-primary hover:text-primary-dark transition">
+                        <i class="fas fa-images mr-2"></i>
+                        {{ t('shop.view_project') if session.get('language') == 'it' else 'View Project Gallery' }}
+                    </a>
+                </div>
+                {% endif %}
+                
                 <!-- Add to Cart Button -->
                 {% if product.in_stock %}
                 <div class="pt-6 border-t border-gray-200 dark:border-gray-700">

@@ -156,10 +156,14 @@ class Product(db.Model):
     description_en = db.Column(db.Text)
     
     # Product details
-    category = db.Column(db.String(64))  # archery, 3dprinting, electronics
+    category = db.Column(db.String(64))  # Primary category: archery, 3dprinting, electronics
+    categories = db.Column(db.Text)  # Comma-separated list of all categories for multi-category support
     price = db.Column(db.Float)
     currency = db.Column(db.String(3), default='EUR')
     tags = db.Column(db.Text)  # Comma-separated tags for search/filtering
+    
+    # Link to gallery item
+    gallery_item_id = db.Column(db.Integer, db.ForeignKey('gallery_items.id'), nullable=True)
     
     # Images
     main_image = db.Column(db.String(256))
@@ -188,13 +192,17 @@ class GalleryItem(db.Model):
     description_en = db.Column(db.Text)
     
     # Item details
-    category = db.Column(db.String(64))  # 3dprinting, electronics
+    category = db.Column(db.String(64))  # Primary category: 3dprinting, electronics
+    categories = db.Column(db.Text)  # Comma-separated list of all categories for multi-category support
     tags = db.Column(db.Text)  # Comma-separated tags for search/filtering
     main_image = db.Column(db.String(256))
     images = db.Column(db.Text)  # JSON array of image URLs
     
     # External links
     external_url = db.Column(db.String(512))  # Link to Printables, GitHub, etc.
+    
+    # Relationship to products (one gallery item can have multiple products)
+    products = db.relationship('Product', backref='gallery_item', lazy=True, foreign_keys='Product.gallery_item_id')
     
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

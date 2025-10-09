@@ -48,6 +48,22 @@ def migrate_database():
                 print("✓ Successfully added 'tags' column to products table")
             else:
                 print("\n[products] 'tags' column already exists, skipping")
+            
+            if 'categories' not in columns:
+                print("\n[products] Adding 'categories' column...")
+                cursor.execute("ALTER TABLE products ADD COLUMN categories TEXT")
+                migrations_performed.append("Added 'categories' column to products table")
+                print("✓ Successfully added 'categories' column to products table")
+            else:
+                print("\n[products] 'categories' column already exists, skipping")
+            
+            if 'gallery_item_id' not in columns:
+                print("\n[products] Adding 'gallery_item_id' column...")
+                cursor.execute("ALTER TABLE products ADD COLUMN gallery_item_id INTEGER")
+                migrations_performed.append("Added 'gallery_item_id' column to products table")
+                print("✓ Successfully added 'gallery_item_id' column to products table")
+            else:
+                print("\n[products] 'gallery_item_id' column already exists, skipping")
         else:
             print("\n[products] Table not found, skipping")
         
@@ -63,6 +79,14 @@ def migrate_database():
                 print("✓ Successfully added 'tags' column to gallery_items table")
             else:
                 print("\n[gallery_items] 'tags' column already exists, skipping")
+            
+            if 'categories' not in columns:
+                print("\n[gallery_items] Adding 'categories' column...")
+                cursor.execute("ALTER TABLE gallery_items ADD COLUMN categories TEXT")
+                migrations_performed.append("Added 'categories' column to gallery_items table")
+                print("✓ Successfully added 'categories' column to gallery_items table")
+            else:
+                print("\n[gallery_items] 'categories' column already exists, skipping")
         else:
             print("\n[gallery_items] Table not found, skipping")
         

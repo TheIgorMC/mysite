@@ -132,17 +132,39 @@
                         </div>
                     </div>
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Category *
-                        </label>
-                        <select name="category" 
-                                required
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="">Select category...</option>
-                            <option value="3dprinting">3D Printing</option>
-                            <option value="electronics">Electronics</option>
-                        </select>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Primary Category *
+                            </label>
+                            <select name="category" 
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">Select category...</option>
+                                <option value="3dprinting">3D Printing</option>
+                                <option value="electronics">Electronics</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Main category for this project</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Additional Categories (Optional)
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="gallery_categories" value="3dprinting" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">3D Printing</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="gallery_categories" value="electronics" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Electronics</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Check all categories this project belongs to (e.g., 3D printed electronic enclosure)</p>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -324,7 +346,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Category *
+                                Primary Category *
                             </label>
                             <select name="category" 
                                     required
@@ -334,8 +356,35 @@
                                 <option value="electronics">Electronics</option>
                                 <option value="archery">Archery</option>
                             </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Main category for this product</p>
                         </div>
                         
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Additional Categories (Optional)
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="categories" value="3dprinting" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">3D Printing</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="categories" value="electronics" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Electronics</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="categories" value="archery" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Archery</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Check all categories this product belongs to</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Price (€) *
@@ -347,6 +396,20 @@
                                    min="0"
                                    placeholder="19.99"
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Link to Gallery Item (Optional)
+                            </label>
+                            <select name="gallery_item_id" 
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">None</option>
+                                {% for item in gallery_items %}
+                                <option value="{{ item.id }}">{{ item.title_en }} ({{ item.category }})</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Link this product to a gallery project</p>
                         </div>
                     </div>
                     

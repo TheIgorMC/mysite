@@ -112,6 +112,11 @@ def add_gallery_item():
     description_it = request.form.get('description_it', '')
     external_url = request.form.get('external_url', '')
     tags = request.form.get('tags', '')  # Comma-separated tags
+    
+    # Get additional categories from checkboxes
+    additional_categories = request.form.getlist('gallery_categories')
+    categories_str = ','.join(additional_categories) if additional_categories else None
+    
     image = request.files.get('image')
     
     # Validation
@@ -140,6 +145,7 @@ def add_gallery_item():
         title_en=title_en,
         title_it=title_it,
         category=category,
+        categories=categories_str,
         description_en=description_en,
         description_it=description_it,
         tags=tags.strip() if tags else None,
@@ -207,6 +213,11 @@ def add_product():
     description_it = request.form.get('description_it')
     stock_quantity = request.form.get('stock', 0)
     tags = request.form.get('tags', '')
+    gallery_item_id = request.form.get('gallery_item_id')
+    
+    # Get additional categories from checkboxes
+    additional_categories = request.form.getlist('categories')
+    categories_str = ','.join(additional_categories) if additional_categories else None
     
     # Handle image upload
     image_filename = None
@@ -231,12 +242,14 @@ def add_product():
         name_en=name_en,
         name_it=name_it,
         category=category,
+        categories=categories_str,
         price=float(price),
         description_en=description_en,
         description_it=description_it,
         stock_quantity=int(stock_quantity),
         tags=tags,
         main_image=image_filename,
+        gallery_item_id=int(gallery_item_id) if gallery_item_id else None,
         is_active=True
     )
     
