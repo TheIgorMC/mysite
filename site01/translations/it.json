@@ -32,6 +32,7 @@
     "analysis_desc": "Analizza i risultati delle gare e visualizza statistiche dettagliate",
     "competitions": "Gestione Gare",
     "competitions_desc": "Iscriviti alle gare della ASD Compagnia Arcieri Carraresi",
+    "competitions_subtitle": "Iscriviti alle gare del club e gestisci le tue registrazioni",
     "shop": "Negozio",
     "shop_desc": "Impugnature personalizzate, corde e accessori",
     "athlete_search": "Cerca Atleta",
@@ -107,6 +108,9 @@
     "details": "Dettagli",
     "open": "Aperta",
     "ended": "Terminata",
+    "ongoing": "In Corso",
+    "closed": "Chiusa",
+    "select_athlete": "Seleziona Atleta",
     "competitions_subtitle": "Iscriviti alle gare del club e gestisci le tue registrazioni"
   },
   "printing": {

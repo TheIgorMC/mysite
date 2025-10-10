@@ -38,6 +38,10 @@ class User(UserMixin, db.Model):
     competition_subscriptions = db.relationship('CompetitionSubscription', 
                                                back_populates='user', 
                                                lazy='dynamic')
+    authorized_athletes = db.relationship('AuthorizedAthlete',
+                                         back_populates='user',
+                                         lazy='dynamic',
+                                         foreign_keys='AuthorizedAthlete.user_id')
     
     def set_password(self, password):
         """Hash and set password"""
@@ -49,6 +53,48 @@ class User(UserMixin, db.Model):
     
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+class AuthorizedAthlete(db.Model):
+    """Athletes that a user is authorized to manage"""
+    __tablename__ = 'authorized_athletes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    tessera_atleta = db.Column(db.String(10), nullable=False)
+    nome_atleta = db.Column(db.String(100), nullable=False)
+    cognome_atleta = db.Column(db.String(100), nullable=False)
+    data_nascita = db.Column(db.Date)
+    categoria = db.Column(db.String(10))
+    
+    # Metadata
+    added_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', 
+                          back_populates='authorized_athletes',
+                          foreign_keys=[user_id])
+    added_by_user = db.relationship('User', foreign_keys=[added_by])
+    
+    # Unique constraint: one user can't have duplicate athletes
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tessera_atleta', name='unique_user_athlete'),
+    )
+    
+    @property
+    def nome_completo(self):
+        """Full name of athlete"""
+        return f"{self.nome_atleta} {self.cognome_atleta}"
+    
+    @property
+    def display_name(self):
+        """Display format: tessera - full name"""
+        return f"{self.tessera_atleta} - {self.nome_completo}"
+    
+    def __repr__(self):
+        return f'<AuthorizedAthlete {self.tessera_atleta} for User {self.user_id}>'
+
 
 class Competition(db.Model):
     """Competition model for archery events"""

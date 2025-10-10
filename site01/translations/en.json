@@ -32,6 +32,7 @@
     "analysis_desc": "Analyze competition results and view detailed statistics",
     "competitions": "Competition Management",
     "competitions_desc": "Subscribe to ASD Compagnia Arcieri Carraresi competitions",
+    "competitions_subtitle": "Subscribe to club competitions and manage your registrations",
     "shop": "Shop",
     "shop_desc": "Custom grips, strings, and accessories",
     "athlete_search": "Search Athlete",
@@ -107,6 +108,9 @@
     "details": "Details",
     "open": "Open",
     "ended": "Ended",
+    "ongoing": "Ongoing",
+    "closed": "Closed",
+    "select_athlete": "Select Athlete",
     "competitions_subtitle": "Subscribe to club competitions and manage your registrations"
   },
   "printing": {

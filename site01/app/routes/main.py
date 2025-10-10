@@ -47,6 +47,26 @@ def admin():
     products = Product.query.all()
     return render_template('admin.html', users=users, gallery_items=gallery_items, products=products)
 
+@bp.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    """Admin dashboard"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    return render_template('admin.html')
+
+@bp.route('/admin/manage-athletes')
+@login_required
+def admin_manage_athletes():
+    """Admin page for managing authorized athletes"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    return render_template('admin/manage_athletes.html')
+
 @bp.route('/admin/toggle_club_member/<int:user_id>', methods=['POST'])
 @login_required
 def toggle_club_member(user_id):
