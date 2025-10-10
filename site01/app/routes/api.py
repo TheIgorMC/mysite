@@ -26,6 +26,7 @@ def get_authorized_athletes():
                 'nome_completo': a.nome_completo,
                 'display': a.display_name,
                 'categoria': a.categoria,
+                'classe': a.classe,
                 'data_nascita': a.data_nascita.isoformat() if a.data_nascita else None
             }
             for a in athletes
@@ -104,6 +105,7 @@ def admin_get_all_assignments():
                         'tessera': a.tessera_atleta,
                         'nome_completo': a.nome_completo,
                         'categoria': a.categoria,
+                        'classe': a.classe,
                         'added_at': a.added_at.isoformat()
                     }
                     for a in athletes
@@ -161,7 +163,8 @@ def admin_add_athletes():
             tessera_atleta=tessera,
             nome_atleta=nome,
             cognome_atleta=cognome,
-            categoria=athlete_data.get('categoria'),
+            categoria=athlete_data.get('categoria'),  # Age category: GM, GF, RM, etc.
+            classe=athlete_data.get('classe'),  # Competition class: CO, OL, AN
             data_nascita=datetime.fromisoformat(athlete_data['data_nascita']).date() if athlete_data.get('data_nascita') else None,
             added_by=current_user.id
         )

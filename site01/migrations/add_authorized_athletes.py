@@ -35,6 +35,7 @@ def upgrade():
                 cognome_atleta VARCHAR(100) NOT NULL,
                 data_nascita DATE,
                 categoria VARCHAR(10),
+                classe VARCHAR(10),
                 added_by INTEGER,
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 

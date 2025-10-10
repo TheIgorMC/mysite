@@ -424,3 +424,76 @@ def subscribe_to_competition(competition_id):
 def shop():
     """Archery shop"""
     return render_template('shop/index.html', category='archery')
+
+# FastAPI Proxy Endpoints for Competitions
+@bp.route('/api/gare')
+def get_gare():
+    """Proxy endpoint for fetching competitions (gare) from FastAPI"""
+    future = request.args.get('future', 'false').lower() == 'true'
+    limit = request.args.get('limit', '100')
+    
+    client = OrionAPIClient()
+    
+    try:
+        # Fetch from FastAPI
+        gare = client.get_competitions(future=future, limit=int(limit))
+        return jsonify(gare if gare else [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/turni')
+def get_turni():
+    """Proxy endpoint for fetching turns (turni) from FastAPI"""
+    codice_gara = request.args.get('codice_gara')
+    
+    if not codice_gara:
+        return jsonify({'error': 'codice_gara is required'}), 400
+    
+    client = OrionAPIClient()
+    
+    try:
+        # Fetch from FastAPI
+        turni = client.get_turns(codice_gara)
+        return jsonify(turni if turni else [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/iscrizioni', methods=['GET', 'POST'])
+@login_required
+def handle_iscrizioni():
+    """Proxy endpoint for subscriptions (iscrizioni) to/from FastAPI"""
+    client = OrionAPIClient()
+    
+    if request.method == 'GET':
+        # Get subscriptions for an athlete
+        tessera_atleta = request.args.get('tessera_atleta')
+        
+        if not tessera_atleta:
+            return jsonify({'error': 'tessera_atleta is required'}), 400
+        
+        try:
+            iscrizioni = client.get_subscriptions(tessera_atleta)
+            return jsonify(iscrizioni if iscrizioni else [])
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    else:  # POST
+        # Create a new subscription
+        data = request.get_json()
+        
+        required_fields = ['codice_gara', 'tessera_atleta', 'categoria', 'turno']
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        try:
+            result = client.create_subscription(
+                codice_gara=data['codice_gara'],
+                tessera_atleta=data['tessera_atleta'],
+                categoria=data['categoria'],
+                turno=data['turno'],
+                stato=data.get('stato', 'confermato'),
+                note=data.get('note', '')
+            )
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500

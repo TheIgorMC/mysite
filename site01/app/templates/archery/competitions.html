@@ -4,7 +4,13 @@
 
 {% block content %}
 <section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
-    <div class="container mx-auto px-4 max-w-7xl">
+    <div class="container mx-auto p        if (authAthletesResp.ok) {
+            const authData = await authAthletesResp.json();
+            authorizedAthletes = authData.authorized_athletes || [];
+        }
+        
+        // Load competitions from Flask proxy (which calls FastAPI with auth)
+        const gareResp = await fetch(`/archery/api/gare?future=true&limit=100`);-7xl">
         <!-- Header -->
         <div class="mb-8">
             <a href="{{ url_for('archery.index') }}" 
@@ -149,6 +155,31 @@
                                 </div>
                                 
                                 <div class="mb-4">
+                                    <label for="age-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {{ t('competitions.age_category') }}
+                                    </label>
+                                    <select id="age-category" name="age_category" 
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <option value="">{{ t('competitions.select_age_category') }}</option>
+                                        <option value="GM">GM - Giovanissimi Maschile</option>
+                                        <option value="GF">GF - Giovanissimi Femminile</option>
+                                        <option value="RM">RM - Ragazzi Maschile</option>
+                                        <option value="RF">RF - Ragazzi Femminile</option>
+                                        <option value="AM">AM - Allievi Maschile</option>
+                                        <option value="AF">AF - Allievi Femminile</option>
+                                        <option value="JM">JM - Juniores Maschile</option>
+                                        <option value="JF">JF - Juniores Femminile</option>
+                                        <option value="SM">SM - Seniores Maschile</option>
+                                        <option value="SF">SF - Seniores Femminile</option>
+                                        <option value="MM">MM - Master Maschile</option>
+                                        <option value="MF">MF - Master Femminile</option>
+                                    </select>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i>{{ t('competitions.age_category_info') }}
+                                    </p>
+                                </div>
+                                
+                                <div class="mb-4">
                                     <label for="turn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {{ t('competitions.select_turn') }}
                                     </label>
@@ -186,8 +217,8 @@
 </div>
 
 <script>
-// Configuration - Use Flask's API_BASE_URL config
-const ARCHERY_API_BASE = '{{ config.API_BASE_URL }}/api';
+// Configuration - Use Flask proxy endpoints (no direct API calls)
+// All API calls go through Flask backend which handles Cloudflare Access
 
 let currentFilter = 'upcoming';
 let allCompetitions = [];
@@ -213,7 +244,9 @@ async function loadInitialData() {
         }
         
         // Load competitions from FastAPI
-        const gareResp = await fetch(`${ARCHERY_API_BASE}/gare?future=true&limit=100`);
+        try {
+        // Load competitions from Flask proxy (which calls FastAPI with auth)
+        const gareResp = await fetch(`/archery/api/gare?future=true&limit=100`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
@@ -244,12 +277,9 @@ async function loadInvitiData() {
 
 async function loadUserSubscriptions() {
     try {
-        // Get tessera values from authorized athletes
-        const tessere = authorizedAthletes.map(a => a.tessera).join(',');
-        
-        // Load subscriptions for all authorized athletes
+        // Load subscriptions for all authorized athletes from Flask proxy
         for (const athlete of authorizedAthletes) {
-            const resp = await fetch(`${ARCHERY_API_BASE}/iscrizioni?tessera_atleta=${athlete.tessera}`);
+            const resp = await fetch(`/archery/api/iscrizioni?tessera_atleta=${athlete.tessera}`);
             if (resp.ok) {
                 const subscriptions = await resp.json();
                 subscriptions.forEach(sub => {
@@ -387,9 +417,9 @@ async function openSubscriptionModal(competition) {
     document.getElementById('modal-competition-info').textContent = 
         `${competition.nome} - ${formatDate(competition.data_inizio)}`;
     
-    // Load turns for this competition
+    // Load turns for this competition from Flask proxy
     try {
-        const turnsResp = await fetch(`${ARCHERY_API_BASE}/turni?codice_gara=${competition.codice}`);
+        const turnsResp = await fetch(`/archery/api/turni?codice_gara=${competition.codice}`);
         if (turnsResp.ok) {
             const turns = await turnsResp.json();
             populateTurnsDropdown(turns);
@@ -457,6 +487,7 @@ async function submitSubscription() {
     const codiceGara = document.getElementById('competition-id').value;
     const turn = document.getElementById('turn').value;
     const tessera = document.getElementById('selected-athlete')?.value;
+    const ageCategory = document.getElementById('age-category').value;
     const notes = document.getElementById('notes').value;
     
     if (!turn) {
@@ -469,15 +500,25 @@ async function submitSubscription() {
         return;
     }
     
+    if (!ageCategory) {
+        showNotification('Please select an age category', 'warning');
+        return;
+    }
+    
+    // Find the selected athlete to get their competition class (CO, OL, AN)
+    const selectedAthlete = authorizedAthletes.find(a => a.tessera === tessera);
+    const competitionClass = selectedAthlete?.classe || 'CO';
+    
     try {
-        // Submit to FastAPI
-        const response = await fetch(`${ARCHERY_API_BASE}/iscrizioni`, {
+        // Submit to Flask proxy (which forwards to FastAPI with auth)
+        const response = await fetch(`/archery/api/iscrizioni`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 codice_gara: codiceGara,
                 tessera_atleta: tessera,
-                categoria: authorizedAthletes.find(a => a.tessera === tessera)?.categoria || 'CO',
+                classe: competitionClass,  // Competition class (CO, OL, AN)
+                categoria: ageCategory,     // Age category (GM, GF, RM, RF, etc.)
                 turno: parseInt(turn),
                 stato: 'confermato',
                 note: notes

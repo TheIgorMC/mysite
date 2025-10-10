@@ -113,3 +113,30 @@ class OrionAPIClient:
         """Get athlete statistics"""
         # API expects 'athletes' as an array parameter
         return self._make_request('GET', '/api/stats', params={'athletes': [athlete_id]})
+    
+    def get_competitions(self, future=False, limit=100):
+        """Get list of competitions (gare)"""
+        params = {'limit': limit}
+        if future:
+            params['future'] = 'true'
+        return self._make_request('GET', '/api/gare', params=params)
+    
+    def get_turns(self, codice_gara):
+        """Get turns (turni) for a specific competition"""
+        return self._make_request('GET', '/api/turni', params={'codice_gara': codice_gara})
+    
+    def get_subscriptions(self, tessera_atleta):
+        """Get subscriptions (iscrizioni) for an athlete"""
+        return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})
+    
+    def create_subscription(self, codice_gara, tessera_atleta, categoria, turno, stato='confermato', note=''):
+        """Create a new subscription (iscrizione)"""
+        data = {
+            'codice_gara': codice_gara,
+            'tessera_atleta': tessera_atleta,
+            'categoria': categoria,
+            'turno': turno,
+            'stato': stato,
+            'note': note
+        }
+        return self._make_request('POST', '/api/iscrizioni', data=data)

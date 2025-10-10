@@ -111,6 +111,9 @@
     "ongoing": "Ongoing",
     "closed": "Closed",
     "select_athlete": "Select Athlete",
+    "age_category": "Age Category",
+    "select_age_category": "Select age category...",
+    "age_category_info": "Select the appropriate age and gender category",
     "competitions_subtitle": "Subscribe to club competitions and manage your registrations"
   },
   "printing": {

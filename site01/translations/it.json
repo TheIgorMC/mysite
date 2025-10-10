@@ -111,6 +111,9 @@
     "ongoing": "In Corso",
     "closed": "Chiusa",
     "select_athlete": "Seleziona Atleta",
+    "age_category": "Categoria di Età",
+    "select_age_category": "Seleziona categoria di età...",
+    "age_category_info": "Seleziona la categoria appropriata per età e genere",
     "competitions_subtitle": "Iscriviti alle gare del club e gestisci le tue registrazioni"
   },
   "printing": {

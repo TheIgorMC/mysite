@@ -65,7 +65,8 @@ class AuthorizedAthlete(db.Model):
     nome_atleta = db.Column(db.String(100), nullable=False)
     cognome_atleta = db.Column(db.String(100), nullable=False)
     data_nascita = db.Column(db.Date)
-    categoria = db.Column(db.String(10))
+    categoria = db.Column(db.String(10))  # Age category: GM, GF, RM, RF, AM, AF, JM, JF, SM, SF, MM, MF
+    classe = db.Column(db.String(10))  # Competition class: CO (Compound), OL (Olympic), AN (Barebow)
     
     # Metadata
     added_by = db.Column(db.Integer, db.ForeignKey('users.id'))
