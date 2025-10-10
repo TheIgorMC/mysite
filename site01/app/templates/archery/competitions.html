@@ -186,8 +186,8 @@
 </div>
 
 <script>
-// Configuration - Update with your FastAPI endpoint
-const ARCHERY_API_BASE = 'http://localhost:80/api';  // Update with your FastAPI URL
+// Configuration - Use Flask's API_BASE_URL config
+const ARCHERY_API_BASE = '{{ config.API_BASE_URL }}/api';
 
 let currentFilter = 'upcoming';
 let allCompetitions = [];

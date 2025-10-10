@@ -160,8 +160,8 @@
 </div>
 
 <script>
-// Configuration
-const ARCHERY_API_BASE = 'http://localhost:80/api';  // Update with your FastAPI URL
+// Configuration - Use Flask's API_BASE_URL config
+const ARCHERY_API_BASE = '{{ config.API_BASE_URL }}/api';
 
 let allUsers = [];
 let selectedUser = null;
