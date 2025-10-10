@@ -7,7 +7,7 @@ from app import db
 from app.models import AuthorizedAthlete, User
 from datetime import datetime
 
-bp = Blueprint('api', __name__)
+bp = Blueprint('website_api', __name__)
 
 @bp.route('/api/user/authorized-athletes', methods=['GET'])
 @login_required
