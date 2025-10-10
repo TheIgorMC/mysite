@@ -160,9 +160,6 @@
 </div>
 
 <script>
-// Configuration - Use Flask's API_BASE_URL config
-const ARCHERY_API_BASE = '{{ config.API_BASE_URL }}/api';
-
 let allUsers = [];
 let selectedUser = null;
 let selectedUserAthletes = [];
@@ -312,7 +309,8 @@ async function searchAthletes(query) {
     resultsContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i></div>';
     
     try {
-        const response = await fetch(`${ARCHERY_API_BASE}/atleti?q=${encodeURIComponent(query)}&limit=20`);
+        // Use Flask proxy endpoint (same as analysis page)
+        const response = await fetch(`/archery/api/search_athlete?name=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error('Failed to search athletes');
         
         const athletes = await response.json();
@@ -324,7 +322,7 @@ async function searchAthletes(query) {
         
         // Filter out already assigned athletes
         const assignedTessere = new Set(selectedUserAthletes.map(a => a.tessera));
-        const availableAthletes = athletes.filter(a => !assignedTessere.has(a.tessera));
+        const availableAthletes = athletes.filter(a => !assignedTessere.has(a.id));
         
         if (availableAthletes.length === 0) {
             resultsContainer.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-4">All found athletes already assigned</p>';
@@ -333,9 +331,9 @@ async function searchAthletes(query) {
         
         resultsContainer.innerHTML = availableAthletes.map(athlete => `
             <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition"
-                 onclick="addAthleteToUser('${athlete.tessera}', '${athlete.nome}', '${athlete.classe || 'CO'}')">
+                 onclick="addAthleteToUser('${athlete.id}', '${athlete.name}', '${athlete.classe || 'CO'}')">
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-900 dark:text-white">${athlete.tessera} - ${athlete.nome}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">${athlete.id} - ${athlete.name}</p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Category: ${athlete.classe || 'N/A'}</p>
                 </div>
                 <button class="ml-3 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
