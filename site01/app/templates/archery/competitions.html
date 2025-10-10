@@ -243,8 +243,6 @@ async function loadInitialData() {
             authorizedAthletes = authData.authorized_athletes || [];
         }
         
-        // Load competitions from FastAPI
-        try {
         // Load competitions from Flask proxy (which calls FastAPI with auth)
         const gareResp = await fetch(`/archery/api/gare?future=true&limit=100`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
