@@ -9,12 +9,19 @@ Usage:
     python migrations/add_authorized_athletes.py
 """
 
-from app import app, db
+import os
+import sys
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import create_app, db
 from sqlalchemy import text
 
 def upgrade():
     """Create authorized_athletes table"""
     
+    app = create_app(os.getenv('FLASK_ENV', 'production'))
     with app.app_context():
         print("Creating authorized_athletes table...")
         
@@ -56,6 +63,7 @@ def upgrade():
 def downgrade():
     """Drop authorized_athletes table"""
     
+    app = create_app(os.getenv('FLASK_ENV', 'production'))
     with app.app_context():
         print("Dropping authorized_athletes table...")
         
