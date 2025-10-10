@@ -6,6 +6,10 @@
     <meta name="description" content="Orion Project - Passion, Precision, Innovation">
     <title>{% block title %}{{ t('site.title') }}{% endblock %}</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='media/logoOrion.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='media/logoOrion.png') }}">
+    
     <!-- Inline theme script to prevent flash -->
     <script>
         (function() {
