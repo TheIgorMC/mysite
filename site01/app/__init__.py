@@ -36,6 +36,16 @@ def create_app(config_name='default'):
         if 'language' not in session:
             session['language'] = app.config['DEFAULT_LANGUAGE']
     
+    # Disable caching for HTML responses (force browser to check for updates)
+    @app.after_request
+    def add_header(response):
+        # Don't cache HTML pages
+        if response.content_type and 'text/html' in response.content_type:
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '-1'
+        return response
+    
     # Register blueprints
     from app.routes import main, auth, archery, printing, electronics, shop, api_routes, api
     

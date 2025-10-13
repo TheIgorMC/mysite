@@ -51,6 +51,9 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     TESTING = False
+    # Force template reloading in production (for updates)
+    TEMPLATES_AUTO_RELOAD = True
+    SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable static file caching
 
 class TestingConfig(Config):
     """Testing configuration"""
