@@ -188,7 +188,17 @@
     "no_account": "Don't have an account?",
     "have_account": "Already have an account?",
     "first_name": "First Name",
-    "last_name": "Last Name"
+    "last_name": "Last Name",
+    "profile": "Profile",
+    "profile_information": "Profile Information",
+    "choose_photo": "Choose profile photo",
+    "update_profile": "Update Profile",
+    "change_password": "Change Password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_new_password": "Confirm New Password",
+    "club_member": "Club Member",
+    "admin_panel": "Admin Panel"
   },
   "footer": {
     "sections": "Sections",

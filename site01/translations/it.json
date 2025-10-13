@@ -187,7 +187,17 @@
     "no_account": "Non hai un account?",
     "have_account": "Hai già un account?",
     "first_name": "Nome",
-    "last_name": "Cognome"
+    "last_name": "Cognome",
+    "profile": "Profilo",
+    "profile_information": "Informazioni Profilo",
+    "choose_photo": "Scegli foto profilo",
+    "update_profile": "Aggiorna Profilo",
+    "change_password": "Cambia Password",
+    "current_password": "Password Attuale",
+    "new_password": "Nuova Password",
+    "confirm_new_password": "Conferma Nuova Password",
+    "club_member": "Socio del Club",
+    "admin_panel": "Pannello Admin"
   },
   "footer": {
     "sections": "Sezioni",

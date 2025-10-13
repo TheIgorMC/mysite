@@ -618,7 +618,19 @@ function formatDateRange(startStr, endStr) {
 }
 
 function showLoading(show) {
-    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    const loading = document.getElementById('loading');
+    const grid = document.getElementById('competitions-grid');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (show) {
+        loading.classList.remove('hidden');
+        loading.style.display = 'flex';
+        grid.classList.add('hidden');
+        emptyState.classList.add('hidden');
+    } else {
+        loading.classList.add('hidden');
+        loading.style.display = 'none';
+    }
 }
 
 function showError(message) {
