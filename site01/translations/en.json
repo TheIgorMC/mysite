@@ -114,7 +114,14 @@
     "age_category": "Age Category",
     "select_age_category": "Select age category...",
     "age_category_info": "Select the appropriate age and gender category",
-    "competitions_subtitle": "Subscribe to club competitions and manage your registrations"
+    "competitions_subtitle": "Subscribe to club competitions and manage your registrations",
+    "my_athletes": "My Athletes",
+    "my_athletes_desc": "Manage default competition class and age category for your authorized athletes",
+    "no_athletes": "No authorized athletes",
+    "contact_admin": "Contact admin to add athletes to your account",
+    "athlete_id": "Athlete ID",
+    "competition_class": "Competition Class",
+    "default_preferences": "These will be used as defaults for competition subscriptions"
   },
   "printing": {
     "title": "3D Printing",
@@ -221,7 +228,8 @@
     "description": "Description",
     "available": "available",
     "related_projects": "Related Projects",
-    "related_products": "Related Products"
+    "related_products": "Related Products",
+    "optional": "optional"
   },
   "errors": {
     "loading_data": "Error loading data",

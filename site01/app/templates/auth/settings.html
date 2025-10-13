@@ -162,8 +162,138 @@
                         </button>
                     </form>
                 </div>
+                
+                <!-- Authorized Athletes Section -->
+                {% if current_user.is_club_member %}
+                <div id="athletes" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                        <i class="fas fa-users mr-2"></i>{{ t('competitions.my_athletes') }}
+                    </h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        {{ t('competitions.my_athletes_desc') }}
+                    </p>
+                    
+                    <div id="athletes-list" class="space-y-4">
+                        <!-- Loaded by JavaScript -->
+                        <div class="flex justify-center py-8">
+                            <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </section>
+
+<script>
+{% if current_user.is_club_member %}
+// Load authorized athletes on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadAuthorizedAthletes();
+});
+
+async function loadAuthorizedAthletes() {
+    const container = document.getElementById('athletes-list');
+    
+    try {
+        const resp = await fetch('/api/user/authorized-athletes');
+        if (!resp.ok) throw new Error('Failed to load athletes');
+        
+        const data = await resp.json();
+        const athletes = data.authorized_athletes || [];
+        
+        if (athletes.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-users text-4xl mb-3"></i>
+                    <p>${window.translations.competitions?.no_athletes || 'No authorized athletes'}</p>
+                    <p class="text-sm mt-2">${window.translations.competitions?.contact_admin || 'Contact admin to add athletes'}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = athletes.map(athlete => `
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-900 dark:text-white">${athlete.display}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${window.translations.competitions?.athlete_id || 'ID'}: ${athlete.tessera}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Competition Class -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ${window.translations.competitions?.competition_class || 'Competition Class'}
+                        </label>
+                        <select class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="updateAthletePreference(${athlete.id}, this.value, document.getElementById('cat-${athlete.id}').value)">
+                            <option value="CO" ${athlete.classe === 'CO' ? 'selected' : ''}>CO - Compound</option>
+                            <option value="OL" ${athlete.classe === 'OL' ? 'selected' : ''}>OL - Olimpico</option>
+                            <option value="AN" ${athlete.classe === 'AN' ? 'selected' : ''}>AN - Arco Nudo</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Age Category -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ${window.translations.competitions?.age_category || 'Age Category'}
+                        </label>
+                        <select id="cat-${athlete.id}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="updateAthletePreference(${athlete.id}, document.querySelector('[onchange*=\"cat-${athlete.id}\"]').value, this.value)">
+                            <option value="">${window.translations.competitions?.select_age_category || 'Select...'}</option>
+                            <option value="GM" ${athlete.categoria === 'GM' ? 'selected' : ''}>GM - Giovanissimi M</option>
+                            <option value="GF" ${athlete.categoria === 'GF' ? 'selected' : ''}>GF - Giovanissimi F</option>
+                            <option value="RM" ${athlete.categoria === 'RM' ? 'selected' : ''}>RM - Ragazzi M</option>
+                            <option value="RF" ${athlete.categoria === 'RF' ? 'selected' : ''}>RF - Ragazzi F</option>
+                            <option value="AM" ${athlete.categoria === 'AM' ? 'selected' : ''}>AM - Allievi M</option>
+                            <option value="AF" ${athlete.categoria === 'AF' ? 'selected' : ''}>AF - Allievi F</option>
+                            <option value="JM" ${athlete.categoria === 'JM' ? 'selected' : ''}>JM - Juniores M</option>
+                            <option value="JF" ${athlete.categoria === 'JF' ? 'selected' : ''}>JF - Juniores F</option>
+                            <option value="SM" ${athlete.categoria === 'SM' ? 'selected' : ''}>SM - Seniores M</option>
+                            <option value="SF" ${athlete.categoria === 'SF' ? 'selected' : ''}>SF - Seniores F</option>
+                            <option value="MM" ${athlete.categoria === 'MM' ? 'selected' : ''}>MM - Master M</option>
+                            <option value="MF" ${athlete.categoria === 'MF' ? 'selected' : ''}>MF - Master F</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>${window.translations.competitions?.default_preferences || 'These will be used as defaults for competition subscriptions'}
+                </p>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading athletes:', error);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+                <p>${window.translations.common?.error || 'Error loading athletes'}</p>
+            </div>
+        `;
+    }
+}
+
+async function updateAthletePreference(athleteId, classe, categoria) {
+    try {
+        const resp = await fetch(`/api/user/authorized-athletes/${athleteId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ classe, categoria })
+        });
+        
+        if (!resp.ok) throw new Error('Failed to update');
+        
+        showNotification(window.translations.common?.success || 'Updated successfully', 'success');
+    } catch (error) {
+        console.error('Error updating athlete:', error);
+        showNotification(window.translations.common?.error || 'Failed to update', 'error');
+    }
+}
+{% endif %}
+</script>
+
 {% endblock %}

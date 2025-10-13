@@ -114,7 +114,14 @@
     "age_category": "Categoria di Età",
     "select_age_category": "Seleziona categoria di età...",
     "age_category_info": "Seleziona la categoria appropriata per età e genere",
-    "competitions_subtitle": "Iscriviti alle gare del club e gestisci le tue registrazioni"
+    "competitions_subtitle": "Iscriviti alle gare del club e gestisci le tue registrazioni",
+    "my_athletes": "I Miei Atleti",
+    "my_athletes_desc": "Gestisci la classe di gara e la categoria di età predefinite per i tuoi atleti autorizzati",
+    "no_athletes": "Nessun atleta autorizzato",
+    "contact_admin": "Contatta l'amministratore per aggiungere atleti al tuo account",
+    "athlete_id": "ID Atleta",
+    "competition_class": "Classe di Gara",
+    "default_preferences": "Questi saranno usati come valori predefiniti per le iscrizioni alle gare"
   },
   "printing": {
     "title": "Stampa 3D",
@@ -220,7 +227,8 @@
     "description": "Descrizione",
     "available": "disponibili",
     "related_projects": "Progetti Correlati",
-    "related_products": "Prodotti Correlati"
+    "related_products": "Prodotti Correlati",
+    "optional": "facoltativo"
   },
   "errors": {
     "loading_data": "Errore nel caricamento dei dati",

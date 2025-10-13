@@ -262,6 +262,7 @@ async function loadInitialData() {
         console.error('Error loading data:', error);
         showError('Failed to load competitions');
     } finally {
+        // Always hide loading spinner
         showLoading(false);
     }
 }
@@ -361,7 +362,11 @@ function renderCompetitions(competitions) {
         
         // Fill in competition details
         card.querySelector('.competition-name').textContent = competition.nome;
-        card.querySelector('.competition-location').textContent = competition.societa_codice || 'TBA';
+        
+        // Show location (luogo) if available, otherwise show societa name or code
+        let locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
+        card.querySelector('.competition-location').textContent = locationText;
+        
         card.querySelector('.competition-date').textContent = formatDateRange(competition.data_inizio, competition.data_fine);
         card.querySelector('.competition-type').textContent = competition.tipo || 'Competition';
         
@@ -434,12 +439,17 @@ async function openSubscriptionModal(competition) {
 
 function populateTurnsDropdown(turns) {
     const select = document.getElementById('turn');
-    select.innerHTML = '<option value="">Select turn...</option>';
+    select.innerHTML = `<option value="">${window.translations.competitions?.choose_turn || 'Select turn...'}</option>`;
     
     turns.forEach(turn => {
         const option = document.createElement('option');
         option.value = turn.turno;
-        option.textContent = `${turn.giorno} - ${turn.fase} (${turn.ora_ritrovo})`;
+        // Build display text, only including non-null parts
+        const parts = [];
+        if (turn.giorno) parts.push(turn.giorno);
+        if (turn.fase) parts.push(turn.fase);
+        if (turn.ora_ritrovo) parts.push(turn.ora_ritrovo);
+        option.textContent = parts.length > 0 ? parts.join(' - ') : `Turno ${turn.turno}`;
         select.appendChild(option);
     });
 }
@@ -448,21 +458,21 @@ function populateAthleteDropdown() {
     const container = document.getElementById('athlete-select-container');
     
     if (authorizedAthletes.length === 0) {
-        container.innerHTML = '<p class="text-sm text-yellow-600">No authorized athletes. Contact admin to add athletes to your account.</p>';
+        container.innerHTML = '<p class="text-sm text-yellow-600 dark:text-yellow-400">No authorized athletes. Contact admin to add athletes to your account.</p>';
         return;
     }
     
     if (authorizedAthletes.length === 1) {
         // Only one athlete - auto-select and hide dropdown
         container.innerHTML = `<input type="hidden" id="selected-athlete" value="${authorizedAthletes[0].tessera}">
-                              <p class="text-sm text-gray-600">Subscribing: ${authorizedAthletes[0].display}</p>`;
+                              <p class="text-sm text-gray-600 dark:text-gray-400">Subscribing: ${authorizedAthletes[0].display}</p>`;
         return;
     }
     
-    // Multiple athletes - show dropdown
+    // Multiple athletes - show dropdown with theme matching
     const select = document.createElement('select');
     select.id = 'selected-athlete';
-    select.className = 'w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50';
+    select.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary';
     
     select.innerHTML = '<option value="">Select athlete...</option>';
     authorizedAthletes.forEach(athlete => {
@@ -518,7 +528,7 @@ async function submitSubscription() {
                 classe: competitionClass,  // Competition class (CO, OL, AN)
                 categoria: ageCategory,     // Age category (GM, GF, RM, RF, etc.)
                 turno: parseInt(turn),
-                stato: 'confermato',
+                stato: 'in attesa',  // Pending - admin must confirm manually
                 note: notes
             })
         });
@@ -549,7 +559,17 @@ function showCompetitionDetails(competition) {
 function formatDate(dateStr) {
     if (!dateStr) return 'TBA';
     const date = new Date(dateStr);
-    return date.toLocaleDateString(window.translations._lang === 'it' ? 'it-IT' : 'en-US', {
+    const locale = window.translations._lang === 'it' ? 'it-IT' : 'en-US';
+    
+    if (locale === 'it-IT') {
+        // Italian format: 17-Ott-2025
+        const day = date.getDate();
+        const monthShort = date.toLocaleDateString('it-IT', { month: 'short' });
+        const year = date.getFullYear();
+        return `${day}-${monthShort.charAt(0).toUpperCase() + monthShort.slice(1)}-${year}`;
+    }
+    
+    return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -562,6 +582,31 @@ function formatDateRange(startStr, endStr) {
     const end = endStr ? new Date(endStr) : null;
     
     const locale = window.translations._lang === 'it' ? 'it-IT' : 'en-US';
+    
+    if (locale === 'it-IT') {
+        // Italian format: 17-Ott or 17-18 Ott or 17 Ott - 20 Nov
+        const startDay = start.getDate();
+        const startMonthShort = start.toLocaleDateString('it-IT', { month: 'short' });
+        const startMonth = startMonthShort.charAt(0).toUpperCase() + startMonthShort.slice(1);
+        
+        if (end && end.getTime() !== start.getTime()) {
+            const endDay = end.getDate();
+            const endMonthShort = end.toLocaleDateString('it-IT', { month: 'short' });
+            const endMonth = endMonthShort.charAt(0).toUpperCase() + endMonthShort.slice(1);
+            
+            if (start.getMonth() === end.getMonth()) {
+                // Same month: 17-18 Ott
+                return `${startDay}-${endDay} ${startMonth}`;
+            } else {
+                // Different months: 28 Ott - 2 Nov
+                return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+            }
+        }
+        
+        return `${startDay} ${startMonth}`;
+    }
+    
+    // English format
     const startFormatted = start.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     
     if (end && end.getTime() !== start.getTime()) {

@@ -34,6 +34,38 @@ def get_authorized_athletes():
     })
 
 
+@bp.route('/api/user/authorized-athletes/<int:athlete_id>', methods=['PATCH'])
+@login_required
+def update_authorized_athlete(athlete_id):
+    """Update athlete preferences (class/category) for current user"""
+    
+    athlete = AuthorizedAthlete.query.get_or_404(athlete_id)
+    
+    # Verify athlete belongs to current user
+    if athlete.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    
+    # Update fields if provided
+    if 'classe' in data:
+        athlete.classe = data['classe']
+    if 'categoria' in data:
+        athlete.categoria = data['categoria']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'athlete': {
+            'id': athlete.id,
+            'tessera': athlete.tessera_atleta,
+            'classe': athlete.classe,
+            'categoria': athlete.categoria
+        }
+    })
+
+
 @bp.route('/admin/api/users', methods=['GET'])
 @login_required
 def admin_get_users():
