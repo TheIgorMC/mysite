@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadInitialData() {
+    console.log('Loading initial data...');
     showLoading(true);
     
     try {
@@ -247,27 +248,34 @@ async function loadInitialData() {
             const authData = await authAthletesResp.json();
             authorizedAthletes = authData.authorized_athletes || [];
         }
+        console.log('Loaded athletes:', authorizedAthletes.length);
         
         // Load competitions from Flask proxy (which calls FastAPI with auth)
         const gareResp = await fetch(`/archery/api/gare?future=true&limit=100`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
+        console.log('Loaded competitions:', allCompetitions.length);
         
         // Load turni (turns) for each competition to determine if invite is published
         await loadTurniForAll();
+        console.log('Loaded all turni');
         
         // Load user's subscriptions from FastAPI
         if (authorizedAthletes.length > 0) {
             await loadUserSubscriptions();
+            console.log('Loaded subscriptions');
         }
         
+        console.log('Filtering competitions...');
         filterCompetitions(currentFilter);
+        console.log('Filter complete');
     } catch (error) {
         console.error('Error loading data:', error);
         showError('Failed to load competitions');
     } finally {
         // Always hide loading spinner
+        console.log('Hiding spinner');
         showLoading(false);
     }
 }
