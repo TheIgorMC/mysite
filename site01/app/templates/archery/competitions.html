@@ -50,7 +50,7 @@
         </div>
 
         <!-- Loading State -->
-        <div id="loading" class="hidden flex justify-center items-center py-12">
+        <div id="loading" class="flex justify-center items-center py-12">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
 
@@ -254,8 +254,8 @@ async function loadInitialData() {
         
         allCompetitions = await gareResp.json();
         
-        // Load inviti (subscription settings) for each competition
-        await loadInvitiData();
+        // Load turni (turns) for each competition to determine if invite is published
+        await loadTurniForAll();
         
         // Load user's subscriptions from FastAPI
         if (authorizedAthletes.length > 0) {
@@ -272,11 +272,22 @@ async function loadInitialData() {
     }
 }
 
-async function loadInvitiData() {
-    // Load ARC_inviti data to check subscription status
-    // Note: FastAPI doesn't have a direct endpoint for this yet
-    // For now, we'll assume competitions with future dates are open
-    // You'll need to add this endpoint to your FastAPI backend
+async function loadTurniForAll() {
+    // Load turns for all competitions to check if invites are published
+    for (const comp of allCompetitions) {
+        try {
+            const resp = await fetch(`/archery/api/turni?codice_gara=${comp.codice}`);
+            if (resp.ok) {
+                const turns = await resp.json();
+                allTurni[comp.codice] = turns || [];
+            } else {
+                allTurni[comp.codice] = [];
+            }
+        } catch (error) {
+            console.error(`Error loading turns for ${comp.codice}:`, error);
+            allTurni[comp.codice] = [];
+        }
+    }
 }
 
 async function loadUserSubscriptions() {
@@ -317,22 +328,22 @@ function filterCompetitions(filter) {
     
     switch(filter) {
         case 'upcoming':
-            // Future competitions
+            // Future competitions (not ended yet) - region 06 only
             filtered = allCompetitions.filter(c => {
-                const startDate = new Date(c.data_inizio);
-                return startDate > now;
+                const endDate = new Date(c.data_fine);
+                return endDate >= now;
             });
             break;
         case 'open':
-            // Competitions with open subscriptions
-            // For now, just show upcoming ones (you'll need inviti data for accurate filtering)
+            // Competitions with published invites (have turns) AND not yet started - region 06 only
             filtered = allCompetitions.filter(c => {
                 const startDate = new Date(c.data_inizio);
-                return startDate > now;
+                const hasTurns = allTurni[c.codice] && allTurni[c.codice].length > 0;
+                return startDate > now && hasTurns;
             });
             break;
         case 'past':
-            // Past competitions
+            // Past competitions (ended)
             filtered = allCompetitions.filter(c => {
                 const endDate = new Date(c.data_fine);
                 return endDate < now;
@@ -434,15 +445,34 @@ function renderCompetitions(competitions) {
                 e.stopPropagation();
                 deleteSubscription(subscription, competition);
             });
-        } else if (startDate <= now) {
-            // Can't subscribe to past/ongoing
-            subscribeBtn.textContent = window.translations.competitions?.closed || 'Closed';
-            subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            subscribeBtn.disabled = true;
+        } else {
+            // Not subscribed - check if can subscribe
+            const hasTurns = allTurni[competition.codice] && allTurni[competition.codice].length > 0;
+            
+            if (startDate <= now || !hasTurns) {
+                // Competition started or no invite published - show as closed
+                subscribeBtn.textContent = window.translations.competitions?.closed || 'Chiuso';
+                subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
+                subscribeBtn.classList.add('bg-red-600');
+                subscribeBtn.disabled = true;
+                
+                // Add red note about closed subscriptions if competition started
+                if (startDate <= now && endDate >= now) {
+                    const noteEl = document.createElement('div');
+                    noteEl.className = 'mb-4 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-800 dark:text-red-300';
+                    noteEl.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i>Iscrizioni chiuse';
+                    subscribeBtn.parentElement.parentElement.insertBefore(noteEl, subscribeBtn.parentElement);
+                }
+            }
         }
         
         // Button actions
-        subscribeBtn.addEventListener('click', () => openSubscriptionModal(competition));
+        subscribeBtn.addEventListener('click', () => {
+            if (!subscribeBtn.disabled) {
+                openSubscriptionModal(competition);
+            }
+        });
         card.querySelector('.btn-details').addEventListener('click', () => showCompetitionDetails(competition));
         
         grid.appendChild(card);
@@ -559,7 +589,11 @@ function populateTurnsDropdown(turns) {
         const parts = [];
         if (turn.giorno) parts.push(turn.giorno);
         if (turn.fase) parts.push(turn.fase);
-        if (turn.ora_ritrovo) parts.push(turn.ora_ritrovo);
+        if (turn.ora_ritrovo) {
+            // Format time from "08:45:00" to "08:45"
+            const timeFormatted = turn.ora_ritrovo.substring(0, 5);
+            parts.push(timeFormatted);
+        }
         option.textContent = parts.length > 0 ? parts.join(' - ') : `Turno ${turn.turno}`;
         select.appendChild(option);
     });

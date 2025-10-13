@@ -229,7 +229,7 @@ async function loadAuthorizedAthletes() {
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             ${window.translations.competitions?.competition_class || 'Competition Class'}
                         </label>
-                        <select class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        <select id="class-${athlete.id}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 onchange="updateAthletePreference(${athlete.id}, this.value, document.getElementById('cat-${athlete.id}').value)">
                             <option value="CO" ${athlete.classe === 'CO' ? 'selected' : ''}>CO - Compound</option>
                             <option value="OL" ${athlete.classe === 'OL' ? 'selected' : ''}>OL - Olimpico</option>
@@ -243,7 +243,7 @@ async function loadAuthorizedAthletes() {
                             ${window.translations.competitions?.age_category || 'Age Category'}
                         </label>
                         <select id="cat-${athlete.id}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                onchange="updateAthletePreference(${athlete.id}, document.querySelector('[onchange*=\"cat-${athlete.id}\"]').value, this.value)">
+                                onchange="updateAthletePreference(${athlete.id}, document.getElementById('class-${athlete.id}').value, this.value)">
                             <option value="">${window.translations.competitions?.select_age_category || 'Select...'}</option>
                             <option value="GM" ${athlete.categoria === 'GM' ? 'selected' : ''}>GM - Giovanissimi M</option>
                             <option value="GF" ${athlete.categoria === 'GF' ? 'selected' : ''}>GF - Giovanissimi F</option>
