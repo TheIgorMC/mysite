@@ -50,7 +50,7 @@
         </div>
 
         <!-- Loading State -->
-        <div id="loading" class="flex justify-center items-center py-12">
+        <div id="loading" class="hidden flex justify-center items-center py-12">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
 
@@ -407,7 +407,24 @@ function renderCompetitions(competitions) {
         
         if (userSubscriptions.has(competition.codice)) {
             const subscription = userSubscriptions.get(competition.codice);
-            card.querySelector('.competition-subscription-status').classList.remove('hidden');
+            const statusBox = card.querySelector('.competition-subscription-status');
+            statusBox.classList.remove('hidden');
+            
+            // Check subscription status and update styling
+            if (subscription.stato === 'in attesa') {
+                // Yellow styling for pending subscriptions
+                statusBox.classList.remove('bg-green-50', 'dark:bg-green-900/20', 'border-green-200', 'dark:border-green-800');
+                statusBox.classList.add('bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-200', 'dark:border-yellow-800');
+                
+                const statusText = statusBox.querySelector('.flex.items-center.text-green-800');
+                if (statusText) {
+                    statusText.classList.remove('text-green-800', 'dark:text-green-300');
+                    statusText.classList.add('text-yellow-800', 'dark:text-yellow-300');
+                    statusText.querySelector('span').textContent = window.translations.competitions?.status_pending || 'In attesa';
+                    statusText.querySelector('i').className = 'fas fa-clock mr-2';
+                }
+            }
+            
             subscribeBtn.textContent = window.translations.competitions?.subscribed || 'Subscribed';
             subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
             subscribeBtn.disabled = true;
@@ -613,18 +630,19 @@ async function submitSubscription() {
     
     // Find the selected athlete to get their competition class (CO, OL, AN)
     const selectedAthlete = authorizedAthletes.find(a => a.tessera === tessera);
-    const competitionClass = selectedAthlete?.classe || 'CO';
+    const competitionClass = selectedAthlete?.classe || 'CO';  // This is actually bow type from user preferences
     
     try {
         // Submit to Flask proxy (which forwards to FastAPI with auth)
+        // NOTE: Server expects categoria=bow_type (CO/OL/AN) and classe=age_category (SM/SF/etc)
         const response = await fetch(`/archery/api/iscrizioni`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 codice_gara: codiceGara,
                 tessera_atleta: tessera,
-                classe: competitionClass,  // Competition class (CO, OL, AN)
-                categoria: ageCategory,     // Age category (GM, GF, RM, RF, etc.)
+                categoria: competitionClass,    // Competition class / bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
                 turno: isExpressInterest ? 0 : parseInt(turn),  // Use 0 for express interest
                 stato: 'in attesa',  // Pending - admin must confirm manually
                 note: isExpressInterest ? 
@@ -645,7 +663,8 @@ async function submitSubscription() {
             id: result.id,
             codice_gara: codiceGara,
             tessera_atleta: tessera,
-            categoria: ageCategory,
+            categoria: competitionClass,  // Bow type: CO/OL/AN
+            classe: ageCategory,          // Age category: SM/SF/etc
             turno: isExpressInterest ? 0 : parseInt(turn),
             stato: 'in attesa',
             note: isExpressInterest ? 

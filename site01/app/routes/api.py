@@ -53,7 +53,11 @@ def update_authorized_athlete(athlete_id):
     if 'categoria' in data:
         athlete.categoria = data['categoria']
     
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     
     return jsonify({
         'success': True,

@@ -64,6 +64,7 @@
     <!-- Translations for JavaScript -->
     <script>
         window.translations = {
+            _lang: "{{ session.get('lang', 'it') }}",  // Current language
             common: {
                 loading: "{{ t('common.loading') }}",
                 searching: "{{ t('common.searching') }}",
