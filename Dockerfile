@@ -37,6 +37,13 @@ RUN echo "Cache bust: ${CACHE_BUST}"
 # Copy application code (this layer will be rebuilt when CACHE_BUST changes)
 COPY site01/ ./site01/
 
+# Make entrypoint script executable
+RUN chmod +x /app/site01/entrypoint.sh
+
+# Clear Python bytecode cache to ensure fresh templates
+RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+RUN find /app -type f -name "*.pyc" -delete 2>/dev/null || true
+
 # Set Python path to include site01 directory
 ENV PYTHONPATH=/app:/app/site01
 
@@ -53,5 +60,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Set working directory to site01 for proper imports
 WORKDIR /app/site01
 
-# Run the application with wsgi.py as entry point
-CMD ["python", "-m", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "wsgi:app"]
+# Use entrypoint script to run migrations and start app
+ENTRYPOINT ["/app/site01/entrypoint.sh"]
