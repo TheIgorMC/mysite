@@ -497,3 +497,17 @@ def handle_iscrizioni():
             return jsonify(result)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/iscrizioni/<int:subscription_id>', methods=['DELETE'])
+@login_required
+def delete_iscrizione(subscription_id):
+    """Delete a subscription (iscrizione) by ID"""
+    client = OrionAPIClient()
+    
+    try:
+        result = client.delete_subscription(subscription_id)
+        return jsonify(result if result else {'id': subscription_id, 'status': 'deleted'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

@@ -105,9 +105,14 @@
 
             <!-- Subscription Status -->
             <div class="competition-subscription-status hidden mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <div class="flex items-center text-sm text-green-800 dark:text-green-300">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    <span>{{ t('competitions.subscribed') }}</span>
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center text-green-800 dark:text-green-300">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span>{{ t('competitions.subscribed') }}</span>
+                    </div>
+                    <button class="btn-unsubscribe text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="{{ t('competitions.delete_subscription') }}">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
 
@@ -179,7 +184,7 @@
                                     </p>
                                 </div>
                                 
-                                <div class="mb-4">
+                                <div id="turn-selection-container" class="mb-4">
                                     <label for="turn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {{ t('competitions.select_turn') }}
                                     </label>
@@ -224,7 +229,7 @@ let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
 let allTurni = {};   // Turns mapped by codice_gara
-let userSubscriptions = new Set();  // Set of codice_gara values user is subscribed to
+let userSubscriptions = new Map();  // Map of codice_gara -> subscription object (includes id)
 let authorizedAthletes = [];  // User's authorized athletes from website
 
 // Load competitions on page load
@@ -282,7 +287,11 @@ async function loadUserSubscriptions() {
             if (resp.ok) {
                 const subscriptions = await resp.json();
                 subscriptions.forEach(sub => {
-                    userSubscriptions.add(sub.codice_gara);
+                    // Store the full subscription object, keyed by codice_gara
+                    // If multiple athletes subscribed to same competition, keep first one
+                    if (!userSubscriptions.has(sub.codice_gara)) {
+                        userSubscriptions.set(sub.codice_gara, sub);
+                    }
                 });
             }
         }
@@ -335,7 +344,9 @@ function filterCompetitions(filter) {
             break;
     }
     
-    // Filter by region 06 (Tuscany) based on societa_codice
+    // Filter by region 06 (Veneto) based on societa_codice
+    // Show ALL region 06 competitions, including those WITHOUT published invites
+    // Users can express interest in competitions without invites
     filtered = filtered.filter(c => c.societa_codice && c.societa_codice.startsWith('06'));
     
     renderCompetitions(filtered);
@@ -392,11 +403,20 @@ function renderCompetitions(competitions) {
         
         // Subscription status
         const subscribeBtn = card.querySelector('.btn-subscribe');
+        const unsubscribeBtn = card.querySelector('.btn-unsubscribe');
+        
         if (userSubscriptions.has(competition.codice)) {
+            const subscription = userSubscriptions.get(competition.codice);
             card.querySelector('.competition-subscription-status').classList.remove('hidden');
             subscribeBtn.textContent = window.translations.competitions?.subscribed || 'Subscribed';
             subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
             subscribeBtn.disabled = true;
+            
+            // Wire up delete button
+            unsubscribeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteSubscription(subscription, competition);
+            });
         } else if (startDate <= now) {
             // Can't subscribe to past/ongoing
             subscribeBtn.textContent = window.translations.competitions?.closed || 'Closed';
@@ -425,15 +445,89 @@ async function openSubscriptionModal(competition) {
         const turnsResp = await fetch(`/archery/api/turni?codice_gara=${competition.codice}`);
         if (turnsResp.ok) {
             const turns = await turnsResp.json();
+            
+            // Check if invite is published (has turns)
+            if (!turns || turns.length === 0) {
+                // No invite published - show "Express Interest" mode
+                showExpressInterestMode(competition);
+                return;
+            }
+            
             populateTurnsDropdown(turns);
+        } else {
+            // API error - assume no invite, allow express interest
+            showExpressInterestMode(competition);
+            return;
         }
     } catch (error) {
         console.error('Error loading turns:', error);
+        showExpressInterestMode(competition);
+        return;
     }
+    
+    // Show normal subscription mode (with turns)
+    showNormalSubscriptionMode(competition);
+}
+
+function showNormalSubscriptionMode(competition) {
+    // Reset modal to normal subscription mode
+    
+    // Reset modal title
+    document.getElementById('modal-title').textContent = 
+        window.translations.competitions?.subscribe_title || 'Subscribe to Competition';
+    
+    // Show turn selection
+    const turnContainer = document.getElementById('turn-selection-container');
+    if (turnContainer) turnContainer.style.display = 'block';
+    
+    // Reset info message
+    const infoEl = document.getElementById('modal-competition-info');
+    infoEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>`;
     
     // Populate athlete dropdown
     populateAthleteDropdown();
     
+    // Show modal
+    document.getElementById('subscription-modal').classList.remove('hidden');
+}
+
+function showExpressInterestMode(competition) {
+    // Competition doesn't have published invite yet
+    // Show modal with "Express Interest" instead of full subscription
+    
+    // Update modal title
+    document.getElementById('modal-title').textContent = 
+        window.translations.competitions?.express_interest_title || 'Express Interest in Competition';
+    
+    // Hide turn selection (no turns available)
+    const turnContainer = document.getElementById('turn-selection-container');
+    if (turnContainer) turnContainer.style.display = 'none';
+    
+    // Update submit button text
+    const submitBtn = document.querySelector('#subscription-form').closest('div').querySelector('button[type="button"]');
+    if (submitBtn && submitBtn.textContent.includes('Confirm')) {
+        submitBtn.textContent = window.translations.competitions?.express_interest_btn || 'Express Interest';
+    }
+    
+    // Add info message
+    const infoEl = document.getElementById('modal-competition-info');
+    infoEl.innerHTML = `
+        <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg mb-4">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2"></i>
+                <div class="text-sm text-yellow-800 dark:text-yellow-300">
+                    <strong>${window.translations.competitions?.no_invite_title || 'Invite Not Yet Published'}</strong><br>
+                    ${window.translations.competitions?.no_invite_desc || 'The official invitation for this competition has not been published yet. You can express interest and we will notify you when registration opens.'}
+                </div>
+            </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>
+    `;
+    
+    // Populate athlete dropdown
+    populateAthleteDropdown();
+    
+    // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
 }
 
@@ -498,7 +592,11 @@ async function submitSubscription() {
     const ageCategory = document.getElementById('age-category').value;
     const notes = document.getElementById('notes').value;
     
-    if (!turn) {
+    // Check if turn selection is visible (normal subscription) or hidden (express interest)
+    const turnContainer = document.getElementById('turn-selection-container');
+    const isExpressInterest = turnContainer && turnContainer.style.display === 'none';
+    
+    if (!isExpressInterest && !turn) {
         showNotification(window.translations.competitions?.select_turn_required || 'Please select a turn', 'warning');
         return;
     }
@@ -527,9 +625,11 @@ async function submitSubscription() {
                 tessera_atleta: tessera,
                 classe: competitionClass,  // Competition class (CO, OL, AN)
                 categoria: ageCategory,     // Age category (GM, GF, RM, RF, etc.)
-                turno: parseInt(turn),
+                turno: isExpressInterest ? 0 : parseInt(turn),  // Use 0 for express interest
                 stato: 'in attesa',  // Pending - admin must confirm manually
-                note: notes
+                note: isExpressInterest ? 
+                    `Interesse espresso (invito non pubblicato). ${notes}` : 
+                    notes
             })
         });
         
@@ -540,13 +640,58 @@ async function submitSubscription() {
         
         const result = await response.json();
         
-        userSubscriptions.add(codiceGara);
+        // Create subscription object from response
+        const subscription = {
+            id: result.id,
+            codice_gara: codiceGara,
+            tessera_atleta: tessera,
+            categoria: ageCategory,
+            turno: isExpressInterest ? 0 : parseInt(turn),
+            stato: 'in attesa',
+            note: isExpressInterest ? 
+                `Interesse espresso (invito non pubblicato). ${notes}` : 
+                notes
+        };
+        
+        userSubscriptions.set(codiceGara, subscription);
         closeSubscriptionModal();
         showNotification(window.translations.competitions?.subscription_success || 'Successfully subscribed!', 'success');
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error subscribing:', error);
         showNotification(error.message || window.translations.competitions?.subscription_error || 'Failed to subscribe', 'error');
+    }
+}
+
+async function deleteSubscription(subscription, competition) {
+    // Confirm before deleting
+    const confirmMsg = window.translations.competitions?.confirm_delete || 
+        `Are you sure you want to delete your subscription to ${competition.nome}?`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/archery/api/iscrizioni/${subscription.id}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Delete failed');
+        }
+        
+        // Remove from local cache
+        userSubscriptions.delete(competition.codice);
+        
+        showNotification(window.translations.competitions?.delete_success || 'Subscription deleted successfully', 'success');
+        
+        // Refresh the competition list
+        filterCompetitions(currentFilter);
+    } catch (error) {
+        console.error('Error deleting subscription:', error);
+        showNotification(error.message || window.translations.competitions?.delete_error || 'Failed to delete subscription', 'error');
     }
 }
 

@@ -140,3 +140,7 @@ class OrionAPIClient:
             'note': note
         }
         return self._make_request('POST', '/api/iscrizioni', data=data)
+    
+    def delete_subscription(self, subscription_id):
+        """Delete a subscription (iscrizione) by ID"""
+        return self._make_request('DELETE', f'/api/iscrizioni/{subscription_id}')

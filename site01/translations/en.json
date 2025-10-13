@@ -121,7 +121,15 @@
     "contact_admin": "Contact admin to add athletes to your account",
     "athlete_id": "Athlete ID",
     "competition_class": "Competition Class",
-    "default_preferences": "These will be used as defaults for competition subscriptions"
+    "default_preferences": "These will be used as defaults for competition subscriptions",
+    "delete_subscription": "Delete Subscription",
+    "confirm_delete": "Are you sure you want to delete this subscription?",
+    "delete_success": "Subscription deleted successfully",
+    "delete_error": "Failed to delete subscription",
+    "express_interest_title": "Express Interest in Competition",
+    "express_interest_btn": "Express Interest",
+    "no_invite_title": "Invite Not Yet Published",
+    "no_invite_desc": "The official invitation for this competition has not been published yet. You can express interest and we will notify you when registration opens."
   },
   "printing": {
     "title": "3D Printing",

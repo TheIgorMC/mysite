@@ -121,7 +121,15 @@
     "contact_admin": "Contatta l'amministratore per aggiungere atleti al tuo account",
     "athlete_id": "ID Atleta",
     "competition_class": "Classe di Gara",
-    "default_preferences": "Questi saranno usati come valori predefiniti per le iscrizioni alle gare"
+    "default_preferences": "Questi saranno usati come valori predefiniti per le iscrizioni alle gare",
+    "delete_subscription": "Elimina Iscrizione",
+    "confirm_delete": "Sei sicuro di voler eliminare questa iscrizione?",
+    "delete_success": "Iscrizione eliminata con successo",
+    "delete_error": "Impossibile eliminare l'iscrizione",
+    "express_interest_title": "Esprimi Interesse per la Gara",
+    "express_interest_btn": "Esprimi Interesse",
+    "no_invite_title": "Invito Non Ancora Pubblicato",
+    "no_invite_desc": "L'invito ufficiale per questa gara non è ancora stato pubblicato. Puoi esprimere interesse e ti avviseremo quando le iscrizioni saranno aperte."
   },
   "printing": {
     "title": "Stampa 3D",
