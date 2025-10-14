@@ -179,6 +179,19 @@
                                     </p>
                                 </div>
                                 
+                                <div class="mb-4">
+                                    <label for="bow-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {{ t('competitions.bow_type') }}
+                                    </label>
+                                    <select id="bow-type" name="bow_type" required
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <option value="">{{ t('competitions.select_bow_type') }}</option>
+                                        <option value="CO">CO - Compound</option>
+                                        <option value="OL">OL - Olympic Recurve</option>
+                                        <option value="AN">AN - Barebow</option>
+                                    </select>
+                                </div>
+                                
                                 <div id="turn-selection-container" class="mb-4">
                                     <label for="turn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {{ t('competitions.select_turn') }}
@@ -224,7 +237,7 @@ let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
 let allTurni = {};   // Turns mapped by codice_gara
-let userSubscriptions = new Map();  // Map of codice_gara -> subscription object (includes id)
+let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects
 let authorizedAthletes = [];  // User's authorized athletes from website
 let expressedInterest = new Set();  // Set of codice_gara where user expressed interest (localStorage)
 
@@ -361,11 +374,11 @@ async function loadUserSubscriptions() {
             if (resp.ok) {
                 const subscriptions = await resp.json();
                 subscriptions.forEach(sub => {
-                    // Store the full subscription object, keyed by codice_gara
-                    // If multiple athletes subscribed to same competition, keep first one
+                    // Store subscriptions as array per competition to support multiple athletes
                     if (!userSubscriptions.has(sub.codice_gara)) {
-                        userSubscriptions.set(sub.codice_gara, sub);
+                        userSubscriptions.set(sub.codice_gara, []);
                     }
+                    userSubscriptions.get(sub.codice_gara).push(sub);
                 });
             }
         }
@@ -519,6 +532,61 @@ function filterCompetitions(filter) {
     renderCompetitions(filtered);
 }
 
+/**
+ * Get subscription summary for a competition (handles multiple athletes)
+ * Returns: { hasActiveSubscription, allCancelled, statusText, statusColor, primaryStatus, subscriptions }
+ */
+function getSubscriptionSummary(codiceGara) {
+    if (!userSubscriptions.has(codiceGara)) {
+        return { hasActiveSubscription: false, allCancelled: false, subscriptions: [] };
+    }
+    
+    const subs = userSubscriptions.get(codiceGara);
+    const activeSubs = subs.filter(s => s.stato !== 'cancellato');
+    
+    if (activeSubs.length === 0) {
+        return { hasActiveSubscription: false, allCancelled: true, subscriptions: subs };
+    }
+    
+    // Count by status
+    const confirmed = activeSubs.filter(s => s.stato === 'confermato').length;
+    const waiting = activeSubs.filter(s => s.stato === 'in attesa').length;
+    const pending = activeSubs.filter(s => s.stato === 'richiesta_effettuata').length;
+    
+    // Determine primary status (priority: confirmed > waiting > pending)
+    let primaryStatus, statusText, statusColor, statusIcon;
+    if (confirmed > 0) {
+        primaryStatus = 'confermato';
+        statusIcon = 'fas fa-check-circle';
+        statusColor = 'green';
+        statusText = confirmed === 1 ? 'Iscritto' : `${confirmed} iscritti`;
+    } else if (waiting > 0) {
+        primaryStatus = 'in attesa';
+        statusIcon = 'fas fa-clock';
+        statusColor = 'yellow';
+        statusText = waiting === 1 ? 'In attesa' : `${waiting} in attesa`;
+    } else {
+        primaryStatus = 'richiesta_effettuata';
+        statusIcon = 'fas fa-paper-plane';
+        statusColor = 'gray';
+        statusText = pending === 1 ? 'Richiesta effettuata' : `${pending} richieste`;
+    }
+    
+    return { 
+        hasActiveSubscription: true, 
+        allCancelled: false,
+        primaryStatus, 
+        statusText, 
+        statusColor,
+        statusIcon,
+        subscriptions: subs,
+        activeSubs,
+        confirmed,
+        waiting,
+        pending
+    };
+}
+
 function renderCompetitions(competitions) {
     const grid = document.getElementById('competitions-grid');
     const emptyState = document.getElementById('empty-state');
@@ -560,13 +628,14 @@ function renderCompetitions(competitions) {
         const subscribeBtn = card.querySelector('.btn-subscribe');
         const unsubscribeBtn = card.querySelector('.btn-unsubscribe');
         
-        if (userSubscriptions.has(competition.codice)) {
-            // User has a subscription - show subscription status
-            const subscription = userSubscriptions.get(competition.codice);
+        const subSummary = getSubscriptionSummary(competition.codice);
+        
+        if (subSummary.hasActiveSubscription) {
+            // User has active subscriptions - show summary
             const statusBox = card.querySelector('.competition-subscription-status');
             statusBox.classList.remove('hidden');
             
-            // Update status box based on subscription stato
+            // Update status box based on primary subscription status
             const statusTextContainer = statusBox.querySelector('.flex.items-center.text-green-800');
             const statusIcon = statusTextContainer.querySelector('i');
             const statusText = statusTextContainer.querySelector('span');
@@ -585,59 +654,53 @@ function renderCompetitions(competitions) {
                 'text-gray-800', 'dark:text-gray-300'
             );
             
-            // Apply styling based on stato
-            switch(subscription.stato) {
-                case 'confermato':
-                    // Green - Iscritto (confirmed)
-                    statusBox.classList.add('bg-green-50', 'dark:bg-green-900/20', 'border-green-200', 'dark:border-green-800');
-                    statusTextContainer.classList.add('text-green-800', 'dark:text-green-300');
-                    statusIcon.className = 'fas fa-check-circle mr-2';
-                    statusText.textContent = window.translations.iscritto || 'Iscritto';
-                    subscribeBtn.disabled = true;
-                    subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    break;
-                    
-                case 'in attesa':
-                    // Yellow - In attesa (waiting list)
-                    statusBox.classList.add('bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-200', 'dark:border-yellow-800');
-                    statusTextContainer.classList.add('text-yellow-800', 'dark:text-yellow-300');
-                    statusIcon.className = 'fas fa-clock mr-2';
-                    statusText.textContent = window.translations.in_attesa || 'In attesa';
-                    subscribeBtn.disabled = true;
-                    subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    break;
-                    
-                case 'cancellato':
-                    // Red - Cancellato (cancelled, can resubscribe)
-                    statusBox.classList.add('bg-red-50', 'dark:bg-red-900/20', 'border-red-200', 'dark:border-red-800');
-                    statusTextContainer.classList.add('text-red-800', 'dark:text-red-300');
-                    statusIcon.className = 'fas fa-times-circle mr-2';
-                    statusText.textContent = window.translations.cancellato || 'Cancellato';
-                    subscribeBtn.disabled = false;  // Allow resubscription
-                    subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>' + (window.translations.competitions?.subscribe || 'Subscribe');
-                    break;
-                    
-                default:
-                    // White/Gray - Richiesta effettuata (request made, pending confirmation)
-                    statusBox.classList.add('bg-gray-50', 'dark:bg-gray-900/20', 'border-gray-200', 'dark:border-gray-800');
-                    statusTextContainer.classList.add('text-gray-800', 'dark:text-gray-300');
-                    statusIcon.className = 'fas fa-paper-plane mr-2';
-                    statusText.textContent = window.translations.richiesta_effettuata || 'Richiesta effettuata';
-                    subscribeBtn.disabled = true;
-                    subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    break;
+            // Apply styling based on primary status
+            const colorMap = {
+                'green': {
+                    bg: ['bg-green-50', 'dark:bg-green-900/20', 'border-green-200', 'dark:border-green-800'],
+                    text: ['text-green-800', 'dark:text-green-300']
+                },
+                'yellow': {
+                    bg: ['bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-200', 'dark:border-yellow-800'],
+                    text: ['text-yellow-800', 'dark:text-yellow-300']
+                },
+                'gray': {
+                    bg: ['bg-gray-50', 'dark:bg-gray-900/20', 'border-gray-200', 'dark:border-gray-800'],
+                    text: ['text-gray-800', 'dark:text-gray-300']
+                }
+            };
+            
+            const colors = colorMap[subSummary.statusColor];
+            statusBox.classList.add(...colors.bg);
+            statusTextContainer.classList.add(...colors.text);
+            statusIcon.className = `${subSummary.statusIcon} mr-2`;
+            statusText.textContent = subSummary.statusText;
+            
+            // Allow subscribing additional athletes if:
+            // 1. User has multiple authorized athletes
+            // 2. Not all athletes are subscribed (active subscriptions < total athletes)
+            const canSubscribeMore = authorizedAthletes.length > 1 && 
+                                      subSummary.activeSubs.length < authorizedAthletes.length;
+            
+            if (canSubscribeMore) {
+                subscribeBtn.disabled = false;
+                subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Aggiungi atleta';
+            } else {
+                subscribeBtn.disabled = true;
+                subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
             
-            // Wire up delete button (hide for cancellato status since they can resubscribe)
-            if (subscription.stato !== 'cancellato') {
-                unsubscribeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteSubscription(subscription, competition);
-                });
-            } else {
-                statusBox.classList.add('hidden');  // Hide status box if cancelled
-            }
+            // Wire up delete button - show list of subscribed athletes to delete
+            unsubscribeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showDeleteSubscriptionModal(subSummary.subscriptions, competition);
+            });
+        } else if (subSummary.allCancelled) {
+            // All subscriptions cancelled - allow resubscription
+            subscribeBtn.disabled = false;
+            subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>' + (window.translations.competitions?.subscribe || 'Subscribe');
         } else {
             // Not subscribed - configure button based on competition status
             if (competitionStatus.canExpressInterest) {
@@ -688,20 +751,20 @@ function renderCompetitions(competitions) {
 }
 
 async function openSubscriptionModal(competition) {
-    if (userSubscriptions.has(competition.codice) && userSubscriptions.get(competition.codice).stato !== 'cancellato') {
-        return;  // Already subscribed (unless cancelled)
-    }
+    // Get subscription summary to check who's already subscribed
+    const subSummary = getSubscriptionSummary(competition.codice);
+    const subscribedAthletes = new Set(subSummary.subscriptions
+        .filter(s => s.stato !== 'cancellato')
+        .map(s => s.tessera_atleta));
     
-    // Check competition status
-    const competitionStatus = getCompetitionStatus(competition);
+    // Filter to only show athletes who aren't already subscribed
+    const availableAthletes = authorizedAthletes.filter(a => !subscribedAthletes.has(a.tessera));
     
-    // If this is an "attesa invito" competition, show express interest mode
-    if (competitionStatus.canExpressInterest) {
-        showExpressInterestMode(competition);
+    if (availableAthletes.length === 0) {
+        showNotification('Tutti gli atleti sono già iscritti a questa gara', 'info');
         return;
     }
     
-    // Otherwise show normal subscription modal
     // Populate modal with competition info
     document.getElementById('competition-id').value = competition.codice;
     document.getElementById('modal-competition-info').textContent = 
@@ -713,30 +776,34 @@ async function openSubscriptionModal(competition) {
         if (turnsResp.ok) {
             const turns = await turnsResp.json();
             
+            console.log(`Turns for ${competition.codice}:`, turns);
+            
             // Check if invite is published (has turns)
             if (!turns || turns.length === 0) {
                 // No invite published - show "Express Interest" mode
-                showExpressInterestMode(competition);
+                console.log(`No turns found for ${competition.codice} - showing express interest`);
+                showExpressInterestMode(competition, availableAthletes);
                 return;
             }
             
+            // Has turns - show normal subscription mode
+            console.log(`${turns.length} turns found for ${competition.codice} - showing normal subscription`);
             populateTurnsDropdown(turns);
+            showNormalSubscriptionMode(competition, availableAthletes);
         } else {
             // API error - assume no invite, allow express interest
-            showExpressInterestMode(competition);
+            console.log(`API error loading turns for ${competition.codice} - showing express interest`);
+            showExpressInterestMode(competition, availableAthletes);
             return;
         }
     } catch (error) {
         console.error('Error loading turns:', error);
-        showExpressInterestMode(competition);
+        showExpressInterestMode(competition, availableAthletes);
         return;
     }
-    
-    // Show normal subscription mode (with turns)
-    showNormalSubscriptionMode(competition);
 }
 
-function showNormalSubscriptionMode(competition) {
+function showNormalSubscriptionMode(competition, availableAthletes = null) {
     // Reset modal to normal subscription mode
     
     // Reset modal title
@@ -751,14 +818,14 @@ function showNormalSubscriptionMode(competition) {
     const infoEl = document.getElementById('modal-competition-info');
     infoEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>`;
     
-    // Populate athlete dropdown
-    populateAthleteDropdown();
+    // Populate athlete dropdown (filter if provided)
+    populateAthleteDropdown(availableAthletes);
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
 }
 
-function showExpressInterestMode(competition) {
+function showExpressInterestMode(competition, availableAthletes = null) {
     // Competition doesn't have published invite yet
     // Show modal with "Express Interest" instead of full subscription
     
@@ -791,8 +858,8 @@ function showExpressInterestMode(competition) {
         <p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>
     `;
     
-    // Populate athlete dropdown
-    populateAthleteDropdown();
+    // Populate athlete dropdown (filter if provided)
+    populateAthleteDropdown(availableAthletes);
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
@@ -811,7 +878,9 @@ function populateTurnsDropdown(turns) {
         if (turn.fase) parts.push(turn.fase);
         if (turn.ora_ritrovo) {
             // Format time from "08:45:00" to "08:45"
-            const timeFormatted = turn.ora_ritrovo.substring(0, 5);
+            // Convert to string if it's not already
+            const timeStr = typeof turn.ora_ritrovo === 'string' ? turn.ora_ritrovo : String(turn.ora_ritrovo);
+            const timeFormatted = timeStr.substring(0, 5);
             parts.push(timeFormatted);
         }
         option.textContent = parts.length > 0 ? parts.join(' - ') : `Turno ${turn.turno}`;
@@ -819,18 +888,27 @@ function populateTurnsDropdown(turns) {
     });
 }
 
-function populateAthleteDropdown() {
+function populateAthleteDropdown(filteredAthletes = null) {
     const container = document.getElementById('athlete-select-container');
+    const athletes = filteredAthletes || authorizedAthletes;
     
-    if (authorizedAthletes.length === 0) {
+    if (athletes.length === 0) {
         container.innerHTML = '<p class="text-sm text-yellow-600 dark:text-yellow-400">No authorized athletes. Contact admin to add athletes to your account.</p>';
         return;
     }
     
-    if (authorizedAthletes.length === 1) {
-        // Only one athlete - auto-select and hide dropdown
-        container.innerHTML = `<input type="hidden" id="selected-athlete" value="${authorizedAthletes[0].tessera}">
-                              <p class="text-sm text-gray-600 dark:text-gray-400">Subscribing: ${authorizedAthletes[0].display}</p>`;
+    if (athletes.length === 1) {
+        // Only one athlete - auto-select and hide dropdown, pre-fill form fields
+        const athlete = athletes[0];
+        container.innerHTML = `<input type="hidden" id="selected-athlete" value="${athlete.tessera}">
+                              <p class="text-sm text-gray-600 dark:text-gray-400">Subscribing: ${athlete.display}</p>`;
+        // Pre-fill age category and bow type from athlete data
+        if (athlete.age_category) {
+            document.getElementById('age-category').value = athlete.age_category;
+        }
+        if (athlete.classe) {
+            document.getElementById('bow-type').value = athlete.classe;
+        }
         return;
     }
     
@@ -840,11 +918,31 @@ function populateAthleteDropdown() {
     select.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary';
     
     select.innerHTML = '<option value="">Select athlete...</option>';
-    authorizedAthletes.forEach(athlete => {
+    athletes.forEach(athlete => {
         const option = document.createElement('option');
         option.value = athlete.tessera;
         option.textContent = athlete.display;
+        option.dataset.ageCategory = athlete.age_category || '';
+        option.dataset.bowType = athlete.classe || '';
         select.appendChild(option);
+    });
+    
+    // Add event listener to pre-fill form when athlete is selected
+    select.addEventListener('change', function(e) {
+        const selectedOption = e.target.selectedOptions[0];
+        if (selectedOption && selectedOption.value) {
+            // Pre-fill age category and bow type from selected athlete
+            if (selectedOption.dataset.ageCategory) {
+                document.getElementById('age-category').value = selectedOption.dataset.ageCategory;
+            }
+            if (selectedOption.dataset.bowType) {
+                document.getElementById('bow-type').value = selectedOption.dataset.bowType;
+            }
+        } else {
+            // Reset fields if no athlete selected
+            document.getElementById('age-category').value = '';
+            document.getElementById('bow-type').value = '';
+        }
     });
     
     container.innerHTML = '';
@@ -861,6 +959,7 @@ async function submitSubscription() {
     const turn = document.getElementById('turn').value;
     const tessera = document.getElementById('selected-athlete')?.value;
     const ageCategory = document.getElementById('age-category').value;
+    const bowType = document.getElementById('bow-type').value;
     const notes = document.getElementById('notes').value;
     
     // Check if turn selection is visible (normal subscription) or hidden (express interest)
@@ -882,9 +981,10 @@ async function submitSubscription() {
         return;
     }
     
-    // Find the selected athlete to get their competition class (CO, OL, AN)
-    const selectedAthlete = authorizedAthletes.find(a => a.tessera === tessera);
-    const competitionClass = selectedAthlete?.classe || 'CO';  // This is actually bow type from user preferences
+    if (!bowType) {
+        showNotification('Please select a bow type', 'warning');
+        return;
+    }
     
     try {
         // Submit to Flask proxy (which forwards to FastAPI with auth)
@@ -895,7 +995,7 @@ async function submitSubscription() {
             body: JSON.stringify({
                 codice_gara: codiceGara,
                 tessera_atleta: tessera,
-                categoria: competitionClass,    // Competition class / bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                categoria: bowType,             // Competition class / bow type: CO (Compound), OL (Olympic), AN (Barebow)
                 classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
                 turno: isExpressInterest ? 0 : parseInt(turn),  // Use 0 for express interest
                 stato: 'in attesa',  // Pending - admin must confirm manually
@@ -922,7 +1022,7 @@ async function submitSubscription() {
             id: result.id,
             codice_gara: codiceGara,
             tessera_atleta: tessera,
-            categoria: competitionClass,  // Bow type: CO/OL/AN
+            categoria: bowType,           // Bow type: CO/OL/AN
             classe: ageCategory,          // Age category: SM/SF/etc
             turno: isExpressInterest ? 0 : parseInt(turn),
             stato: 'in attesa',
@@ -931,7 +1031,12 @@ async function submitSubscription() {
                 notes
         };
         
-        userSubscriptions.set(codiceGara, subscription);
+        // Add to subscriptions array
+        if (!userSubscriptions.has(codiceGara)) {
+            userSubscriptions.set(codiceGara, []);
+        }
+        userSubscriptions.get(codiceGara).push(subscription);
+        
         closeSubscriptionModal();
         showNotification(window.translations.competitions?.subscription_success || 'Successfully subscribed!', 'success');
         filterCompetitions(currentFilter);
@@ -939,6 +1044,59 @@ async function submitSubscription() {
         console.error('Error subscribing:', error);
         showNotification(error.message || window.translations.competitions?.subscription_error || 'Failed to subscribe', 'error');
     }
+}
+
+function showDeleteSubscriptionModal(subscriptions, competition) {
+    // For single subscription, delete directly
+    if (subscriptions.length === 1 && subscriptions[0].stato !== 'cancellato') {
+        deleteSubscription(subscriptions[0], competition);
+        return;
+    }
+    
+    // For multiple subscriptions, show a simple list in a confirm dialog
+    const activeSubs = subscriptions.filter(s => s.stato !== 'cancellato');
+    if (activeSubs.length === 0) return;
+    
+    if (activeSubs.length === 1) {
+        deleteSubscription(activeSubs[0], competition);
+        return;
+    }
+    
+    // Build message with athlete names
+    const athleteNames = activeSubs.map(sub => {
+        const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+        return athlete ? athlete.display : sub.tessera_atleta;
+    }).join(', ');
+    
+    const confirmMsg = `Hai ${activeSubs.length} iscrizioni per questa gara (${athleteNames}). Vuoi eliminarle tutte?`;
+    
+    if (confirm(confirmMsg)) {
+        // Delete all subscriptions
+        Promise.all(activeSubs.map(sub => deleteSubscriptionInternal(sub.id)))
+            .then(() => {
+                // Remove all from local cache
+                userSubscriptions.delete(competition.codice);
+                showNotification('Iscrizioni eliminate con successo', 'success');
+                filterCompetitions(currentFilter);
+            })
+            .catch(error => {
+                console.error('Error deleting subscriptions:', error);
+                showNotification('Errore durante l\'eliminazione delle iscrizioni', 'error');
+            });
+    }
+}
+
+async function deleteSubscriptionInternal(subscriptionId) {
+    const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
+        method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Delete failed');
+    }
+    
+    return response.json();
 }
 
 async function deleteSubscription(subscription, competition) {
