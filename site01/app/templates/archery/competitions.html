@@ -320,6 +320,7 @@ async function loadInviti() {
             // Map invites by codice for fast lookup
             inviti.forEach(invito => {
                 allInviti[invito.codice] = invito;
+                console.log(`  Mapped invite: ${invito.codice} -> apertura:${invito.data_apertura_iscrizioni}, chiusura:${invito.data_chiusura_iscrizioni}`);
             });
         } else {
             console.warn('loadInviti: Response not OK:', resp.status);
@@ -327,7 +328,7 @@ async function loadInviti() {
     } catch (error) {
         console.error('Error loading inviti:', error);
     }
-    console.log('loadInviti: Complete');
+    console.log('loadInviti: Complete. Total mapped:', Object.keys(allInviti).length);
 }
 
 async function loadTurniForAll() {
@@ -391,6 +392,12 @@ function getCompetitionStatus(competition) {
     
     const invito = allInviti[competition.codice];
     
+    console.log(`Status for ${competition.codice} (${competition.nome}):`, {
+        has_invito: !!invito,
+        invito_data: invito,
+        start_date: competition.data_inizio
+    });
+    
     // No invite associated = "attesa invito" (white)
     if (!invito) {
         return {
@@ -408,8 +415,11 @@ function getCompetitionStatus(competition) {
     const chiusuraDate = new Date(invito.data_chiusura_iscrizioni);
     chiusuraDate.setHours(0, 0, 0, 0);
     
+    console.log(`  Dates: now=${now.toISOString()}, apertura=${aperturaDate.toISOString()}, chiusura=${chiusuraDate.toISOString()}, start=${startDate.toISOString()}`);
+    
     // Competition started OR subscription window closed = "iscrizioni chiuse" (red)
     if (startDate <= now || chiusuraDate < now) {
+        console.log(`  → Status: CHIUSE (started=${startDate <= now}, closed=${chiusuraDate < now})`);
         return {
             status: 'iscrizioni_chiuse',
             canSubscribe: false,
@@ -421,6 +431,7 @@ function getCompetitionStatus(competition) {
     
     // Subscription window is currently open = "iscrizioni aperte" (green)
     if (now >= aperturaDate && now <= chiusuraDate && startDate > now) {
+        console.log(`  → Status: APERTE`);
         return {
             status: 'iscrizioni_aperte',
             canSubscribe: true,
@@ -432,6 +443,7 @@ function getCompetitionStatus(competition) {
     
     // Subscription opens in the future = "in arrivo" (blue)
     if (aperturaDate > now && startDate > now) {
+        console.log(`  → Status: IN ARRIVO`);
         return {
             status: 'in_arrivo',
             canSubscribe: true,  // Allow subscribing even if not yet open
@@ -442,6 +454,7 @@ function getCompetitionStatus(competition) {
     }
     
     // Fallback (shouldn't reach here)
+    console.log(`  → Status: FALLBACK (attesa invito)`);
     return {
         status: 'attesa_invito',
         canSubscribe: false,
