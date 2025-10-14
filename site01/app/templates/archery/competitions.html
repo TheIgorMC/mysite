@@ -273,6 +273,11 @@
 // Configuration - Use Flask proxy endpoints (no direct API calls)
 // All API calls go through Flask backend which handles Cloudflare Access
 
+// IMPORTANT: Field naming inconsistency between tables:
+// - authorized_athletes table: categoria=age_category (SM/SF/etc), classe=bow_type (CO/OL/AN)
+// - ARC_iscrizioni table: categoria=bow_type (CO/OL/AN), classe=age_category (SM/SF/etc)
+// They are REVERSED! This is why we read athlete.categoria but submit it as classe to iscrizioni API.
+
 let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
@@ -954,15 +959,15 @@ function populateAthleteDropdown(filteredAthletes = null) {
     if (athletes.length === 1) {
         // Only one athlete - auto-select and hide dropdown, pre-fill form fields
         const athlete = athletes[0];
-        console.log('Single athlete mode, pre-filling:', { age_category: athlete.age_category, classe: athlete.classe });
+        console.log('Single athlete mode, pre-filling:', { categoria: athlete.categoria, classe: athlete.classe });
         container.innerHTML = `<input type="hidden" id="selected-athlete" value="${athlete.tessera}">
                               <p class="text-sm text-gray-600 dark:text-gray-400">Subscribing: ${athlete.display}</p>`;
         // Pre-fill age category and bow type from athlete data
-        if (athlete.age_category) {
+        if (athlete.categoria) {
             const ageCategoryEl = document.getElementById('age-category');
             if (ageCategoryEl) {
-                ageCategoryEl.value = athlete.age_category;
-                console.log('Set age-category to:', athlete.age_category);
+                ageCategoryEl.value = athlete.categoria;
+                console.log('Set age-category to:', athlete.categoria);
             }
         }
         if (athlete.classe) {
@@ -985,7 +990,7 @@ function populateAthleteDropdown(filteredAthletes = null) {
         const option = document.createElement('option');
         option.value = athlete.tessera;
         option.textContent = athlete.display;
-        option.dataset.ageCategory = athlete.age_category || '';
+        option.dataset.ageCategory = athlete.categoria || '';  // Changed from age_category to categoria
         option.dataset.bowType = athlete.classe || '';
         select.appendChild(option);
     });
@@ -1061,14 +1066,16 @@ async function submitSubscription() {
     
     try {
         // Submit to Flask proxy (which forwards to FastAPI with auth)
-        // NOTE: Server expects categoria=bow_type (CO/OL/AN) and classe=age_category (SM/SF/etc)
+        // IMPORTANT: Field names are REVERSED between athlete data and iscrizioni API:
+        // - From athlete: categoria=age_category, classe=bow_type
+        // - To iscrizioni: categoria=bow_type, classe=age_category
         const response = await fetch(`/archery/api/iscrizioni`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 codice_gara: codiceGara,
                 tessera_atleta: tessera,
-                categoria: bowType,             // Competition class / bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
                 classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
                 turno: isExpressInterest ? 0 : parseInt(turn),  // Use 0 for express interest
                 stato: 'in attesa',  // Pending - admin must confirm manually
