@@ -35,11 +35,6 @@
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
                         {{ t('competitions.open_subscriptions') }}
                     </button>
-                    <button onclick="filterCompetitions('past')" 
-                            id="tab-past"
-                            class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
-                        {{ t('competitions.past') }}
-                    </button>
                     <button onclick="filterCompetitions('my')" 
                             id="tab-my"
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
@@ -50,7 +45,7 @@
         </div>
 
         <!-- Loading State -->
-        <div id="loading" class="flex justify-center items-center py-12">
+        <div id="loading" class="hidden flex justify-center items-center py-12">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
 
@@ -281,7 +276,7 @@ async function loadInitialData() {
         console.log('Loaded athletes:', authorizedAthletes.length);
         
         // Load competitions from Flask proxy (which calls FastAPI with auth)
-        const gareResp = await fetch(`/archery/api/gare?future=true&limit=100`);
+        const gareResp = await fetch(`/archery/api/gare?future=true&limit=500`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
@@ -476,22 +471,25 @@ function filterCompetitions(filter) {
             // Future competitions (not ended yet) - region 06 only
             filtered = allCompetitions.filter(c => {
                 const endDate = new Date(c.data_fine);
+                endDate.setHours(0, 0, 0, 0);
                 return endDate >= now;
             });
             break;
         case 'open':
-            // Competitions with published invites (have turns) AND not yet started - region 06 only
+            // Competitions with OPEN subscription windows (today between apertura and chiusura dates)
             filtered = allCompetitions.filter(c => {
+                const invito = allInviti[c.codice];
+                if (!invito) return false;  // No invite = not open
+                
+                const aperturaDate = new Date(invito.data_apertura_iscrizioni);
+                aperturaDate.setHours(0, 0, 0, 0);
+                const chiusuraDate = new Date(invito.data_chiusura_iscrizioni);
+                chiusuraDate.setHours(0, 0, 0, 0);
                 const startDate = new Date(c.data_inizio);
-                const hasTurns = allTurni[c.codice] && allTurni[c.codice].length > 0;
-                return startDate > now && hasTurns;
-            });
-            break;
-        case 'past':
-            // Past competitions (ended)
-            filtered = allCompetitions.filter(c => {
-                const endDate = new Date(c.data_fine);
-                return endDate < now;
+                startDate.setHours(0, 0, 0, 0);
+                
+                // Open if: today is between apertura and chiusura, and competition hasn't started
+                return now >= aperturaDate && now <= chiusuraDate && startDate > now;
             });
             break;
         case 'my':
@@ -1037,14 +1035,13 @@ function showLoading(show) {
     
     if (show) {
         loading.classList.remove('hidden');
-        loading.style.display = 'flex';
         grid.classList.add('hidden');
         emptyState.classList.add('hidden');
         console.log('Spinner shown');
     } else {
         loading.classList.add('hidden');
-        loading.style.display = 'none';
-        console.log('Spinner hidden');
+        grid.classList.remove('hidden');
+        console.log('Spinner hidden, grid shown');
     }
 }
 
