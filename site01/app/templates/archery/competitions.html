@@ -229,6 +229,46 @@
     </div>
 </div>
 
+<!-- Delete Subscription Modal -->
+<div id="delete-subscription-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity"></div>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-trash text-red-600 dark:text-red-400"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="delete-modal-title">
+                            Elimina Iscrizioni
+                        </h3>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" id="delete-modal-competition-info">
+                                Seleziona le iscrizioni da eliminare:
+                            </p>
+                            <div id="delete-subscriptions-list" class="space-y-2">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="confirmDeleteSelected()"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-trash mr-2"></i>Elimina Selezionate
+                </button>
+                <button type="button" onclick="closeDeleteModal()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto sm:text-sm">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Configuration - Use Flask proxy endpoints (no direct API calls)
 // All API calls go through Flask backend which handles Cloudflare Access
@@ -295,18 +335,12 @@ async function loadInitialData() {
         allCompetitions = await gareResp.json();
         console.log('Loaded competitions:', allCompetitions.length);
         
-        // Load inviti and turni in parallel for better performance
+        // Use mass export for faster loading
         await Promise.all([
-            loadInviti(),
-            loadTurniForAll()
+            loadInvitiMassExport(),
+            loadUserSubscriptionsMassExport()
         ]);
-        console.log('Loaded inviti and turni');
-        
-        // Load user's subscriptions from FastAPI
-        if (authorizedAthletes.length > 0) {
-            await loadUserSubscriptions();
-            console.log('Loaded subscriptions');
-        }
+        console.log('Loaded inviti and subscriptions via mass export');
         
         console.log('Filtering competitions...');
         filterCompetitions(currentFilter);
@@ -321,12 +355,12 @@ async function loadInitialData() {
     }
 }
 
-async function loadInviti() {
-    // Load all invites data from API
-    console.log('loadInviti: Starting...');
+async function loadInvitiMassExport() {
+    // Load ALL invites data from API in one request using mass export
+    console.log('loadInvitiMassExport: Starting...');
     try {
-        const resp = await fetch(`/archery/api/inviti?only_open=false&only_youth=false`);
-        console.log('loadInviti: Fetch complete, status:', resp.status);
+        const resp = await fetch(`/archery/api/inviti?export=full`);
+        console.log('loadInvitiMassExport: Fetch complete, status:', resp.status);
         if (resp.ok) {
             const inviti = await resp.json();
             console.log('loadInviti: Got', inviti.length, 'invites');
@@ -336,38 +370,50 @@ async function loadInviti() {
                 console.log(`  Mapped invite: ${invito.codice} -> apertura:${invito.data_apertura_iscrizioni}, chiusura:${invito.data_chiusura_iscrizioni}`);
             });
         } else {
-            console.warn('loadInviti: Response not OK:', resp.status);
+            console.warn('loadInvitiMassExport: Response not OK:', resp.status);
         }
     } catch (error) {
         console.error('Error loading inviti:', error);
     }
-    console.log('loadInviti: Complete. Total mapped:', Object.keys(allInviti).length);
+    console.log('loadInvitiMassExport: Complete. Total mapped:', Object.keys(allInviti).length);
 }
 
-async function loadTurniForAll() {
-    // Load turns for all competitions in parallel (faster than sequential)
-    console.log('loadTurniForAll: Starting for', allCompetitions.length, 'competitions');
-    const promises = allCompetitions.map(async (comp) => {
-        try {
-            const resp = await fetch(`/archery/api/turni?codice_gara=${comp.codice}`);
-            if (resp.ok) {
-                const turns = await resp.json();
-                allTurni[comp.codice] = turns || [];
-            } else {
-                allTurni[comp.codice] = [];
-            }
-        } catch (error) {
-            console.error(`Error loading turns for ${comp.codice}:`, error);
-            allTurni[comp.codice] = [];
-        }
-    });
+async function loadUserSubscriptionsMassExport() {
+    if (authorizedAthletes.length === 0) return;
     
-    await Promise.all(promises);
-    console.log('loadTurniForAll: Complete, loaded turns for', Object.keys(allTurni).length, 'competitions');
+    console.log('loadUserSubscriptionsMassExport: Starting for', authorizedAthletes.length, 'athletes');
+    try {
+        // Use mass export to get ALL subscriptions in one request
+        const resp = await fetch(`/archery/api/iscrizioni?export=full`);
+        if (resp.ok) {
+            const allSubscriptions = await resp.json();
+            console.log('loadUserSubscriptionsMassExport: Received', allSubscriptions.length, 'total subscriptions');
+            
+            // Filter to only subscriptions for our authorized athletes
+            const athleteTessere = new Set(authorizedAthletes.map(a => a.tessera));
+            const userSubs = allSubscriptions.filter(sub => athleteTessere.has(sub.tessera_atleta));
+            
+            console.log('loadUserSubscriptionsMassExport: Filtered to', userSubs.length, 'subscriptions for our athletes');
+            
+            userSubs.forEach(sub => {
+                // Store subscriptions as array per competition to support multiple athletes
+                if (!userSubscriptions.has(sub.codice_gara)) {
+                    userSubscriptions.set(sub.codice_gara, []);
+                }
+                userSubscriptions.get(sub.codice_gara).push(sub);
+            });
+        } else {
+            console.warn('loadUserSubscriptionsMassExport: Response not OK:', resp.status);
+        }
+    } catch (error) {
+        console.error('Error loading subscriptions via mass export:', error);
+    }
+    console.log('loadUserSubscriptionsMassExport: Complete. Subscriptions for', userSubscriptions.size, 'competitions');
 }
 
 async function loadUserSubscriptions() {
     try {
+        // DEPRECATED: Use loadUserSubscriptionsMassExport instead for better performance
         // Load subscriptions for all authorized athletes from Flask proxy
         for (const athlete of authorizedAthletes) {
             const resp = await fetch(`/archery/api/iscrizioni?tessera_atleta=${athlete.tessera}`);
@@ -397,11 +443,20 @@ async function loadUserSubscriptions() {
  * }
  */
 function getCompetitionStatus(competition) {
+    // Parse dates in local timezone to avoid UTC conversion issues
     const now = new Date();
     now.setHours(0, 0, 0, 0); // Compare dates only, not times
     
-    const startDate = new Date(competition.data_inizio);
-    startDate.setHours(0, 0, 0, 0);
+    // Parse date strings as local dates (YYYY-MM-DD)
+    const parseLocalDate = (dateStr) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day); // month is 0-indexed
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+    
+    const startDate = parseLocalDate(competition.data_inizio);
     
     const invito = allInviti[competition.codice];
     
@@ -422,13 +477,10 @@ function getCompetitionStatus(competition) {
         };
     }
     
-    const aperturaDate = new Date(invito.data_apertura_iscrizioni);
-    aperturaDate.setHours(0, 0, 0, 0);
+    const aperturaDate = parseLocalDate(invito.data_apertura_iscrizioni);
+    const chiusuraDate = parseLocalDate(invito.data_chiusura_iscrizioni);
     
-    const chiusuraDate = new Date(invito.data_chiusura_iscrizioni);
-    chiusuraDate.setHours(0, 0, 0, 0);
-    
-    console.log(`  Dates: now=${now.toISOString()}, apertura=${aperturaDate.toISOString()}, chiusura=${chiusuraDate.toISOString()}, start=${startDate.toISOString()}`);
+    console.log(`  Dates: now=${now.toLocaleDateString()}, apertura=${aperturaDate?.toLocaleDateString()}, chiusura=${chiusuraDate?.toLocaleDateString()}, start=${startDate?.toLocaleDateString()}`);
     
     // Competition started OR subscription window closed = "iscrizioni chiuse" (red)
     if (startDate <= now || chiusuraDate < now) {
@@ -892,6 +944,8 @@ function populateAthleteDropdown(filteredAthletes = null) {
     const container = document.getElementById('athlete-select-container');
     const athletes = filteredAthletes || authorizedAthletes;
     
+    console.log('populateAthleteDropdown: athletes=', athletes);
+    
     if (athletes.length === 0) {
         container.innerHTML = '<p class="text-sm text-yellow-600 dark:text-yellow-400">No authorized athletes. Contact admin to add athletes to your account.</p>';
         return;
@@ -900,14 +954,23 @@ function populateAthleteDropdown(filteredAthletes = null) {
     if (athletes.length === 1) {
         // Only one athlete - auto-select and hide dropdown, pre-fill form fields
         const athlete = athletes[0];
+        console.log('Single athlete mode, pre-filling:', { age_category: athlete.age_category, classe: athlete.classe });
         container.innerHTML = `<input type="hidden" id="selected-athlete" value="${athlete.tessera}">
                               <p class="text-sm text-gray-600 dark:text-gray-400">Subscribing: ${athlete.display}</p>`;
         // Pre-fill age category and bow type from athlete data
         if (athlete.age_category) {
-            document.getElementById('age-category').value = athlete.age_category;
+            const ageCategoryEl = document.getElementById('age-category');
+            if (ageCategoryEl) {
+                ageCategoryEl.value = athlete.age_category;
+                console.log('Set age-category to:', athlete.age_category);
+            }
         }
         if (athlete.classe) {
-            document.getElementById('bow-type').value = athlete.classe;
+            const bowTypeEl = document.getElementById('bow-type');
+            if (bowTypeEl) {
+                bowTypeEl.value = athlete.classe;
+                console.log('Set bow-type to:', athlete.classe);
+            }
         }
         return;
     }
@@ -931,12 +994,22 @@ function populateAthleteDropdown(filteredAthletes = null) {
     select.addEventListener('change', function(e) {
         const selectedOption = e.target.selectedOptions[0];
         if (selectedOption && selectedOption.value) {
+            console.log('Athlete selected:', { 
+                value: selectedOption.value, 
+                ageCategory: selectedOption.dataset.ageCategory, 
+                bowType: selectedOption.dataset.bowType 
+            });
             // Pre-fill age category and bow type from selected athlete
-            if (selectedOption.dataset.ageCategory) {
-                document.getElementById('age-category').value = selectedOption.dataset.ageCategory;
+            const ageCategoryEl = document.getElementById('age-category');
+            const bowTypeEl = document.getElementById('bow-type');
+            
+            if (selectedOption.dataset.ageCategory && ageCategoryEl) {
+                ageCategoryEl.value = selectedOption.dataset.ageCategory;
+                console.log('Set age-category to:', selectedOption.dataset.ageCategory);
             }
-            if (selectedOption.dataset.bowType) {
-                document.getElementById('bow-type').value = selectedOption.dataset.bowType;
+            if (selectedOption.dataset.bowType && bowTypeEl) {
+                bowTypeEl.value = selectedOption.dataset.bowType;
+                console.log('Set bow-type to:', selectedOption.dataset.bowType);
             }
         } else {
             // Reset fields if no athlete selected
@@ -1047,42 +1120,100 @@ async function submitSubscription() {
 }
 
 function showDeleteSubscriptionModal(subscriptions, competition) {
-    // For single subscription, delete directly
-    if (subscriptions.length === 1 && subscriptions[0].stato !== 'cancellato') {
-        deleteSubscription(subscriptions[0], competition);
-        return;
-    }
-    
-    // For multiple subscriptions, show a simple list in a confirm dialog
     const activeSubs = subscriptions.filter(s => s.stato !== 'cancellato');
     if (activeSubs.length === 0) return;
     
+    // For single subscription, delete directly with simple confirm
     if (activeSubs.length === 1) {
         deleteSubscription(activeSubs[0], competition);
         return;
     }
     
-    // Build message with athlete names
-    const athleteNames = activeSubs.map(sub => {
+    // For multiple subscriptions, show selection modal
+    const modal = document.getElementById('delete-subscription-modal');
+    const competitionInfo = document.getElementById('delete-modal-competition-info');
+    const subscriptionsList = document.getElementById('delete-subscriptions-list');
+    
+    competitionInfo.textContent = `${competition.nome} - ${formatDate(competition.data_inizio)}`;
+    
+    // Build checkboxes for each subscription
+    subscriptionsList.innerHTML = '';
+    activeSubs.forEach(sub => {
         const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
-        return athlete ? athlete.display : sub.tessera_atleta;
-    }).join(', ');
+        const athleteName = athlete ? athlete.display : sub.tessera_atleta;
+        
+        // Status badge
+        let statusBadge = '';
+        if (sub.stato === 'confermato') {
+            statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Confermato</span>';
+        } else if (sub.stato === 'in attesa') {
+            statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">In attesa</span>';
+        } else if (sub.stato === 'richiesta_effettuata') {
+            statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Richiesta</span>';
+        }
+        
+        const checkbox = document.createElement('label');
+        checkbox.className = 'flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${sub.id}" class="subscription-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary" checked>
+            <span class="ml-3 flex-1 text-sm text-gray-900 dark:text-white">
+                ${athleteName}${statusBadge}
+                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    ${sub.categoria || ''} - ${sub.classe || ''} - Turno ${sub.turno}
+                </span>
+            </span>
+        `;
+        subscriptionsList.appendChild(checkbox);
+    });
     
-    const confirmMsg = `Hai ${activeSubs.length} iscrizioni per questa gara (${athleteNames}). Vuoi eliminarle tutte?`;
+    // Store competition reference for later
+    modal.dataset.competitionCode = competition.codice;
     
-    if (confirm(confirmMsg)) {
-        // Delete all subscriptions
-        Promise.all(activeSubs.map(sub => deleteSubscriptionInternal(sub.id)))
-            .then(() => {
-                // Remove all from local cache
-                userSubscriptions.delete(competition.codice);
-                showNotification('Iscrizioni eliminate con successo', 'success');
-                filterCompetitions(currentFilter);
-            })
-            .catch(error => {
-                console.error('Error deleting subscriptions:', error);
-                showNotification('Errore durante l\'eliminazione delle iscrizioni', 'error');
-            });
+    modal.classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('delete-subscription-modal').classList.add('hidden');
+}
+
+async function confirmDeleteSelected() {
+    const modal = document.getElementById('delete-subscription-modal');
+    const checkboxes = modal.querySelectorAll('.subscription-delete-checkbox:checked');
+    const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (idsToDelete.length === 0) {
+        showNotification('Seleziona almeno un\'iscrizione da eliminare', 'warning');
+        return;
+    }
+    
+    const competitionCode = modal.dataset.competitionCode;
+    
+    try {
+        // Delete all selected subscriptions
+        await Promise.all(idsToDelete.map(id => deleteSubscriptionInternal(id)));
+        
+        // Update local cache - remove deleted subscriptions
+        if (userSubscriptions.has(competitionCode)) {
+            const remaining = userSubscriptions.get(competitionCode)
+                .filter(sub => !idsToDelete.includes(sub.id));
+            if (remaining.length > 0) {
+                userSubscriptions.set(competitionCode, remaining);
+            } else {
+                userSubscriptions.delete(competitionCode);
+            }
+        }
+        
+        closeDeleteModal();
+        showNotification(
+            idsToDelete.length === 1 ? 
+                'Iscrizione eliminata con successo' : 
+                `${idsToDelete.length} iscrizioni eliminate con successo`, 
+            'success'
+        );
+        filterCompetitions(currentFilter);
+    } catch (error) {
+        console.error('Error deleting subscriptions:', error);
+        showNotification('Errore durante l\'eliminazione delle iscrizioni', 'error');
     }
 }
 

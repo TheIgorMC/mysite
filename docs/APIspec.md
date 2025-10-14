@@ -1,6 +1,6 @@
 # 🏹 ORION / Archery API — Documentation
 
-Version: **2.3**
+Version: **2.4**
 Database: **`orion_db`** (MariaDB/MySQL)
 Framework: **FastAPI**
 Auth: *(currently open, optional Bearer auth can be added)*
@@ -202,9 +202,12 @@ List competition invitations.
 
 **Params:**
 
-* `codice` (string) — filter by specific code
-* `only_open` (bool) — show only currently open registrations
-* `only_youth` (bool) — show only youth competitions
+| Param        | Type   | Description                                    |
+| ------------ | ------ | ---------------------------------------------- |
+| `codice`     | string | filter by specific code                        |
+| `only_open`  | bool   | show only currently open registrations         |
+| `only_youth` | bool   | show only youth competitions                   |
+| `export`     | string | if `"full"`, returns all invites (mass export) |
 
 **Response:**
 
@@ -268,9 +271,18 @@ Average rankings for a given type/region.
 
 ### 🧾 Iscrizioni (Registrations)
 
-#### `GET /api/iscrizioni?codice_gara=25A001`
+#### `GET /api/iscrizioni`
 
 List registrations for an event or athlete.
+Supports **mass export** with `export=full`.
+
+**Params:**
+
+| Param         | Type   | Description                                          |
+| ------------- | ------ | ---------------------------------------------------- |
+| `codice_gara` | string | filter by competition                                |
+| `tessera`     | string | filter by athlete                                    |
+| `export`      | string | if `"full"`, returns all registrations (mass export) |
 
 **Response:**
 
@@ -359,7 +371,7 @@ Frontend → FastAPI → MySQL (orion_db)
 Modules:
   ├── /api/atleti, /api/societa → read-only lists
   ├── /api/gare, /api/turni, /api/inviti → events info
-  ├── /api/iscrizioni → full CRUD
+  ├── /api/iscrizioni → full CRUD + export
   ├── /api/stats, /api/ranking → analytical charts
   └── /api/elec/... → hardware management
 ```
