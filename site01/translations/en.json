@@ -129,7 +129,16 @@
     "express_interest_title": "Express Interest in Competition",
     "express_interest_btn": "Express Interest",
     "no_invite_title": "Invite Not Yet Published",
-    "no_invite_desc": "The official invitation for this competition has not been published yet. You can express interest and we will notify you when registration opens."
+    "no_invite_desc": "The official invitation for this competition has not been published yet. You can express interest and we will notify you when registration opens.",
+    "richiesta_effettuata": "Request Submitted",
+    "iscritto": "Registered",
+    "in_attesa": "Waiting",
+    "cancellato": "Cancelled",
+    "iscrizioni_chiuse": "Registration Closed",
+    "iscrizioni_aperte": "Registration Open",
+    "in_arrivo": "Coming Soon",
+    "attesa_invito": "Awaiting Invite",
+    "mi_interessa": "I'm Interested"
   },
   "printing": {
     "title": "3D Printing",

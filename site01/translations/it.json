@@ -129,7 +129,16 @@
     "express_interest_title": "Esprimi Interesse per la Gara",
     "express_interest_btn": "Esprimi Interesse",
     "no_invite_title": "Invito Non Ancora Pubblicato",
-    "no_invite_desc": "L'invito ufficiale per questa gara non è ancora stato pubblicato. Puoi esprimere interesse e ti avviseremo quando le iscrizioni saranno aperte."
+    "no_invite_desc": "L'invito ufficiale per questa gara non è ancora stato pubblicato. Puoi esprimere interesse e ti avviseremo quando le iscrizioni saranno aperte.",
+    "richiesta_effettuata": "Richiesta effettuata",
+    "iscritto": "Iscritto",
+    "in_attesa": "In attesa",
+    "cancellato": "Cancellato",
+    "iscrizioni_chiuse": "Iscrizioni chiuse",
+    "iscrizioni_aperte": "Iscrizioni aperte",
+    "in_arrivo": "In arrivo",
+    "attesa_invito": "Attesa invito",
+    "mi_interessa": "Mi interessa"
   },
   "printing": {
     "title": "Stampa 3D",

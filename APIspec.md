@@ -1,6 +1,6 @@
 # 🏹 ORION / Archery API — Documentation
 
-Version: **2.1**
+Version: **2.3**
 Database: **`orion_db`** (MariaDB/MySQL)
 Framework: **FastAPI**
 Auth: *(currently open, optional Bearer auth can be added)*
@@ -41,7 +41,20 @@ Auth: *(currently open, optional Bearer auth can be added)*
 | `nome`                      | varchar(255) | Event name                      |
 | `tipo`                      | varchar(100) | Event type (e.g. Indoor, Targa) |
 | `societa_codice`            | varchar(10)  | Organizing society              |
+| `luogo`                     | varchar(255) | Event location (city or venue)  |
 | `data_inizio` / `data_fine` | date         | Start / end date                |
+
+---
+
+### **ARC_inviti**
+
+| Column                     | Type       | Description                |
+| -------------------------- | ---------- | -------------------------- |
+| `codice`                   | varchar(8) | Primary key                |
+| `solo_giovanile`           | tinyint(1) | Youth-only flag (1 = yes)  |
+| `numero_turni`             | int        | Number of available rounds |
+| `data_apertura_iscrizioni` | date       | Registration opening date  |
+| `data_chiusura_iscrizioni` | date       | Registration closing date  |
 
 ---
 
@@ -69,6 +82,7 @@ Auth: *(currently open, optional Bearer auth can be added)*
 | `codice_gara`    | varchar(8)  | FK → `ARC_gare.codice`    |
 | `tessera_atleta` | varchar(10) | FK → `ARC_atleti.tessera` |
 | `categoria`      | varchar(10) | Category (optional)       |
+| `classe`         | varchar(20) | Class (optional)          |
 | `turno`          | int         | Round number              |
 | `stato`          | varchar(20) | Registration status       |
 | `note`           | text        | Optional notes            |
@@ -156,11 +170,55 @@ List upcoming or recent events.
 * `future` (bool) — default false
 * `limit` (int) — default 20
 
+**Response:**
+
+```json
+[
+  {
+    "codice": "25A001",
+    "nome": "Campionato Indoor",
+    "tipo": "Indoor",
+    "societa_codice": "06/006",
+    "luogo": "Treviso",
+    "data_inizio": "2025-11-02",
+    "data_fine": "2025-11-03"
+  }
+]
+```
+
 ---
 
 #### `GET /api/turni?codice_gara=25A001`
 
 Returns turn schedule for given event.
+
+---
+
+### 📩 Inviti (Invitations)
+
+#### `GET /api/inviti`
+
+List competition invitations.
+
+**Params:**
+
+* `codice` (string) — filter by specific code
+* `only_open` (bool) — show only currently open registrations
+* `only_youth` (bool) — show only youth competitions
+
+**Response:**
+
+```json
+[
+  {
+    "codice": "25A001",
+    "solo_giovanile": 0,
+    "numero_turni": 2,
+    "data_apertura_iscrizioni": "2025-10-01",
+    "data_chiusura_iscrizioni": "2025-10-25"
+  }
+]
+```
 
 ---
 
@@ -222,9 +280,11 @@ List registrations for an event or athlete.
     "id": 12,
     "codice_gara": "25A001",
     "nome_gara": "Campionato Indoor",
+    "luogo_gara": "Treviso",
     "tessera_atleta": "012345",
     "nome_atleta": "Zorzi Alberto",
     "categoria": "CO",
+    "classe": "Senior",
     "turno": 1,
     "stato": "confermato",
     "note": "Turno mattina"
@@ -245,6 +305,7 @@ Create a new registration.
   "codice_gara": "25A001",
   "tessera_atleta": "012345",
   "categoria": "CO",
+  "classe": "Senior",
   "turno": 1,
   "stato": "confermato",
   "note": "Richiesta mattina"
@@ -261,7 +322,7 @@ Create a new registration.
 
 #### `PATCH /api/iscrizioni/{id}`
 
-Update an existing registration (status, note, turno).
+Update an existing registration (status, note, turno, categoria, classe).
 
 **Body:**
 
@@ -297,7 +358,7 @@ Frontend → FastAPI → MySQL (orion_db)
 
 Modules:
   ├── /api/atleti, /api/societa → read-only lists
-  ├── /api/gare, /api/turni → events info
+  ├── /api/gare, /api/turni, /api/inviti → events info
   ├── /api/iscrizioni → full CRUD
   ├── /api/stats, /api/ranking → analytical charts
   └── /api/elec/... → hardware management
