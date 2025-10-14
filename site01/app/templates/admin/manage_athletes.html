@@ -382,7 +382,7 @@ async function searchAthletes(query) {
                  onclick="showClassModal('${athlete.id}', '${athlete.name.replace(/'/g, "\\'")}', '${athlete.classe || 'CO'}')">
                 <div class="flex-1">
                     <p class="font-semibold text-gray-900 dark:text-white">${athlete.id} - ${athlete.name}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Suggested class: ${athlete.classe || 'N/A'}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Bow type: ${athlete.classe || 'N/A'}</p>
                 </div>
                 <button class="ml-3 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
                     <i class="fas fa-plus mr-1"></i>Add

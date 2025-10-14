@@ -315,22 +315,29 @@ async function loadInitialData() {
 
 async function loadInviti() {
     // Load all invites data from API
+    console.log('loadInviti: Starting...');
     try {
-        const resp = await fetch(`/archery/api/inviti`);
+        const resp = await fetch(`/archery/api/inviti?only_open=false&only_youth=false`);
+        console.log('loadInviti: Fetch complete, status:', resp.status);
         if (resp.ok) {
             const inviti = await resp.json();
+            console.log('loadInviti: Got', inviti.length, 'invites');
             // Map invites by codice for fast lookup
             inviti.forEach(invito => {
                 allInviti[invito.codice] = invito;
             });
+        } else {
+            console.warn('loadInviti: Response not OK:', resp.status);
         }
     } catch (error) {
         console.error('Error loading inviti:', error);
     }
+    console.log('loadInviti: Complete');
 }
 
 async function loadTurniForAll() {
     // Load turns for all competitions in parallel (faster than sequential)
+    console.log('loadTurniForAll: Starting for', allCompetitions.length, 'competitions');
     const promises = allCompetitions.map(async (comp) => {
         try {
             const resp = await fetch(`/archery/api/turni?codice_gara=${comp.codice}`);
@@ -347,6 +354,7 @@ async function loadTurniForAll() {
     });
     
     await Promise.all(promises);
+    console.log('loadTurniForAll: Complete, loaded turns for', Object.keys(allTurni).length, 'competitions');
 }
 
 async function loadUserSubscriptions() {
@@ -1022,6 +1030,7 @@ function formatDateRange(startStr, endStr) {
 }
 
 function showLoading(show) {
+    console.log('showLoading called with:', show);
     const loading = document.getElementById('loading');
     const grid = document.getElementById('competitions-grid');
     const emptyState = document.getElementById('empty-state');
@@ -1031,9 +1040,11 @@ function showLoading(show) {
         loading.style.display = 'flex';
         grid.classList.add('hidden');
         emptyState.classList.add('hidden');
+        console.log('Spinner shown');
     } else {
         loading.classList.add('hidden');
         loading.style.display = 'none';
+        console.log('Spinner hidden');
     }
 }
 
