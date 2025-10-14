@@ -125,6 +125,17 @@ class OrionAPIClient:
         """Get turns (turni) for a specific competition"""
         return self._make_request('GET', '/api/turni', params={'codice_gara': codice_gara})
     
+    def get_inviti(self, codice=None, only_open=False, only_youth=False):
+        """Get invitations (inviti) from FastAPI"""
+        params = {}
+        if codice:
+            params['codice'] = codice
+        if only_open:
+            params['only_open'] = 'true'
+        if only_youth:
+            params['only_youth'] = 'true'
+        return self._make_request('GET', '/api/inviti', params=params)
+    
     def get_subscriptions(self, tessera_atleta):
         """Get subscriptions (iscrizioni) for an athlete"""
         return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})

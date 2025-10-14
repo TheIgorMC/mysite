@@ -458,6 +458,22 @@ def get_turni():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/api/inviti')
+def get_inviti():
+    """Proxy endpoint for fetching invitations (inviti) from FastAPI"""
+    codice = request.args.get('codice')
+    only_open = request.args.get('only_open', 'false').lower() == 'true'
+    only_youth = request.args.get('only_youth', 'false').lower() == 'true'
+    
+    client = OrionAPIClient()
+    
+    try:
+        # Fetch from FastAPI
+        inviti = client.get_inviti(codice=codice, only_open=only_open, only_youth=only_youth)
+        return jsonify(inviti if inviti else [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @bp.route('/api/iscrizioni', methods=['GET', 'POST'])
 @login_required
 def handle_iscrizioni():
