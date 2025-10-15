@@ -506,6 +506,7 @@ def handle_iscrizioni():
                 codice_gara=data['codice_gara'],
                 tessera_atleta=data['tessera_atleta'],
                 categoria=data['categoria'],
+                classe=data.get('classe', ''),  # Add classe field
                 turno=data['turno'],
                 stato=data.get('stato', 'confermato'),
                 note=data.get('note', '')

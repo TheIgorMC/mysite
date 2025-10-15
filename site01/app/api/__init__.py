@@ -140,12 +140,13 @@ class OrionAPIClient:
         """Get subscriptions (iscrizioni) for an athlete"""
         return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})
     
-    def create_subscription(self, codice_gara, tessera_atleta, categoria, turno, stato='confermato', note=''):
+    def create_subscription(self, codice_gara, tessera_atleta, categoria, turno, classe='', stato='confermato', note=''):
         """Create a new subscription (iscrizione)"""
         data = {
             'codice_gara': codice_gara,
             'tessera_atleta': tessera_atleta,
             'categoria': categoria,
+            'classe': classe,
             'turno': turno,
             'stato': stato,
             'note': note

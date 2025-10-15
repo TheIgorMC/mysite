@@ -1091,6 +1091,13 @@ async function submitSubscription() {
         }
         
         const result = await response.json();
+        console.log('Subscription response:', result);
+        
+        // Validate response has required id field
+        if (!result || !result.id) {
+            console.error('Invalid API response - missing id field:', result);
+            throw new Error('Invalid server response - missing subscription ID');
+        }
         
         // If this was express interest, mark it in localStorage
         if (isExpressInterest) {
