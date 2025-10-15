@@ -857,8 +857,11 @@ function renderCompetitions(competitions) {
         } else {
             // Not subscribed - configure button based on competition status
             if (competitionStatus.canExpressInterest) {
-                // Check if user already expressed interest
-                if (expressedInterest.has(competition.codice)) {
+                // Check if user already expressed interest (has subscription with turno=0)
+                const hasExpressedInterest = userSubscriptions.has(competition.codice) && 
+                    userSubscriptions.get(competition.codice).some(s => s.turno === 0 && s.stato !== 'cancellato');
+                
+                if (hasExpressedInterest) {
                     // Already expressed interest - show as marked
                     subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
                     subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-yellow-500', 'hover:bg-yellow-600');
