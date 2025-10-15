@@ -144,6 +144,11 @@ class OrionAPIClient:
         """Get subscriptions (iscrizioni) for an athlete"""
         return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})
     
+    def get_all_subscriptions(self):
+        """Get all subscriptions (iscrizioni) - mass export"""
+        # Use export=full parameter as per API spec
+        return self._make_request('GET', '/api/iscrizioni', params={'export': 'full'})
+    
     def create_subscription(self, codice_gara, tessera_atleta, categoria, turno, classe='', stato='confermato', note=''):
         """Create a new subscription (iscrizione)"""
         data = {
@@ -175,16 +180,24 @@ class OrionAPIClient:
             params['codice_gara'] = codice_gara
         return self._make_request('GET', '/api/interesse', params=params)
     
+    def get_all_interests(self):
+        """Get all interest expressions - mass export"""
+        # Call without filters to get all (both params are optional per API spec)
+        return self._make_request('GET', '/api/interesse')
+    
     def create_interest(self, codice_gara, tessera_atleta, categoria, classe='', note=''):
         """Create a new interest expression"""
+        from datetime import date
         data = {
             'codice_gara': codice_gara,
             'tessera_atleta': tessera_atleta,
             'categoria': categoria,
             'classe': classe,
+            'data_interesse': date.today().isoformat(),  # Add current date in YYYY-MM-DD format
             'note': note,
             'stato': 'attivo'
         }
+        logger.info(f"Creating interest with data: {data}")
         return self._make_request('POST', '/api/interesse', data=data)
     
     def delete_interest(self, interest_id):

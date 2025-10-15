@@ -1,7 +1,7 @@
 """
 Archery routes blueprint
 """
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
 from app.api import OrionAPIClient
@@ -481,14 +481,21 @@ def handle_iscrizioni():
     client = OrionAPIClient()
     
     if request.method == 'GET':
-        # Get subscriptions for an athlete
+        # Get subscriptions for an athlete or all subscriptions (mass export)
         tessera_atleta = request.args.get('tessera_atleta')
-        
-        if not tessera_atleta:
-            return jsonify({'error': 'tessera_atleta is required'}), 400
+        export = request.args.get('export')
         
         try:
-            iscrizioni = client.get_subscriptions(tessera_atleta)
+            if export == 'full':
+                # Mass export - get all subscriptions
+                # FastAPI doesn't support this, so we need to get all athletes and their subscriptions
+                # For now, just call without tessera_atleta filter
+                iscrizioni = client.get_all_subscriptions()
+            elif tessera_atleta:
+                iscrizioni = client.get_subscriptions(tessera_atleta)
+            else:
+                return jsonify({'error': 'tessera_atleta is required or use export=full'}), 400
+                
             return jsonify(iscrizioni if iscrizioni else [])
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -550,7 +557,7 @@ def handle_interesse():
         try:
             if export == 'full':
                 # Mass export - get all interests
-                interests = client.get_interests()
+                interests = client.get_all_interests()
             else:
                 interests = client.get_interests(tessera_atleta=tessera_atleta, codice_gara=codice_gara)
             return jsonify(interests if interests else [])
@@ -560,6 +567,8 @@ def handle_interesse():
     else:  # POST
         # Create a new interest expression
         data = request.get_json()
+        
+        current_app.logger.info(f"POST /api/interesse received data: {data}")
         
         required_fields = ['codice_gara', 'tessera_atleta', 'categoria']
         if not all(field in data for field in required_fields):
@@ -575,6 +584,7 @@ def handle_interesse():
             )
             return jsonify(result)
         except Exception as e:
+            current_app.logger.error(f"Error creating interest: {e}")
             return jsonify({'error': str(e)}), 500
 
 
