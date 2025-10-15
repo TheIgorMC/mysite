@@ -320,8 +320,8 @@ async function loadInitialData() {
         console.log('Loaded athletes:', authorizedAthletes.length);
         
         // Load competitions from Flask proxy (which calls FastAPI with auth)
-        // Load ALL competitions (not just future) - we'll filter client-side for better control
-        const gareResp = await fetch(`/archery/api/gare?limit=1000`);
+        // Use future=true to only get future competitions (better performance)
+        const gareResp = await fetch(`/archery/api/gare?future=true&limit=1000`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
