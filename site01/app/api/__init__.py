@@ -65,9 +65,13 @@ class OrionAPIClient:
             )
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"API HTTP error: {e}")
+            logger.error(f"Response text: {e.response.text if e.response else 'No response'}")
+            raise  # Re-raise so Flask can handle it properly
         except requests.exceptions.RequestException as e:
             logger.error(f"API request failed: {e}")
-            return None
+            raise  # Re-raise instead of returning None
     
     def get_athlete(self, athlete_id):
         """Get athlete information by ID"""

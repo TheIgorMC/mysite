@@ -995,8 +995,8 @@ function showExpressInterestMode(competition, availableAthletes = null) {
     
     // Update submit button text
     const submitBtn = document.querySelector('#subscription-form').closest('div').querySelector('button[type="button"]');
-    if (submitBtn && submitBtn.textContent.includes('Confirm')) {
-        submitBtn.textContent = window.translations.competitions?.express_interest_btn || 'Express Interest';
+    if (submitBtn) {
+        submitBtn.textContent = 'Conferma interesse';
     }
     
     // Add info message
