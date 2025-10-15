@@ -40,6 +40,11 @@
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
                         {{ t('competitions.my_subscriptions') }}
                     </button>
+                    <button onclick="filterCompetitions('interested')" 
+                            id="tab-interested"
+                            class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
+                        <i class="fas fa-star mr-1"></i>{{ t('competitions.my_interest') || 'Le mie espressioni di interesse' }}
+                    </button>
                 </nav>
             </div>
         </div>
@@ -552,8 +557,30 @@ function filterCompetitions(filter) {
             });
             break;
         case 'my':
-            // User's subscriptions
-            filtered = allCompetitions.filter(c => userSubscriptions.has(c.codice));
+            // User's subscriptions (actual subscriptions, not just interest)
+            filtered = allCompetitions.filter(c => {
+                if (!userSubscriptions.has(c.codice)) return false;
+                const subs = userSubscriptions.get(c.codice);
+                // Show if there are any actual subscriptions (turno > 0)
+                return subs.some(s => s.turno > 0 && s.stato !== 'cancellato');
+            });
+            break;
+        case 'interested':
+            // Competitions where user expressed interest (turno = 0)
+            filtered = allCompetitions.filter(c => {
+                if (!userSubscriptions.has(c.codice)) return false;
+                const subs = userSubscriptions.get(c.codice);
+                // Show if there are any interest expressions (turno = 0)
+                return subs.some(s => s.turno === 0 && s.stato !== 'cancellato');
+            });
+            break;
+        default:
+            // Default to upcoming
+            filtered = allCompetitions.filter(c => {
+                const endDate = new Date(c.data_fine);
+                endDate.setHours(0, 0, 0, 0);
+                return endDate >= now;
+            });
             break;
     }
     
