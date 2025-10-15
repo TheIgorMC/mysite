@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Competition Subscriptions - Admin - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-7xl">
+        <!-- Back Button -->
+        <div class="mb-8">
+            <a href="{{ url_for('main.admin_panel') }}" 
+               class="inline-flex items-center text-primary hover:text-primary-dark transition">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Admin Panel
+            </a>
+        </div>
+        
+        <h1 class="text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+            <i class="fas fa-clipboard-list text-primary mr-3"></i>Competition Subscriptions
+        </h1>
+
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px">
+                <button id="tab-subscriptions" 
+                        onclick="switchTab('subscriptions')"
+                        class="tab-button active px-6 py-3 text-sm font-medium border-b-2 border-primary text-primary">
+                    <i class="fas fa-users mr-2"></i>Subscriptions
+                </button>
+                <button id="tab-interest" 
+                        onclick="switchTab('interest')"
+                        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300">
+                    <i class="fas fa-star mr-2"></i>Interest Expressions
+                </button>
+            </nav>
+        </div>
+
+        <!-- Subscriptions Tab -->
+        <div id="subscriptions-content" class="tab-content">
+            <!-- Loading State -->
+            <div id="subscriptions-loading" class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading subscriptions...</p>
+            </div>
+
+            <!-- Subscriptions List -->
+            <div id="subscriptions-list" class="hidden space-y-6">
+                <!-- Will be populated by JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="subscriptions-empty" class="hidden text-center py-12">
+                <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">No subscriptions found</p>
+            </div>
+        </div>
+
+        <!-- Interest Tab -->
+        <div id="interest-content" class="tab-content hidden">
+            <!-- Loading State -->
+            <div id="interest-loading" class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading interest expressions...</p>
+            </div>
+
+            <!-- Interest List -->
+            <div id="interest-list" class="hidden space-y-6">
+                <!-- Will be populated by JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="interest-empty" class="hidden text-center py-12">
+                <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">No interest expressions found</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+let currentTab = 'subscriptions';
+let allSubscriptions = [];
+let allCompetitions = {};
+let allAthletes = {};
+
+// Tab switching
+function switchTab(tab) {
+    currentTab = tab;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'border-primary', 'text-primary');
+        btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    });
+    document.getElementById(`tab-${tab}`).classList.add('active', 'border-primary', 'text-primary');
+    document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`${tab}-content`).classList.remove('hidden');
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadData();
+});
+
+async function loadData() {
+    try {
+        // Load all subscriptions using mass export
+        const subsResp = await fetch('/archery/api/iscrizioni?export=full');
+        if (subsResp.ok) {
+            allSubscriptions = await subsResp.json();
+            console.log('Loaded subscriptions:', allSubscriptions.length);
+        }
+
+        // Load competitions
+        const gareResp = await fetch('/archery/api/gare?future=true&limit=500');
+        if (gareResp.ok) {
+            const competitions = await gareResp.json();
+            competitions.forEach(comp => {
+                allCompetitions[comp.codice] = comp;
+            });
+            console.log('Loaded competitions:', Object.keys(allCompetitions).length);
+        }
+
+        renderSubscriptions();
+        renderInterest();
+    } catch (error) {
+        console.error('Error loading data:', error);
+    }
+}
+
+function renderSubscriptions() {
+    const loading = document.getElementById('subscriptions-loading');
+    const list = document.getElementById('subscriptions-list');
+    const empty = document.getElementById('subscriptions-empty');
+    
+    loading.classList.add('hidden');
+    
+    // Filter to only actual subscriptions (turno > 0)
+    const subscriptions = allSubscriptions.filter(sub => sub.turno > 0 && sub.stato !== 'cancellato');
+    
+    if (subscriptions.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+    }
+    
+    // Group by competition
+    const byCompetition = {};
+    subscriptions.forEach(sub => {
+        if (!byCompetition[sub.codice_gara]) {
+            byCompetition[sub.codice_gara] = [];
+        }
+        byCompetition[sub.codice_gara].push(sub);
+    });
+    
+    // Render each competition
+    list.innerHTML = '';
+    Object.keys(byCompetition).sort().forEach(codiceGara => {
+        const subs = byCompetition[codiceGara];
+        const competition = allCompetitions[codiceGara];
+        
+        // Sort subscriptions by turn
+        subs.sort((a, b) => a.turno - b.turno);
+        
+        const competitionCard = document.createElement('div');
+        competitionCard.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-md p-6';
+        
+        const competitionInfo = competition ? 
+            `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                ${competition.nome}
+                <span class="text-sm font-mono text-gray-500 dark:text-gray-400 ml-2">${codiceGara}</span>
+            </h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                <i class="fas fa-calendar mr-2"></i>${formatDate(competition.data_inizio)}
+                <i class="fas fa-map-marker-alt ml-4 mr-2"></i>${competition.luogo || 'N/A'}
+            </p>` :
+            `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Competition ${codiceGara}
+            </h2>`;
+        
+        const subsHtml = subs.map(sub => {
+            let statusColor = 'gray';
+            let statusIcon = 'paper-plane';
+            if (sub.stato === 'confermato') {
+                statusColor = 'green';
+                statusIcon = 'check-circle';
+            } else if (sub.stato === 'in attesa') {
+                statusColor = 'yellow';
+                statusIcon = 'clock';
+            }
+            
+            return `
+                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+                    <td class="px-4 py-3">Turno ${sub.turno}</td>
+                    <td class="px-4 py-3">${sub.tessera_atleta}</td>
+                    <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
+                    <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
+                    <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-900/30 dark:text-${statusColor}-300">
+                            <i class="fas fa-${statusIcon} mr-1"></i>${sub.stato}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">${sub.note || '-'}</td>
+                    <td class="px-4 py-3">
+                        <select onchange="updateSubscriptionStatus(${sub.id}, this.value)" 
+                                class="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="in attesa" ${sub.stato === 'in attesa' ? 'selected' : ''}>In attesa</option>
+                            <option value="confermato" ${sub.stato === 'confermato' ? 'selected' : ''}>Confermato</option>
+                            <option value="cancellato" ${sub.stato === 'cancellato' ? 'selected' : ''}>Cancellato</option>
+                        </select>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        competitionCard.innerHTML = `
+            ${competitionInfo}
+            <div class="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> iscrizioni
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-2">Turno</th>
+                                <th class="px-4 py-2">Tessera</th>
+                                <th class="px-4 py-2">Atleta</th>
+                                <th class="px-4 py-2">Categoria</th>
+                                <th class="px-4 py-2">Classe</th>
+                                <th class="px-4 py-2">Stato</th>
+                                <th class="px-4 py-2">Note</th>
+                                <th class="px-4 py-2">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-900 dark:text-gray-300">
+                            ${subsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        list.appendChild(competitionCard);
+    });
+    
+    list.classList.remove('hidden');
+}
+
+function renderInterest() {
+    const loading = document.getElementById('interest-loading');
+    const list = document.getElementById('interest-list');
+    const empty = document.getElementById('interest-empty');
+    
+    loading.classList.add('hidden');
+    
+    // Filter to only interest expressions (turno = 0)
+    const interestExpressions = allSubscriptions.filter(sub => sub.turno === 0 && sub.stato !== 'cancellato');
+    
+    if (interestExpressions.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+    }
+    
+    // Group by competition
+    const byCompetition = {};
+    interestExpressions.forEach(sub => {
+        if (!byCompetition[sub.codice_gara]) {
+            byCompetition[sub.codice_gara] = [];
+        }
+        byCompetition[sub.codice_gara].push(sub);
+    });
+    
+    // Render each competition
+    list.innerHTML = '';
+    Object.keys(byCompetition).sort().forEach(codiceGara => {
+        const interests = byCompetition[codiceGara];
+        const competition = allCompetitions[codiceGara];
+        
+        const competitionCard = document.createElement('div');
+        competitionCard.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-md p-6';
+        
+        const competitionInfo = competition ? 
+            `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                ${competition.nome}
+                <span class="text-sm font-mono text-gray-500 dark:text-gray-400 ml-2">${codiceGara}</span>
+            </h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                <i class="fas fa-calendar mr-2"></i>${formatDate(competition.data_inizio)}
+                <i class="fas fa-map-marker-alt ml-4 mr-2"></i>${competition.luogo || 'N/A'}
+            </p>` :
+            `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Competition ${codiceGara}
+            </h2>`;
+        
+        const interestHtml = interests.map(sub => `
+            <tr class="border-b border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-3">${sub.tessera_atleta}</td>
+                <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
+                <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
+                <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
+                <td class="px-4 py-3 text-sm">${sub.note || '-'}</td>
+            </tr>
+        `).join('');
+        
+        competitionCard.innerHTML = `
+            ${competitionInfo}
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> espressioni di interesse
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs uppercase bg-yellow-100 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-2">Tessera</th>
+                                <th class="px-4 py-2">Atleta</th>
+                                <th class="px-4 py-2">Categoria</th>
+                                <th class="px-4 py-2">Classe</th>
+                                <th class="px-4 py-2">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-900 dark:text-gray-300">
+                            ${interestHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        list.appendChild(competitionCard);
+    });
+    
+    list.classList.remove('hidden');
+}
+
+async function updateSubscriptionStatus(subscriptionId, newStatus) {
+    try {
+        const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stato: newStatus })
+        });
+        
+        if (response.ok) {
+            // Update local data
+            const sub = allSubscriptions.find(s => s.id === subscriptionId);
+            if (sub) sub.stato = newStatus;
+            
+            // Show notification
+            showNotification('Stato aggiornato con successo', 'success');
+            
+            // Re-render
+            renderSubscriptions();
+        } else {
+            throw new Error('Failed to update status');
+        }
+    } catch (error) {
+        console.error('Error updating status:', error);
+        showNotification('Errore durante l\'aggiornamento', 'error');
+    }
+}
+
+function showNotification(message, type) {
+    // Simple notification - you can enhance this
+    alert(message);
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'TBA';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const monthShort = date.toLocaleDateString('it-IT', { month: 'short' });
+    return `${day}-${monthShort.charAt(0).toUpperCase() + monthShort.slice(1)}-${year}`;
+}
+</script>
+
+<style>
+.tab-button.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+</style>
+{% endblock %}

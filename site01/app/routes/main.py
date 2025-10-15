@@ -67,6 +67,16 @@ def admin_manage_athletes():
     
     return render_template('admin/manage_athletes.html')
 
+@bp.route('/admin/competition-subscriptions')
+@login_required
+def admin_competition_subscriptions():
+    """Admin page for managing competition subscriptions and interest expressions"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    return render_template('admin/competition_subscriptions.html')
+
 @bp.route('/admin/toggle_club_member/<int:user_id>', methods=['POST'])
 @login_required
 def toggle_club_member(user_id):

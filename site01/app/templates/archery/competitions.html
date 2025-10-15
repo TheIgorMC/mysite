@@ -69,7 +69,10 @@
             <!-- Header -->
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
-                    <h3 class="competition-name text-xl font-bold text-gray-900 dark:text-white mb-2"></h3>
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <h3 class="competition-name text-xl font-bold text-gray-900 dark:text-white"></h3>
+                        <span class="competition-code text-sm font-mono text-gray-500 dark:text-gray-400"></span>
+                    </div>
                     <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
                         <i class="fas fa-map-marker-alt mr-2"></i>
                         <span class="competition-location"></span>
@@ -282,41 +285,14 @@ let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
 let allTurni = {};   // Turns mapped by codice_gara
-let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects
+let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects (includes interest with turno=0)
 let authorizedAthletes = [];  // User's authorized athletes from website
-let expressedInterest = new Set();  // Set of codice_gara where user expressed interest (localStorage)
 
-// Load expressed interest from localStorage
-function loadExpressedInterest() {
-    try {
-        const stored = localStorage.getItem('archery_expressed_interest');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            expressedInterest = new Set(parsed);
-        }
-    } catch (error) {
-        console.error('Error loading expressed interest:', error);
-    }
-}
-
-// Save expressed interest to localStorage
-function saveExpressedInterest() {
-    try {
-        localStorage.setItem('archery_expressed_interest', JSON.stringify([...expressedInterest]));
-    } catch (error) {
-        console.error('Error saving expressed interest:', error);
-    }
-}
-
-// Mark interest in a competition
-function markInterest(codiceGara) {
-    expressedInterest.add(codiceGara);
-    saveExpressedInterest();
-}
+// Interest expressions are now stored in the database as subscriptions with turno=0
+// No longer using localStorage for tracking interest
 
 // Load competitions on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadExpressedInterest();  // Load from localStorage
     loadInitialData();
 });
 
@@ -605,10 +581,33 @@ function getSubscriptionSummary(codiceGara) {
         return { hasActiveSubscription: false, allCancelled: true, subscriptions: subs };
     }
     
-    // Count by status
-    const confirmed = activeSubs.filter(s => s.stato === 'confermato').length;
-    const waiting = activeSubs.filter(s => s.stato === 'in attesa').length;
-    const pending = activeSubs.filter(s => s.stato === 'richiesta_effettuata').length;
+    // Separate interest expressions (turno=0) from actual subscriptions (turno>0)
+    const interestSubs = activeSubs.filter(s => s.turno === 0);
+    const actualSubs = activeSubs.filter(s => s.turno > 0);
+    
+    // If only interest expressions (no actual subscriptions)
+    if (actualSubs.length === 0 && interestSubs.length > 0) {
+        return {
+            hasActiveSubscription: true,
+            allCancelled: false,
+            primaryStatus: 'interesse',
+            statusIcon: 'fas fa-star',
+            statusColor: 'yellow',
+            statusText: interestSubs.length === 1 ? 'Interesse espresso' : `${interestSubs.length} interessi espressi`,
+            subscriptions: subs,
+            activeSubs,
+            interestSubs,
+            actualSubs: [],
+            confirmed: 0,
+            waiting: 0,
+            pending: 0
+        };
+    }
+    
+    // Count by status (only actual subscriptions)
+    const confirmed = actualSubs.filter(s => s.stato === 'confermato').length;
+    const waiting = actualSubs.filter(s => s.stato === 'in attesa').length;
+    const pending = actualSubs.filter(s => s.stato === 'richiesta_effettuata').length;
     
     // Determine primary status (priority: confirmed > waiting > pending)
     let primaryStatus, statusText, statusColor, statusIcon;
@@ -638,6 +637,8 @@ function getSubscriptionSummary(codiceGara) {
         statusIcon,
         subscriptions: subs,
         activeSubs,
+        actualSubs,
+        interestSubs,
         confirmed,
         waiting,
         pending
@@ -665,6 +666,7 @@ function renderCompetitions(competitions) {
         
         // Fill in competition details
         card.querySelector('.competition-name').textContent = competition.nome;
+        card.querySelector('.competition-code').textContent = competition.codice;
         
         // Show location (luogo) if available, otherwise show societa name or code
         let locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
@@ -1099,12 +1101,7 @@ async function submitSubscription() {
             throw new Error('Invalid server response - missing subscription ID');
         }
         
-        // If this was express interest, mark it in localStorage
-        if (isExpressInterest) {
-            markInterest(codiceGara);
-        }
-        
-        // Create subscription object from response
+        // Create subscription object from response (interest expressions are stored with turno=0)
         const subscription = {
             id: result.id,
             codice_gara: codiceGara,
