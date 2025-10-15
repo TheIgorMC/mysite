@@ -43,7 +43,7 @@
                     <button onclick="filterCompetitions('interested')" 
                             id="tab-interested"
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
-                        <i class="fas fa-star mr-1"></i>{{ t('competitions.my_interest') or 'Le mie espressioni di interesse' }}
+                        <i class="fas fa-star mr-1"></i>Le mie espressioni di interesse
                     </button>
                 </nav>
             </div>
@@ -315,11 +315,18 @@ async function loadInitialData() {
         console.log('Loaded athletes:', authorizedAthletes.length);
         
         // Load competitions from Flask proxy (which calls FastAPI with auth)
+        // Note: future=true filters on the API side, but we also filter client-side
         const gareResp = await fetch(`/archery/api/gare?future=true&limit=500`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
         console.log('Loaded competitions:', allCompetitions.length);
+        console.log('Sample competition:', allCompetitions[0]);
+        console.log('Competitions by societa_codice:', allCompetitions.reduce((acc, c) => {
+            const prefix = c.societa_codice ? c.societa_codice.substring(0, 2) : 'null';
+            acc[prefix] = (acc[prefix] || 0) + 1;
+            return acc;
+        }, {}));
         
         // Use mass export for faster loading
         await Promise.all([
@@ -327,8 +334,9 @@ async function loadInitialData() {
             loadUserSubscriptionsMassExport()
         ]);
         console.log('Loaded inviti and subscriptions via mass export');
+        console.log('Total inviti:', Object.keys(allInviti).length);
         
-        console.log('Filtering competitions...');
+        console.log('Filtering competitions with filter:', currentFilter);
         filterCompetitions(currentFilter);
         console.log('Filter complete');
     } catch (error) {
@@ -518,6 +526,9 @@ function getCompetitionStatus(competition) {
 function filterCompetitions(filter) {
     currentFilter = filter;
     
+    console.log('=== filterCompetitions called with:', filter);
+    console.log('Total competitions:', allCompetitions.length);
+    
     // Update tab styling
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('active', 'border-primary', 'text-primary');
@@ -529,15 +540,24 @@ function filterCompetitions(filter) {
     // Filter competitions based on selected tab
     let filtered = [];
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    console.log('Current date for filtering:', now.toISOString());
     
     switch(filter) {
         case 'upcoming':
             // Future competitions (not ended yet) - region 06 only
+            console.log('Filtering for upcoming competitions...');
             filtered = allCompetitions.filter(c => {
                 const endDate = new Date(c.data_fine);
                 endDate.setHours(0, 0, 0, 0);
-                return endDate >= now;
+                const isUpcoming = endDate >= now;
+                if (!isUpcoming) {
+                    console.log(`  ${c.nome} (${c.codice}): PAST (end: ${c.data_fine})`);
+                }
+                return isUpcoming;
             });
+            console.log('After date filter:', filtered.length);
             break;
         case 'open':
             // Competitions with OPEN subscription windows (today between apertura and chiusura dates)
@@ -587,8 +607,19 @@ function filterCompetitions(filter) {
     // Filter by region 06 (Veneto) based on societa_codice
     // Show ALL region 06 competitions, including those WITHOUT published invites
     // Users can express interest in competitions without invites
+    console.log('Before region filter:', filtered.length);
+    const beforeRegionFilter = filtered.length;
     filtered = filtered.filter(c => c.societa_codice && c.societa_codice.startsWith('06'));
+    console.log('After region 06 filter:', filtered.length);
+    if (filtered.length === 0 && beforeRegionFilter > 0) {
+        console.warn('ALL competitions filtered out by region filter!');
+        console.log('Sample societa_codice values:', allCompetitions.slice(0, 5).map(c => ({
+            nome: c.nome,
+            societa_codice: c.societa_codice
+        })));
+    }
     
+    console.log('Final filtered competitions:', filtered.length);
     renderCompetitions(filtered);
 }
 
