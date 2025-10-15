@@ -45,6 +45,11 @@
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
                         <i class="fas fa-star mr-1"></i>Le mie espressioni di interesse
                     </button>
+                    <button onclick="filterCompetitions('awaiting-invite')" 
+                            id="tab-awaiting-invite"
+                            class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
+                        <i class="fas fa-hourglass-half mr-1"></i>In attesa di invito
+                    </button>
                 </nav>
             </div>
         </div>
@@ -315,8 +320,8 @@ async function loadInitialData() {
         console.log('Loaded athletes:', authorizedAthletes.length);
         
         // Load competitions from Flask proxy (which calls FastAPI with auth)
-        // Note: future=true filters on the API side, but we also filter client-side
-        const gareResp = await fetch(`/archery/api/gare?future=true&limit=500`);
+        // Load ALL competitions (not just future) - we'll filter client-side for better control
+        const gareResp = await fetch(`/archery/api/gare?limit=1000`);
         if (!gareResp.ok) throw new Error('Failed to load competitions');
         
         allCompetitions = await gareResp.json();
@@ -335,6 +340,18 @@ async function loadInitialData() {
         ]);
         console.log('Loaded inviti and subscriptions via mass export');
         console.log('Total inviti:', Object.keys(allInviti).length);
+        console.log('Competitions without invites:', allCompetitions.filter(c => !allInviti[c.codice]).length);
+        if (allCompetitions.length > 0) {
+            const withoutInvites = allCompetitions.filter(c => !allInviti[c.codice]);
+            if (withoutInvites.length > 0) {
+                console.log('Sample competitions without invites:', withoutInvites.slice(0, 5).map(c => ({
+                    codice: c.codice,
+                    nome: c.nome,
+                    data_inizio: c.data_inizio,
+                    societa_codice: c.societa_codice
+                })));
+            }
+        }
         
         console.log('Filtering competitions with filter:', currentFilter);
         filterCompetitions(currentFilter);
@@ -593,6 +610,25 @@ function filterCompetitions(filter) {
                 // Show if there are any interest expressions (turno = 0)
                 return subs.some(s => s.turno === 0 && s.stato !== 'cancellato');
             });
+            break;
+        case 'awaiting-invite':
+            // Competitions without published invites (where you can express interest)
+            console.log('Filtering for competitions without invites...');
+            filtered = allCompetitions.filter(c => {
+                const startDate = new Date(c.data_inizio);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(c.data_fine);
+                endDate.setHours(0, 0, 0, 0);
+                const hasInvite = !!allInviti[c.codice];
+                const isFuture = startDate >= now; // Competition hasn't started yet
+                
+                if (!hasInvite) {
+                    console.log(`  ${c.nome} (${c.codice}): hasInvite=${hasInvite}, start=${c.data_inizio}, isFuture=${isFuture}`);
+                }
+                
+                return isFuture && !hasInvite;
+            });
+            console.log('Competitions awaiting invite:', filtered.length);
             break;
         default:
             // Default to upcoming
