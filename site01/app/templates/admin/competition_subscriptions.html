@@ -78,6 +78,7 @@
 <script>
 let currentTab = 'subscriptions';
 let allSubscriptions = [];
+let allInterests = [];
 let allCompetitions = {};
 let allAthletes = {};
 
@@ -114,6 +115,13 @@ async function loadData() {
             console.log('Loaded subscriptions:', allSubscriptions.length);
         }
 
+        // Load all interest expressions using mass export
+        const interestResp = await fetch('/archery/api/interesse?export=full');
+        if (interestResp.ok) {
+            allInterests = await interestResp.json();
+            console.log('Loaded interests:', allInterests.length);
+        }
+
         // Load competitions
         const gareResp = await fetch('/archery/api/gare?future=true&limit=500');
         if (gareResp.ok) {
@@ -127,7 +135,7 @@ async function loadData() {
         renderSubscriptions();
         renderInterest();
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.log('Error loading data:', error);
     }
 }
 
@@ -138,8 +146,8 @@ function renderSubscriptions() {
     
     loading.classList.add('hidden');
     
-    // Filter to only actual subscriptions (turno > 0)
-    const subscriptions = allSubscriptions.filter(sub => sub.turno > 0 && sub.stato !== 'cancellato');
+    // All subscriptions are actual subscriptions (no turno=0 hack anymore)
+    const subscriptions = allSubscriptions.filter(sub => sub.stato !== 'cancellato');
     
     if (subscriptions.length === 0) {
         empty.classList.remove('hidden');
@@ -257,8 +265,8 @@ function renderInterest() {
     
     loading.classList.add('hidden');
     
-    // Filter to only interest expressions (turno = 0)
-    const interestExpressions = allSubscriptions.filter(sub => sub.turno === 0 && sub.stato !== 'cancellato');
+    // Use the separate interests array (from ARC_interesse table)
+    const interestExpressions = allInterests.filter(int => int.stato === 'attivo');
     
     if (interestExpressions.length === 0) {
         empty.classList.remove('hidden');

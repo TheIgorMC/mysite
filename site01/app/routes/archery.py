@@ -534,3 +534,59 @@ def manage_iscrizione(subscription_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/api/interesse', methods=['GET', 'POST'])
+@login_required
+def handle_interesse():
+    """Proxy endpoint for interest expressions (interesse) to/from FastAPI"""
+    client = OrionAPIClient()
+    
+    if request.method == 'GET':
+        # Get interest expressions for an athlete or competition
+        tessera_atleta = request.args.get('tessera_atleta')
+        codice_gara = request.args.get('codice_gara')
+        export = request.args.get('export')
+        
+        try:
+            if export == 'full':
+                # Mass export - get all interests
+                interests = client.get_interests()
+            else:
+                interests = client.get_interests(tessera_atleta=tessera_atleta, codice_gara=codice_gara)
+            return jsonify(interests if interests else [])
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    else:  # POST
+        # Create a new interest expression
+        data = request.get_json()
+        
+        required_fields = ['codice_gara', 'tessera_atleta', 'categoria']
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        try:
+            result = client.create_interest(
+                codice_gara=data['codice_gara'],
+                tessera_atleta=data['tessera_atleta'],
+                categoria=data['categoria'],
+                classe=data.get('classe', ''),
+                note=data.get('note', '')
+            )
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/interesse/<int:interest_id>', methods=['DELETE'])
+@login_required
+def delete_interesse(interest_id):
+    """Delete an interest expression by ID"""
+    client = OrionAPIClient()
+    
+    try:
+        result = client.delete_interest(interest_id)
+        return jsonify(result if result else {'id': interest_id, 'status': 'deleted'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

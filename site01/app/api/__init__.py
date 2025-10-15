@@ -164,3 +164,29 @@ class OrionAPIClient:
     def update_subscription(self, subscription_id, data):
         """Update a subscription (iscrizione) by ID"""
         return self._make_request('PATCH', f'/api/iscrizioni/{subscription_id}', json=data)
+    
+    # Interest expressions (interesse) endpoints
+    def get_interests(self, tessera_atleta=None, codice_gara=None):
+        """Get interest expressions for an athlete or competition"""
+        params = {}
+        if tessera_atleta:
+            params['tessera_atleta'] = tessera_atleta
+        if codice_gara:
+            params['codice_gara'] = codice_gara
+        return self._make_request('GET', '/api/interesse', params=params)
+    
+    def create_interest(self, codice_gara, tessera_atleta, categoria, classe='', note=''):
+        """Create a new interest expression"""
+        data = {
+            'codice_gara': codice_gara,
+            'tessera_atleta': tessera_atleta,
+            'categoria': categoria,
+            'classe': classe,
+            'note': note,
+            'stato': 'attivo'
+        }
+        return self._make_request('POST', '/api/interesse', data=data)
+    
+    def delete_interest(self, interest_id):
+        """Delete an interest expression by ID"""
+        return self._make_request('DELETE', f'/api/interesse/{interest_id}')

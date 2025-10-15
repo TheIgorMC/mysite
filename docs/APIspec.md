@@ -363,18 +363,73 @@ List available components.
 
 ---
 
-## 🧱 DATA FLOW OVERVIEW
+💬 Interesse (Expressions of Interest)
+GET /api/interesse
 
-```text
+Retrieve interest expressions.
+
+Params:
+
+Param	Type	Description
+tessera_atleta	string	Filter by athlete ID
+codice_gara	string	Filter by competition code (admin)
+
+Response:
+
+[
+  {
+    "id": 4,
+    "codice_gara": "25A001",
+    "nome_gara": "Campionato Indoor",
+    "tessera_atleta": "012345",
+    "nome_atleta": "Zorzi Alberto",
+    "categoria": "CO",
+    "classe": "Senior",
+    "data_interesse": "2025-10-15",
+    "note": "Preferenza per il turno mattina",
+    "stato": "attivo"
+  }
+]
+
+POST /api/interesse
+
+Create a new interest expression.
+
+Body:
+
+{
+  "codice_gara": "25A001",
+  "tessera_atleta": "012345",
+  "categoria": "CO",
+  "classe": "Senior",
+  "data_interesse": "2025-10-15",
+  "note": "Preferenza per il turno mattina",
+  "stato": "attivo"
+}
+
+
+Response:
+
+{"id": 4, "status": "created"}
+
+DELETE /api/interesse/{id}
+
+Delete an interest expression (by ID).
+
+Response:
+
+{"id": 4, "status": "deleted"}
+
+🧱 Data Flow Update
 Frontend → FastAPI → MySQL (orion_db)
 
 Modules:
   ├── /api/atleti, /api/societa → read-only lists
-  ├── /api/gare, /api/turni, /api/inviti → events info
+  ├── /api/gare, /api/turni, /api/inviti → event and invite info
+  ├── /api/interesse → interest tracking (pre-registration)
   ├── /api/iscrizioni → full CRUD + export
-  ├── /api/stats, /api/ranking → analytical charts
-  └── /api/elec/... → hardware management
-```
+  ├── /api/stats, /api/ranking → analytics
+  └── /api/elec/... → electronics management
 
 ---
 

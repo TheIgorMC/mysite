@@ -295,11 +295,11 @@ let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
 let allTurni = {};   // Turns mapped by codice_gara
-let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects (includes interest with turno=0)
+let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects
+let userInterests = new Map();  // Map of codice_gara -> array of interest expressions
 let authorizedAthletes = [];  // User's authorized athletes from website
 
-// Interest expressions are now stored in the database as subscriptions with turno=0
-// No longer using localStorage for tracking interest
+// Interest expressions are now stored in ARC_interesse table (separate from subscriptions)
 
 // Load competitions on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -336,9 +336,10 @@ async function loadInitialData() {
         // Use mass export for faster loading
         await Promise.all([
             loadInvitiMassExport(),
-            loadUserSubscriptionsMassExport()
+            loadUserSubscriptionsMassExport(),
+            loadUserInterestsMassExport()
         ]);
-        console.log('Loaded inviti and subscriptions via mass export');
+        console.log('Loaded inviti, subscriptions, and interests via mass export');
         console.log('Total inviti:', Object.keys(allInviti).length);
         console.log('Competitions without invites:', allCompetitions.filter(c => !allInviti[c.codice]).length);
         if (allCompetitions.length > 0) {
@@ -420,6 +421,39 @@ async function loadUserSubscriptionsMassExport() {
         console.error('Error loading subscriptions via mass export:', error);
     }
     console.log('loadUserSubscriptionsMassExport: Complete. Subscriptions for', userSubscriptions.size, 'competitions');
+}
+
+async function loadUserInterestsMassExport() {
+    if (authorizedAthletes.length === 0) return;
+    
+    console.log('loadUserInterestsMassExport: Starting for', authorizedAthletes.length, 'athletes');
+    try {
+        // Use mass export to get ALL interests in one request
+        const resp = await fetch(`/archery/api/interesse?export=full`);
+        if (resp.ok) {
+            const allInterests = await resp.json();
+            console.log('loadUserInterestsMassExport: Received', allInterests.length, 'total interests');
+            
+            // Filter to only interests for our authorized athletes
+            const athleteTessere = new Set(authorizedAthletes.map(a => a.tessera));
+            const userInts = allInterests.filter(int => athleteTessere.has(int.tessera_atleta));
+            
+            console.log('loadUserInterestsMassExport: Filtered to', userInts.length, 'interests for our athletes');
+            
+            userInts.forEach(interest => {
+                // Store interests as array per competition to support multiple athletes
+                if (!userInterests.has(interest.codice_gara)) {
+                    userInterests.set(interest.codice_gara, []);
+                }
+                userInterests.get(interest.codice_gara).push(interest);
+            });
+        } else {
+            console.warn('loadUserInterestsMassExport: Response not OK:', resp.status);
+        }
+    } catch (error) {
+        console.error('Error loading interests via mass export:', error);
+    }
+    console.log('loadUserInterestsMassExport: Complete. Interests for', userInterests.size, 'competitions');
 }
 
 async function loadUserSubscriptions() {
@@ -594,22 +628,12 @@ function filterCompetitions(filter) {
             });
             break;
         case 'my':
-            // User's subscriptions (actual subscriptions, not just interest)
-            filtered = allCompetitions.filter(c => {
-                if (!userSubscriptions.has(c.codice)) return false;
-                const subs = userSubscriptions.get(c.codice);
-                // Show if there are any actual subscriptions (turno > 0)
-                return subs.some(s => s.turno > 0 && s.stato !== 'cancellato');
-            });
+            // User's subscriptions (actual subscriptions only)
+            filtered = allCompetitions.filter(c => userSubscriptions.has(c.codice));
             break;
         case 'interested':
-            // Competitions where user expressed interest (turno = 0)
-            filtered = allCompetitions.filter(c => {
-                if (!userSubscriptions.has(c.codice)) return false;
-                const subs = userSubscriptions.get(c.codice);
-                // Show if there are any interest expressions (turno = 0)
-                return subs.some(s => s.turno === 0 && s.stato !== 'cancellato');
-            });
+            // Competitions where user expressed interest
+            filtered = allCompetitions.filter(c => userInterests.has(c.codice));
             break;
         case 'awaiting-invite':
             // Competitions without published invites (where you can express interest)
@@ -675,33 +699,10 @@ function getSubscriptionSummary(codiceGara) {
         return { hasActiveSubscription: false, allCancelled: true, subscriptions: subs };
     }
     
-    // Separate interest expressions (turno=0) from actual subscriptions (turno>0)
-    const interestSubs = activeSubs.filter(s => s.turno === 0);
-    const actualSubs = activeSubs.filter(s => s.turno > 0);
-    
-    // If only interest expressions (no actual subscriptions)
-    if (actualSubs.length === 0 && interestSubs.length > 0) {
-        return {
-            hasActiveSubscription: true,
-            allCancelled: false,
-            primaryStatus: 'interesse',
-            statusIcon: 'fas fa-star',
-            statusColor: 'yellow',
-            statusText: interestSubs.length === 1 ? 'Interesse espresso' : `${interestSubs.length} interessi espressi`,
-            subscriptions: subs,
-            activeSubs,
-            interestSubs,
-            actualSubs: [],
-            confirmed: 0,
-            waiting: 0,
-            pending: 0
-        };
-    }
-    
-    // Count by status (only actual subscriptions)
-    const confirmed = actualSubs.filter(s => s.stato === 'confermato').length;
-    const waiting = actualSubs.filter(s => s.stato === 'in attesa').length;
-    const pending = actualSubs.filter(s => s.stato === 'richiesta_effettuata').length;
+    // Count by status
+    const confirmed = activeSubs.filter(s => s.stato === 'confermato').length;
+    const waiting = activeSubs.filter(s => s.stato === 'in attesa').length;
+    const pending = activeSubs.filter(s => s.stato === 'richiesta_effettuata').length;
     
     // Determine primary status (priority: confirmed > waiting > pending)
     let primaryStatus, statusText, statusColor, statusIcon;
@@ -731,8 +732,6 @@ function getSubscriptionSummary(codiceGara) {
         statusIcon,
         subscriptions: subs,
         activeSubs,
-        actualSubs,
-        interestSubs,
         confirmed,
         waiting,
         pending
@@ -857,9 +856,9 @@ function renderCompetitions(competitions) {
         } else {
             // Not subscribed - configure button based on competition status
             if (competitionStatus.canExpressInterest) {
-                // Check if user already expressed interest (has subscription with turno=0)
-                const hasExpressedInterest = userSubscriptions.has(competition.codice) && 
-                    userSubscriptions.get(competition.codice).some(s => s.turno === 0 && s.stato !== 'cancellato');
+                // Check if user already expressed interest (has interest in userInterests)
+                const hasExpressedInterest = userInterests.has(competition.codice) && 
+                    userInterests.get(competition.codice).some(i => i.stato === 'attivo');
                 
                 if (hasExpressedInterest) {
                     // Already expressed interest - show as marked
@@ -1168,58 +1167,97 @@ async function submitSubscription() {
         // IMPORTANT: Field names are REVERSED between athlete data and iscrizioni API:
         // - From athlete: categoria=age_category, classe=bow_type
         // - To iscrizioni: categoria=bow_type, classe=age_category
-        const response = await fetch(`/archery/api/iscrizioni`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                codice_gara: codiceGara,
-                tessera_atleta: tessera,
-                categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
-                classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
-                turno: isExpressInterest ? 0 : parseInt(turn),  // Use 0 for express interest
-                stato: 'in attesa',  // Pending - admin must confirm manually
-                note: isExpressInterest ? 
-                    `Interesse espresso (invito non pubblicato). ${notes}` : 
-                    notes
-            })
-        });
+        
+        let response, result;
+        
+        if (isExpressInterest) {
+            // Use interesse API for interest expressions
+            response = await fetch(`/archery/api/interesse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                    classe: ageCategory,            // Age category: SM, SF, MM, MF, etc.
+                    note: notes
+                })
+            });
+        } else {
+            // Use iscrizioni API for actual subscriptions
+            response = await fetch(`/archery/api/iscrizioni`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                    classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
+                    turno: parseInt(turn),
+                    stato: 'in attesa',  // Pending - admin must confirm manually
+                    note: notes
+                })
+            });
+        }
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Subscription failed');
+            throw new Error(error.message || (isExpressInterest ? 'Interest expression failed' : 'Subscription failed'));
         }
         
-        const result = await response.json();
-        console.log('Subscription response:', result);
+        result = await response.json();
+        console.log(isExpressInterest ? 'Interest response:' : 'Subscription response:', result);
         
         // Validate response has required id field
         if (!result || !result.id) {
             console.error('Invalid API response - missing id field:', result);
-            throw new Error('Invalid server response - missing subscription ID');
+            throw new Error('Invalid server response - missing ID');
         }
         
-        // Create subscription object from response (interest expressions are stored with turno=0)
-        const subscription = {
-            id: result.id,
-            codice_gara: codiceGara,
-            tessera_atleta: tessera,
-            categoria: bowType,           // Bow type: CO/OL/AN
-            classe: ageCategory,          // Age category: SM/SF/etc
-            turno: isExpressInterest ? 0 : parseInt(turn),
-            stato: 'in attesa',
-            note: isExpressInterest ? 
-                `Interesse espresso (invito non pubblicato). ${notes}` : 
-                notes
-        };
-        
-        // Add to subscriptions array
-        if (!userSubscriptions.has(codiceGara)) {
-            userSubscriptions.set(codiceGara, []);
+        if (isExpressInterest) {
+            // Create interest object from response
+            const interest = {
+                id: result.id,
+                codice_gara: codiceGara,
+                tessera_atleta: tessera,
+                categoria: bowType,
+                classe: ageCategory,
+                stato: 'attivo',
+                note: notes
+            };
+            
+            // Add to interests array
+            if (!userInterests.has(codiceGara)) {
+                userInterests.set(codiceGara, []);
+            }
+            userInterests.get(codiceGara).push(interest);
+        } else {
+            // Create subscription object from response
+            const subscription = {
+                id: result.id,
+                codice_gara: codiceGara,
+                tessera_atleta: tessera,
+                categoria: bowType,
+                classe: ageCategory,
+                turno: parseInt(turn),
+                stato: 'in attesa',
+                note: notes
+            };
+            
+            // Add to subscriptions array
+            if (!userSubscriptions.has(codiceGara)) {
+                userSubscriptions.set(codiceGara, []);
+            }
+            userSubscriptions.get(codiceGara).push(subscription);
         }
-        userSubscriptions.get(codiceGara).push(subscription);
         
         closeSubscriptionModal();
-        showNotification(window.translations.competitions?.subscription_success || 'Successfully subscribed!', 'success');
+        showNotification(
+            isExpressInterest ? 
+                'Interesse espresso con successo!' : 
+                (window.translations.competitions?.subscription_success || 'Successfully subscribed!'), 
+            'success'
+        );
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error subscribing:', error);
