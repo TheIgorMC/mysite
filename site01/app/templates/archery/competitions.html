@@ -861,17 +861,20 @@ function renderCompetitions(competitions) {
                     userInterests.get(competition.codice).some(i => i.stato === 'attivo');
                 
                 if (hasExpressedInterest) {
-                    // Already expressed interest - show as marked
+                    // Already expressed interest - show as marked with delete option
                     subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
                     subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-yellow-500', 'hover:bg-yellow-600');
-                    subscribeBtn.classList.add('bg-yellow-600', 'cursor-default');
-                    subscribeBtn.disabled = true;
+                    subscribeBtn.classList.add('bg-yellow-600');
+                    subscribeBtn.disabled = false; // Allow clicking to re-express or change
                     
-                    // Add a small indicator badge
-                    const badge = document.createElement('span');
-                    badge.className = 'ml-2 text-xs';
-                    badge.innerHTML = '<i class="fas fa-check"></i>';
-                    subscribeBtn.appendChild(badge);
+                    // Show unsubscribe button for deleting interests
+                    unsubscribeBtn.classList.remove('hidden');
+                    unsubscribeBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Rimuovi interesse';
+                    unsubscribeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const interests = userInterests.get(competition.codice) || [];
+                        showDeleteInterestModal(interests, competition);
+                    });
                 } else {
                     // Show "Mi interessa" button for competitions without invites
                     subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
@@ -906,13 +909,13 @@ function renderCompetitions(competitions) {
 }
 
 async function openSubscriptionModal(competition) {
-    // Get subscription summary to check who's already subscribed
+    // Get subscription summary to check who's already subscribed (NOT interested)
     const subSummary = getSubscriptionSummary(competition.codice);
     const subscribedAthletes = new Set(subSummary.subscriptions
         .filter(s => s.stato !== 'cancellato')
         .map(s => s.tessera_atleta));
     
-    // Filter to only show athletes who aren't already subscribed
+    // Filter to only show athletes who aren't already subscribed (interests are allowed to be re-expressed)
     const availableAthletes = authorizedAthletes.filter(a => !subscribedAthletes.has(a.tessera));
     
     if (availableAthletes.length === 0) {
@@ -1013,8 +1016,8 @@ function showExpressInterestMode(competition, availableAthletes = null) {
         <p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>
     `;
     
-    // Populate athlete dropdown with multi-select enabled for interests
-    populateAthleteDropdown(availableAthletes, true);  // true = allow multi-select
+    // Populate athlete dropdown (no filtering, allow re-expressing interest)
+    populateAthleteDropdown(availableAthletes);
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
@@ -1043,18 +1046,18 @@ function populateTurnsDropdown(turns) {
     });
 }
 
-function populateAthleteDropdown(filteredAthletes = null, allowMultiSelect = false) {
+function populateAthleteDropdown(filteredAthletes = null) {
     const container = document.getElementById('athlete-select-container');
     const athletes = filteredAthletes || authorizedAthletes;
     
-    console.log('populateAthleteDropdown: athletes=', athletes, 'multiSelect=', allowMultiSelect);
+    console.log('populateAthleteDropdown: athletes=', athletes);
     
     if (athletes.length === 0) {
         container.innerHTML = '<p class="text-sm text-yellow-600 dark:text-yellow-400">No authorized athletes. Contact admin to add athletes to your account.</p>';
         return;
     }
     
-    if (athletes.length === 1 && !allowMultiSelect) {
+    if (athletes.length === 1) {
         // Only one athlete - auto-select and hide dropdown, pre-fill form fields
         const athlete = athletes[0];
         console.log('Single athlete mode, pre-filling:', { categoria: athlete.categoria, classe: athlete.classe });
@@ -1078,32 +1081,7 @@ function populateAthleteDropdown(filteredAthletes = null, allowMultiSelect = fal
         return;
     }
     
-    // Multi-select mode for interest expressions
-    if (allowMultiSelect && athletes.length > 1) {
-        container.innerHTML = `
-            <div class="mb-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Athletes <span class="text-xs text-gray-500">(You can select multiple)</span>
-                </label>
-                <div class="space-y-2 max-h-60 overflow-y-auto">
-                    ${athletes.map(athlete => `
-                        <label class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
-                            <input type="checkbox" 
-                                   class="athlete-checkbox mr-3 h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary" 
-                                   value="${athlete.tessera}"
-                                   data-age-category="${athlete.categoria || ''}"
-                                   data-bow-type="${athlete.classe || ''}"
-                                   data-display="${athlete.display}">
-                            <span class="text-sm text-gray-900 dark:text-white">${athlete.display}</span>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-        return;
-    }
-    
-    // Multiple athletes - show dropdown with theme matching (single select)
+    // Multiple athletes - show dropdown with theme matching
     const select = document.createElement('select');
     select.id = 'selected-athlete';
     select.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary';
@@ -1158,6 +1136,7 @@ function closeSubscriptionModal() {
 async function submitSubscription() {
     const codiceGara = document.getElementById('competition-id').value;
     const turn = document.getElementById('turn').value;
+    const tessera = document.getElementById('selected-athlete')?.value;
     const ageCategory = document.getElementById('age-category').value;
     const bowType = document.getElementById('bow-type').value;
     const notes = document.getElementById('notes').value;
@@ -1171,30 +1150,8 @@ async function submitSubscription() {
         return;
     }
     
-    // Get selected athletes - either from checkboxes (multi-select) or dropdown/hidden input (single)
-    let selectedAthletes = [];
-    const checkboxes = document.querySelectorAll('.athlete-checkbox:checked');
-    
-    if (checkboxes.length > 0) {
-        // Multi-select mode (checkboxes) - used for interest expressions
-        selectedAthletes = Array.from(checkboxes).map(cb => ({
-            tessera: cb.value,
-            display: cb.dataset.display,
-            categoria: cb.dataset.ageCategory,
-            classe: cb.dataset.bowType
-        }));
-    } else {
-        // Single select mode (dropdown or hidden input)
-        const tessera = document.getElementById('selected-athlete')?.value;
-        if (!tessera) {
-            showNotification('Please select an athlete', 'warning');
-            return;
-        }
-        selectedAthletes = [{ tessera }];
-    }
-    
-    if (selectedAthletes.length === 0) {
-        showNotification('Please select at least one athlete', 'warning');
+    if (!tessera) {
+        showNotification('Please select an athlete', 'warning');
         return;
     }
     
@@ -1208,122 +1165,102 @@ async function submitSubscription() {
         return;
     }
     
-    // Submit for each selected athlete
-    let successCount = 0;
-    let failCount = 0;
-    
     try {
-        for (const athlete of selectedAthletes) {
-            try {
-                // Submit to Flask proxy (which forwards to FastAPI with auth)
-                // IMPORTANT: Field names are REVERSED between athlete data and iscrizioni API:
-                // - From athlete: categoria=age_category, classe=bow_type
-                // - To iscrizioni: categoria=bow_type, classe=age_category
-                
-                let response, result;
-                
-                if (isExpressInterest) {
-                    // Use interesse API for interest expressions
-                    response = await fetch(`/archery/api/interesse`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            codice_gara: codiceGara,
-                            tessera_atleta: athlete.tessera,
-                            categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
-                            classe: ageCategory,            // Age category: SM, SF, MM, MF, etc.
-                            note: notes
-                        })
-                    });
-                } else {
-                    // Use iscrizioni API for actual subscriptions
-                    response = await fetch(`/archery/api/iscrizioni`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            codice_gara: codiceGara,
-                            tessera_atleta: athlete.tessera,
-                            categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
-                            classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
-                            turno: parseInt(turn),
-                            stato: 'in attesa',  // Pending - admin must confirm manually
-                            note: notes
-                        })
-                    });
-                }
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || (isExpressInterest ? 'Interest expression failed' : 'Subscription failed'));
-                }
-                
-                result = await response.json();
-                console.log(isExpressInterest ? 'Interest response:' : 'Subscription response:', result);
-                
-                // Validate response has required id field
-                if (!result || !result.id) {
-                    console.error('Invalid API response - missing id field:', result);
-                    throw new Error('Invalid server response - missing ID');
-                }
-                
-                if (isExpressInterest) {
-                    // Create interest object from response
-                    const interest = {
-                        id: result.id,
-                        codice_gara: codiceGara,
-                        tessera_atleta: athlete.tessera,
-                        categoria: bowType,
-                        classe: ageCategory,
-                        stato: 'attivo',
-                        note: notes
-                    };
-                    
-                    // Add to interests array
-                    if (!userInterests.has(codiceGara)) {
-                        userInterests.set(codiceGara, []);
-                    }
-                    userInterests.get(codiceGara).push(interest);
-                } else {
-                    // Create subscription object from response
-                    const subscription = {
-                        id: result.id,
-                        codice_gara: codiceGara,
-                        tessera_atleta: athlete.tessera,
-                        categoria: bowType,
-                        classe: ageCategory,
-                        turno: parseInt(turn),
-                        stato: 'in attesa',
-                        note: notes
-                    };
-                    
-                    // Add to subscriptions array
-                    if (!userSubscriptions.has(codiceGara)) {
-                        userSubscriptions.set(codiceGara, []);
-                    }
-                    userSubscriptions.get(codiceGara).push(subscription);
-                }
-                
-                successCount++;
-            } catch (error) {
-                console.error(`Error for athlete ${athlete.tessera}:`, error);
-                failCount++;
+        // Submit to Flask proxy (which forwards to FastAPI with auth)
+        // IMPORTANT: Field names are REVERSED between athlete data and iscrizioni API:
+        // - From athlete: categoria=age_category, classe=bow_type
+        // - To iscrizioni: categoria=bow_type, classe=age_category
+        
+        let response, result;
+        
+        if (isExpressInterest) {
+            // Use interesse API for interest expressions
+            response = await fetch(`/archery/api/interesse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                    classe: ageCategory,            // Age category: SM, SF, MM, MF, etc.
+                    note: notes
+                })
+            });
+        } else {
+            // Use iscrizioni API for actual subscriptions
+            response = await fetch(`/archery/api/iscrizioni`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                    classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
+                    turno: parseInt(turn),
+                    stato: 'in attesa',  // Pending - admin must confirm manually
+                    note: notes
+                })
+            });
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || (isExpressInterest ? 'Interest expression failed' : 'Subscription failed'));
+        }
+        
+        result = await response.json();
+        console.log(isExpressInterest ? 'Interest response:' : 'Subscription response:', result);
+        
+        // Validate response has required id field
+        if (!result || !result.id) {
+            console.error('Invalid API response - missing id field:', result);
+            throw new Error('Invalid server response - missing ID');
+        }
+        
+        if (isExpressInterest) {
+            // Create interest object from response
+            const interest = {
+                id: result.id,
+                codice_gara: codiceGara,
+                tessera_atleta: tessera,
+                categoria: bowType,
+                classe: ageCategory,
+                stato: 'attivo',
+                note: notes
+            };
+            
+            // Add to interests array
+            if (!userInterests.has(codiceGara)) {
+                userInterests.set(codiceGara, []);
             }
+            userInterests.get(codiceGara).push(interest);
+        } else {
+            // Create subscription object from response
+            const subscription = {
+                id: result.id,
+                codice_gara: codiceGara,
+                tessera_atleta: tessera,
+                categoria: bowType,
+                classe: ageCategory,
+                turno: parseInt(turn),
+                stato: 'in attesa',
+                note: notes
+            };
+            
+            // Add to subscriptions array
+            if (!userSubscriptions.has(codiceGara)) {
+                userSubscriptions.set(codiceGara, []);
+            }
+            userSubscriptions.get(codiceGara).push(subscription);
         }
         
         closeSubscriptionModal();
-        
-        // Show appropriate message based on results
-        if (successCount > 0 && failCount === 0) {
-            const message = isExpressInterest ?
-                (selectedAthletes.length > 1 ? `Interesse espresso per ${successCount} atleti!` : 'Interesse espresso con successo!') :
-                (selectedAthletes.length > 1 ? `Successfully subscribed ${successCount} athletes!` : 'Successfully subscribed!');
-            showNotification(message, 'success');
-        } else if (successCount > 0 && failCount > 0) {
-            showNotification(`Completed ${successCount} successfully, ${failCount} failed`, 'warning');
-        } else {
-            showNotification('All submissions failed', 'error');
-        }
-        
+        showNotification(
+            isExpressInterest ? 
+                'Interesse espresso con successo!' : 
+                (window.translations.competitions?.subscription_success || 'Successfully subscribed!'), 
+            'success'
+        );
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error subscribing:', error);
@@ -1472,6 +1409,157 @@ async function deleteSubscription(subscription, competition) {
         console.error('Error deleting subscription:', error);
         showNotification(error.message || window.translations.competitions?.delete_error || 'Failed to delete subscription', 'error');
     }
+}
+
+// Interest deletion functions
+function showDeleteInterestModal(interests, competition) {
+    const activeInterests = interests.filter(i => i.stato === 'attivo');
+    if (activeInterests.length === 0) return;
+    
+    // For single interest, delete directly with simple confirm
+    if (activeInterests.length === 1) {
+        deleteInterest(activeInterests[0], competition);
+        return;
+    }
+    
+    // For multiple interests, show selection modal (reuse subscription modal structure)
+    const modal = document.getElementById('delete-subscription-modal');
+    const competitionInfo = document.getElementById('delete-modal-competition-info');
+    const subscriptionsList = document.getElementById('delete-subscriptions-list');
+    
+    // Change modal title
+    const modalTitle = modal.querySelector('h2');
+    if (modalTitle) modalTitle.textContent = 'Rimuovi Interesse';
+    
+    competitionInfo.textContent = `${competition.nome} - ${formatDate(competition.data_inizio)}`;
+    
+    // Build checkboxes for each interest
+    subscriptionsList.innerHTML = '';
+    activeInterests.forEach(interest => {
+        const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+        const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+        
+        const checkbox = document.createElement('label');
+        checkbox.className = 'flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${interest.id}" class="interest-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary" checked>
+            <span class="ml-3 flex-1 text-sm text-gray-900 dark:text-white">
+                ${athleteName}
+                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    ${interest.categoria || ''} - ${interest.classe || ''}
+                    ${interest.note ? ' - ' + interest.note : ''}
+                </span>
+            </span>
+        `;
+        subscriptionsList.appendChild(checkbox);
+    });
+    
+    // Store competition reference and mark as interest mode
+    modal.dataset.competitionCode = competition.codice;
+    modal.dataset.deleteMode = 'interest';
+    
+    // Update confirm button to call interest deletion
+    const confirmBtn = modal.querySelector('button[onclick="confirmDeleteSelected()"]');
+    if (confirmBtn) {
+        confirmBtn.onclick = confirmDeleteSelectedInterests;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+async function confirmDeleteSelectedInterests() {
+    const modal = document.getElementById('delete-subscription-modal');
+    const checkboxes = modal.querySelectorAll('.interest-delete-checkbox:checked');
+    const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (idsToDelete.length === 0) {
+        showNotification('Seleziona almeno un interesse da eliminare', 'warning');
+        return;
+    }
+    
+    const competitionCode = modal.dataset.competitionCode;
+    
+    try {
+        // Delete all selected interests
+        await Promise.all(idsToDelete.map(id => deleteInterestInternal(id)));
+        
+        // Update local cache - remove deleted interests
+        if (userInterests.has(competitionCode)) {
+            const remaining = userInterests.get(competitionCode)
+                .filter(interest => !idsToDelete.includes(interest.id));
+            if (remaining.length > 0) {
+                userInterests.set(competitionCode, remaining);
+            } else {
+                userInterests.delete(competitionCode);
+            }
+        }
+        
+        closeDeleteModal();
+        showNotification(
+            idsToDelete.length === 1 ? 
+                'Interesse rimosso con successo' : 
+                `${idsToDelete.length} interessi rimossi con successo`,
+            'success'
+        );
+        
+        // Restore modal title and button for next use
+        const modalTitle = modal.querySelector('h2');
+        if (modalTitle) modalTitle.textContent = 'Elimina Iscrizione';
+        const confirmBtn = modal.querySelector('button[onclick="confirmDeleteSelectedInterests()"]');
+        if (confirmBtn) {
+            confirmBtn.onclick = confirmDeleteSelected;
+        }
+        
+        filterCompetitions(currentFilter);
+    } catch (error) {
+        console.error('Error deleting interests:', error);
+        showNotification('Errore durante la rimozione degli interessi', 'error');
+    }
+}
+
+async function deleteInterest(interest, competition) {
+    const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+    const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+    
+    const confirmMsg = `Rimuovere l'interesse di ${athleteName} per ${competition.nome}?`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    try {
+        await deleteInterestInternal(interest.id);
+        
+        // Remove from local cache
+        if (userInterests.has(competition.codice)) {
+            const remaining = userInterests.get(competition.codice)
+                .filter(i => i.id !== interest.id);
+            if (remaining.length > 0) {
+                userInterests.set(competition.codice, remaining);
+            } else {
+                userInterests.delete(competition.codice);
+            }
+        }
+        
+        showNotification('Interesse rimosso con successo', 'success');
+        filterCompetitions(currentFilter);
+    } catch (error) {
+        console.error('Error deleting interest:', error);
+        showNotification('Errore durante la rimozione dell\'interesse', 'error');
+    }
+}
+
+async function deleteInterestInternal(interestId) {
+    const response = await fetch(`/archery/api/interesse/${interestId}`, {
+        method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Delete failed');
+    }
+    
+    return response.json();
 }
 
 function showCompetitionDetails(competition) {
