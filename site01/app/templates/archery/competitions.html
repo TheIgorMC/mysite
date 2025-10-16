@@ -133,7 +133,7 @@
             <!-- Actions -->
             <div class="flex gap-2">
                 <button class="btn-subscribe w-full bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition font-medium">
-                    <i class="fas fa-user-plus mr-2"></i>{{ t('competitions.subscribe') }}
+                    <i class="fas fa-user-plus mr-2"></i>Iscriviti
                 </button>
             </div>
         </div>
@@ -152,7 +152,7 @@
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4" id="modal-title">
-                            {{ t('competitions.subscribe_title') }}
+                            Iscriviti alla Gara
                         </h3>
                         <div class="mt-2">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" id="modal-competition-info"></p>
@@ -163,7 +163,7 @@
                                 <!-- Athlete Selection -->
                                 <div class="mb-4">
                                     <label for="selected-athlete" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ t('competitions.select_athlete') }}
+                                        Seleziona Atleta
                                     </label>
                                     <div id="athlete-select-container">
                                         <!-- Populated by JavaScript -->
@@ -172,11 +172,11 @@
                                 
                                 <div class="mb-4">
                                     <label for="age-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ t('competitions.age_category') }}
+                                        Categoria di Età
                                     </label>
                                     <select id="age-category" name="age_category" 
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <option value="">{{ t('competitions.select_age_category') }}</option>
+                                        <option value="">Seleziona categoria...</option>
                                         <option value="GM">GM - Giovanissimi Maschile</option>
                                         <option value="GF">GF - Giovanissimi Femminile</option>
                                         <option value="RM">RM - Ragazzi Maschile</option>
@@ -191,17 +191,17 @@
                                         <option value="MF">MF - Master Femminile</option>
                                     </select>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        <i class="fas fa-info-circle mr-1"></i>{{ t('competitions.age_category_info') }}
+                                        <i class="fas fa-info-circle mr-1"></i>Categoria determinata dall'età dell'atleta
                                     </p>
                                 </div>
                                 
                                 <div class="mb-4">
                                     <label for="bow-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ t('competitions.bow_type') }}
+                                        Tipo di Arco
                                     </label>
                                     <select id="bow-type" name="bow_type" required
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <option value="">{{ t('competitions.select_bow_type') }}</option>
+                                        <option value="">Seleziona arco...</option>
                                         <option value="CO">CO - Compound</option>
                                         <option value="OL">OL - Olympic Recurve</option>
                                         <option value="AN">AN - Barebow</option>
@@ -210,21 +210,21 @@
                                 
                                 <div id="turn-selection-container" class="mb-4">
                                     <label for="turn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ t('competitions.select_turn') }}
+                                        Seleziona Turno
                                     </label>
                                     <select id="turn" name="turn" 
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <option value="">{{ t('competitions.choose_turn') }}</option>
+                                        <option value="">Scegli turno...</option>
                                     </select>
                                 </div>
 
                                 <div class="mb-4">
                                     <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ t('competitions.notes') }} ({{ t('common.optional') }})
+                                        Note (Opzionale)
                                     </label>
                                     <textarea id="notes" name="notes" rows="3"
                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                              placeholder="{{ t('competitions.notes_placeholder') }}"></textarea>
+                                              placeholder="Aggiungi note o preferenze..."></textarea>
                                 </div>
                             </form>
                         </div>
@@ -232,13 +232,13 @@
                 </div>
             </div>
             <div class="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button type="button" onclick="submitSubscription()"
+                <button type="button" id="modal-submit-btn" onclick="submitSubscription()"
                         class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark sm:ml-3 sm:w-auto sm:text-sm">
-                    {{ t('competitions.confirm_subscription') }}
+                    Conferma Iscrizione
                 </button>
                 <button type="button" onclick="closeSubscriptionModal()"
                         class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto sm:text-sm">
-                    {{ t('common.cancel') }}
+                    Annulla
                 </button>
             </div>
         </div>
@@ -963,12 +963,17 @@ function showNormalSubscriptionMode(competition, availableAthletes = null) {
     // Reset modal to normal subscription mode
     
     // Reset modal title
-    document.getElementById('modal-title').textContent = 
-        window.translations.competitions?.subscribe_title || 'Iscriviti alla Gara';
+    document.getElementById('modal-title').textContent = 'Iscriviti alla Gara';
     
     // Show turn selection
     const turnContainer = document.getElementById('turn-selection-container');
     if (turnContainer) turnContainer.style.display = 'block';
+    
+    // Reset submit button text
+    const submitBtn = document.getElementById('modal-submit-btn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Conferma Iscrizione';
+    }
     
     // Reset info message
     const infoEl = document.getElementById('modal-competition-info');
@@ -986,17 +991,16 @@ function showExpressInterestMode(competition, availableAthletes = null) {
     // Show modal with "Express Interest" instead of full subscription
     
     // Update modal title
-    document.getElementById('modal-title').textContent = 
-        window.translations.competitions?.express_interest_title || 'Express Interest in Competition';
+    document.getElementById('modal-title').textContent = 'Esprimi Interesse';
     
     // Hide turn selection (no turns available)
     const turnContainer = document.getElementById('turn-selection-container');
     if (turnContainer) turnContainer.style.display = 'none';
     
     // Update submit button text
-    const submitBtn = document.querySelector('#subscription-form').closest('div').querySelector('button[type="button"]');
+    const submitBtn = document.getElementById('modal-submit-btn');
     if (submitBtn) {
-        submitBtn.textContent = 'Conferma interesse';
+        submitBtn.textContent = 'Conferma Interesse';
     }
     
     // Add info message
@@ -1006,16 +1010,21 @@ function showExpressInterestMode(competition, availableAthletes = null) {
             <div class="flex items-start">
                 <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2"></i>
                 <div class="text-sm text-yellow-800 dark:text-yellow-300">
-                    <strong>${window.translations.competitions?.no_invite_title || 'Invite Not Yet Published'}</strong><br>
-                    ${window.translations.competitions?.no_invite_desc || 'The official invitation for this competition has not been published yet. You can express interest and we will notify you when registration opens.'}
+                    <strong>Invito Non Ancora Pubblicato</strong><br>
+                    L'invito ufficiale per questa gara non è ancora stato pubblicato. Puoi esprimere interesse e ti avviseremo quando le iscrizioni saranno aperte.
                 </div>
             </div>
         </div>
         <p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>
     `;
     
-    // Populate athlete dropdown (no filtering, allow re-expressing interest)
-    populateAthleteDropdown(availableAthletes);
+    // Filter out athletes who already expressed interest
+    const interestedAthletes = userInterests.get(competition.codice) || [];
+    const interestedTessere = new Set(interestedAthletes.filter(i => i.stato === 'attivo').map(i => i.tessera_atleta));
+    const filteredAthletes = availableAthletes ? availableAthletes.filter(a => !interestedTessere.has(a.tessera)) : null;
+    
+    // Populate athlete dropdown with filtered list
+    populateAthleteDropdown(filteredAthletes);
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
@@ -1023,7 +1032,7 @@ function showExpressInterestMode(competition, availableAthletes = null) {
 
 function populateTurnsDropdown(turns) {
     const select = document.getElementById('turn');
-    select.innerHTML = `<option value="">${window.translations.competitions?.choose_turn || 'Select turn...'}</option>`;
+    select.innerHTML = `<option value="">Scegli turno...</option>`;
     
     turns.forEach(turn => {
         const option = document.createElement('option');
@@ -1302,7 +1311,7 @@ function showDeleteSubscriptionModal(subscriptions, competition) {
         const checkbox = document.createElement('label');
         checkbox.className = 'flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer';
         checkbox.innerHTML = `
-            <input type="checkbox" value="${sub.id}" class="subscription-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary" checked>
+            <input type="checkbox" value="${sub.id}" class="subscription-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary">
             <span class="ml-3 flex-1 text-sm text-gray-900 dark:text-white">
                 ${athleteName}${statusBadge}
                 <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1440,7 +1449,7 @@ function showDeleteInterestModal(interests, competition) {
         const checkbox = document.createElement('label');
         checkbox.className = 'flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer';
         checkbox.innerHTML = `
-            <input type="checkbox" value="${interest.id}" class="interest-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary" checked>
+            <input type="checkbox" value="${interest.id}" class="interest-delete-checkbox h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary">
             <span class="ml-3 flex-1 text-sm text-gray-900 dark:text-white">
                 ${athleteName}
                 <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
