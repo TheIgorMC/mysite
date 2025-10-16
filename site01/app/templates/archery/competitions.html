@@ -124,6 +124,19 @@
                 </div>
             </div>
 
+            <!-- Interest Status -->
+            <div class="competition-interest-status hidden mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center text-yellow-800 dark:text-yellow-300">
+                        <i class="fas fa-star mr-2"></i>
+                        <span class="interest-status-text">Interesse espresso</span>
+                    </div>
+                    <button class="btn-delete-interest text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="Rimuovi interesse">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
             <!-- Actions -->
             <div class="flex gap-2">
                 <button class="btn-subscribe flex-1 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition font-medium">
@@ -779,8 +792,32 @@ function renderCompetitions(competitions) {
         // Subscription status and button logic
         const subscribeBtn = card.querySelector('.btn-subscribe');
         const unsubscribeBtn = card.querySelector('.btn-unsubscribe');
+        const interestStatusBox = card.querySelector('.competition-interest-status');
+        const interestDeleteBtn = card.querySelector('.btn-delete-interest');
         
         const subSummary = getSubscriptionSummary(competition.codice);
+        
+        // Check for interests
+        const hasExpressedInterest = userInterests.has(competition.codice) && 
+            userInterests.get(competition.codice).some(i => i.stato === 'attivo');
+        const activeInterests = hasExpressedInterest ? 
+            userInterests.get(competition.codice).filter(i => i.stato === 'attivo') : [];
+        
+        // Show interest status if user has expressed interest
+        if (hasExpressedInterest && !subSummary.hasActiveSubscription) {
+            interestStatusBox.classList.remove('hidden');
+            const interestText = interestStatusBox.querySelector('.interest-status-text');
+            const count = activeInterests.length;
+            interestText.textContent = count === 1 ? 
+                'Interesse espresso' : 
+                `${count} interessati`;
+            
+            // Wire up delete button
+            interestDeleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showDeleteInterestModal(activeInterests, competition);
+            });
+        }
         
         if (subSummary.hasActiveSubscription) {
             // User has active subscriptions - show summary
@@ -861,20 +898,11 @@ function renderCompetitions(competitions) {
                     userInterests.get(competition.codice).some(i => i.stato === 'attivo');
                 
                 if (hasExpressedInterest) {
-                    // Already expressed interest - show as marked with delete option
+                    // Already expressed interest - allow re-expressing
                     subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
                     subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-yellow-500', 'hover:bg-yellow-600');
-                    subscribeBtn.classList.add('bg-yellow-600');
-                    subscribeBtn.disabled = false; // Allow clicking to re-express or change
-                    
-                    // Show unsubscribe button for deleting interests
-                    unsubscribeBtn.classList.remove('hidden');
-                    unsubscribeBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Rimuovi interesse';
-                    unsubscribeBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const interests = userInterests.get(competition.codice) || [];
-                        showDeleteInterestModal(interests, competition);
-                    });
+                    subscribeBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                    subscribeBtn.disabled = false;
                 } else {
                     // Show "Mi interessa" button for competitions without invites
                     subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
