@@ -107,26 +107,34 @@
             <!-- Subscription Status -->
             <div class="competition-subscription-status hidden mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center text-green-800 dark:text-green-300">
+                    <div class="flex items-center text-green-800 dark:text-green-300 cursor-pointer hover:opacity-80 transition flex-1" onclick="toggleAthleteList(this)">
                         <i class="fas fa-check-circle mr-2"></i>
                         <span>{{ t('competitions.subscribed') }}</span>
+                        <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
                     </div>
                     <button class="btn-unsubscribe text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="{{ t('competitions.delete_subscription') }}">
                         <i class="fas fa-trash"></i>
                     </button>
+                </div>
+                <div class="athlete-list hidden mt-3 pt-3 border-t border-green-200 dark:border-green-800 space-y-2">
+                    <!-- Athletes will be populated here -->
                 </div>
             </div>
 
             <!-- Interest Status -->
             <div class="competition-interest-status hidden mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center text-yellow-800 dark:text-yellow-300">
+                    <div class="flex items-center text-yellow-800 dark:text-yellow-300 cursor-pointer hover:opacity-80 transition flex-1" onclick="toggleAthleteList(this)">
                         <i class="fas fa-star mr-2"></i>
                         <span class="interest-status-text">Interesse espresso</span>
+                        <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
                     </div>
                     <button class="btn-delete-interest text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="Rimuovi interesse">
                         <i class="fas fa-trash"></i>
                     </button>
+                </div>
+                <div class="athlete-list hidden mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 space-y-2">
+                    <!-- Athletes will be populated here -->
                 </div>
             </div>
 
@@ -783,6 +791,22 @@ function renderCompetitions(competitions) {
                 'Interesse espresso' : 
                 `${count} interessati`;
             
+            // Populate athlete list
+            const athleteListContainer = interestStatusBox.querySelector('.athlete-list');
+            athleteListContainer.innerHTML = activeInterests.map(interest => {
+                const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+                const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+                return `
+                    <div class="text-xs text-yellow-800 dark:text-yellow-300 flex items-center justify-between">
+                        <span>
+                            <i class="fas fa-user mr-2"></i>${athleteName}
+                            ${interest.categoria ? ` - ${interest.categoria}` : ''}
+                            ${interest.classe ? ` - ${interest.classe}` : ''}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+            
             // Wire up delete button
             interestDeleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -835,6 +859,36 @@ function renderCompetitions(competitions) {
             statusTextContainer.classList.add(...colors.text);
             statusIcon.className = `${subSummary.statusIcon} mr-2`;
             statusText.textContent = subSummary.statusText;
+            
+            // Populate athlete list for subscriptions
+            const athleteListContainer = statusBox.querySelector('.athlete-list');
+            athleteListContainer.innerHTML = subSummary.activeSubs.map(sub => {
+                const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+                const athleteName = athlete ? athlete.display : sub.tessera_atleta;
+                
+                // Status badge
+                let statusBadge = '';
+                let textColor = colors.text.join(' ');
+                if (sub.stato === 'confermato') {
+                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Confermato</span>';
+                } else if (sub.stato === 'in attesa') {
+                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">In attesa</span>';
+                } else if (sub.stato === 'richiesta_effettuata') {
+                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Richiesta</span>';
+                }
+                
+                return `
+                    <div class="text-xs ${textColor} flex items-center justify-between">
+                        <span>
+                            <i class="fas fa-user mr-2"></i>${athleteName}
+                            ${sub.categoria ? ` - ${sub.categoria}` : ''}
+                            ${sub.classe ? ` - ${sub.classe}` : ''}
+                            ${sub.turno ? ` - Turno ${sub.turno}` : ''}
+                            ${statusBadge}
+                        </span>
+                    </div>
+                `;
+            }).join('');
             
             // Allow subscribing additional athletes if:
             // 1. User has multiple authorized athletes
@@ -1573,6 +1627,23 @@ function showCompetitionDetails(competition) {
     // TODO: Implement details modal or redirect to details page
     console.log('Show details for:', competition);
     showNotification('Competition details coming soon', 'info');
+}
+
+function toggleAthleteList(element) {
+    // Find the athlete list container within the same status box
+    const statusBox = element.closest('.competition-subscription-status, .competition-interest-status');
+    const athleteList = statusBox.querySelector('.athlete-list');
+    const toggleIcon = element.querySelector('.athlete-list-toggle');
+    
+    if (athleteList.classList.contains('hidden')) {
+        athleteList.classList.remove('hidden');
+        toggleIcon.classList.remove('fa-chevron-down');
+        toggleIcon.classList.add('fa-chevron-up');
+    } else {
+        athleteList.classList.add('hidden');
+        toggleIcon.classList.remove('fa-chevron-up');
+        toggleIcon.classList.add('fa-chevron-down');
+    }
 }
 
 function formatDate(dateStr) {

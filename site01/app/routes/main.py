@@ -1,9 +1,9 @@
 """
 Main routes blueprint
 """
-from flask import Blueprint, render_template, session, request, redirect, url_for, flash
+from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from app.models import User, GalleryItem, Product
+from app.models import User, GalleryItem, Product, AuthorizedAthlete, CompetitionSubscription
 from app import db
 from app.utils import t, load_translations
 from datetime import datetime
@@ -118,9 +118,25 @@ def delete_user(user_id):
         return redirect(url_for('main.admin'))
     
     user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash(f'User {user.username} deleted', 'success')
+    username = user.username
+    
+    try:
+        # Delete related records first
+        # Delete authorized athletes
+        AuthorizedAthlete.query.filter_by(user_id=user_id).delete()
+        
+        # Delete competition subscriptions (if any)
+        CompetitionSubscription.query.filter_by(user_id=user_id).delete()
+        
+        # Now delete the user
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {username} deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error deleting user {username}: {str(e)}')
+        flash(f'Error deleting user: {str(e)}', 'error')
+    
     return redirect(url_for('main.admin'))
 
 @bp.route('/admin/add_gallery_item', methods=['POST'])
