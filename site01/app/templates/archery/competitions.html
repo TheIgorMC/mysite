@@ -45,11 +45,6 @@
                             class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
                         <i class="fas fa-star mr-1"></i>Le mie espressioni di interesse
                     </button>
-                    <button onclick="filterCompetitions('awaiting-invite')" 
-                            id="tab-awaiting-invite"
-                            class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary hover:border-gray-300">
-                        <i class="fas fa-hourglass-half mr-1"></i>In attesa di invito
-                    </button>
                 </nav>
             </div>
         </div>
@@ -79,10 +74,8 @@
             <!-- Header -->
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
-                    <div class="flex items-baseline gap-2 mb-2">
-                        <h3 class="competition-name text-xl font-bold text-gray-900 dark:text-white"></h3>
-                        <span class="competition-code text-sm font-mono text-gray-500 dark:text-gray-400"></span>
-                    </div>
+                    <h3 class="competition-name text-xl font-bold text-gray-900 dark:text-white mb-1"></h3>
+                    <span class="competition-code text-xs font-mono text-gray-500 dark:text-gray-400 block mb-2"></span>
                     <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
                         <i class="fas fa-map-marker-alt mr-2"></i>
                         <span class="competition-location"></span>
@@ -139,11 +132,8 @@
 
             <!-- Actions -->
             <div class="flex gap-2">
-                <button class="btn-subscribe flex-1 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition font-medium">
+                <button class="btn-subscribe w-full bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition font-medium">
                     <i class="fas fa-user-plus mr-2"></i>{{ t('competitions.subscribe') }}
-                </button>
-                <button class="btn-details flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg transition font-medium">
-                    <i class="fas fa-info-circle mr-2"></i>{{ t('competitions.details') }}
                 </button>
             </div>
         </div>
@@ -648,25 +638,6 @@ function filterCompetitions(filter) {
             // Competitions where user expressed interest
             filtered = allCompetitions.filter(c => userInterests.has(c.codice));
             break;
-        case 'awaiting-invite':
-            // Competitions without published invites (where you can express interest)
-            console.log('Filtering for competitions without invites...');
-            filtered = allCompetitions.filter(c => {
-                const startDate = new Date(c.data_inizio);
-                startDate.setHours(0, 0, 0, 0);
-                const endDate = new Date(c.data_fine);
-                endDate.setHours(0, 0, 0, 0);
-                const hasInvite = !!allInviti[c.codice];
-                const isFuture = startDate >= now; // Competition hasn't started yet
-                
-                if (!hasInvite) {
-                    console.log(`  ${c.nome} (${c.codice}): hasInvite=${hasInvite}, start=${c.data_inizio}, isFuture=${isFuture}`);
-                }
-                
-                return isFuture && !hasInvite;
-            });
-            console.log('Competitions awaiting invite:', filtered.length);
-            break;
         default:
             // Default to upcoming
             filtered = allCompetitions.filter(c => {
@@ -930,7 +901,6 @@ function renderCompetitions(competitions) {
                 openSubscriptionModal(competition);
             }
         });
-        card.querySelector('.btn-details').addEventListener('click', () => showCompetitionDetails(competition));
         
         grid.appendChild(card);
     });
@@ -994,7 +964,7 @@ function showNormalSubscriptionMode(competition, availableAthletes = null) {
     
     // Reset modal title
     document.getElementById('modal-title').textContent = 
-        window.translations.competitions?.subscribe_title || 'Subscribe to Competition';
+        window.translations.competitions?.subscribe_title || 'Iscriviti alla Gara';
     
     // Show turn selection
     const turnContainer = document.getElementById('turn-selection-container');
@@ -1114,7 +1084,7 @@ function populateAthleteDropdown(filteredAthletes = null) {
     select.id = 'selected-athlete';
     select.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary';
     
-    select.innerHTML = '<option value="">Select athlete...</option>';
+    select.innerHTML = '<option value="">Seleziona atleta...</option>';
     athletes.forEach(athlete => {
         const option = document.createElement('option');
         option.value = athlete.tessera;
@@ -1174,22 +1144,22 @@ async function submitSubscription() {
     const isExpressInterest = turnContainer && turnContainer.style.display === 'none';
     
     if (!isExpressInterest && !turn) {
-        showNotification(window.translations.competitions?.select_turn_required || 'Please select a turn', 'warning');
+        showNotification(window.translations.competitions?.select_turn_required || 'Seleziona un turno', 'warning');
         return;
     }
     
     if (!tessera) {
-        showNotification('Please select an athlete', 'warning');
+        showNotification('Seleziona un atleta', 'warning');
         return;
     }
     
     if (!ageCategory) {
-        showNotification('Please select an age category', 'warning');
+        showNotification('Seleziona una categoria', 'warning');
         return;
     }
     
     if (!bowType) {
-        showNotification('Please select a bow type', 'warning');
+        showNotification('Seleziona un arco', 'warning');
         return;
     }
     
@@ -1233,7 +1203,7 @@ async function submitSubscription() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || (isExpressInterest ? 'Interest expression failed' : 'Subscription failed'));
+            throw new Error(error.message || (isExpressInterest ? 'Errore nell\'espressione di interesse' : 'Errore nell\'iscrizione'));
         }
         
         result = await response.json();
@@ -1242,7 +1212,7 @@ async function submitSubscription() {
         // Validate response has required id field
         if (!result || !result.id) {
             console.error('Invalid API response - missing id field:', result);
-            throw new Error('Invalid server response - missing ID');
+            throw new Error('Risposta del server non valida');
         }
         
         if (isExpressInterest) {
@@ -1286,13 +1256,13 @@ async function submitSubscription() {
         showNotification(
             isExpressInterest ? 
                 'Interesse espresso con successo!' : 
-                (window.translations.competitions?.subscription_success || 'Successfully subscribed!'), 
+                (window.translations.competitions?.subscription_success || 'Iscrizione effettuata con successo!'), 
             'success'
         );
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error subscribing:', error);
-        showNotification(error.message || window.translations.competitions?.subscription_error || 'Failed to subscribe', 'error');
+        showNotification(error.message || window.translations.competitions?.subscription_error || 'Errore nell\'iscrizione', 'error');
     }
 }
 

@@ -37,14 +37,17 @@
                     <form method="POST" action="{{ url_for('auth.update_profile') }}" enctype="multipart/form-data">
                         <!-- Avatar -->
                         <div class="mb-6 text-center">
-                            <img src="{{ url_for('static', filename='media/' + current_user.avatar) }}" 
+                            <img id="avatar-preview"
+                                 src="{{ url_for('static', filename='media/' + current_user.avatar) }}" 
                                  alt="{{ current_user.username }}" 
                                  class="h-32 w-32 rounded-full object-cover mx-auto mb-4 border-4 border-gray-200 dark:border-gray-700">
                             <label class="block">
                                 <span class="sr-only">{{ t('auth.choose_photo') }}</span>
                                 <input type="file" 
+                                       id="avatar-input"
                                        name="avatar" 
                                        accept="image/*"
+                                       onchange="previewAvatar(event)"
                                        class="block w-full text-sm text-gray-500 dark:text-gray-400
                                               file:mr-4 file:py-2 file:px-4
                                               file:rounded-lg file:border-0
@@ -291,6 +294,33 @@ async function updateAthletePreference(athleteId, classe, categoria) {
     } catch (error) {
         console.error('Error updating athlete:', error);
         showNotification(window.translations.common?.error || 'Failed to update', 'error');
+    }
+}
+
+// Profile picture preview
+function previewAvatar(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('L\'immagine è troppo grande (max 5MB)', 'error');
+            event.target.value = '';
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showNotification('Seleziona un file immagine valido', 'error');
+            event.target.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('avatar-preview');
+            preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 }
 {% endif %}

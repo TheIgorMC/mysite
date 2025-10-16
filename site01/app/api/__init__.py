@@ -55,7 +55,6 @@ class OrionAPIClient:
         url = f"{self.base_url}{endpoint}"
         
         try:
-            logger.info(f"Making {method} request to {url} with data: {data}, params: {params}")
             response = requests.request(
                 method=method,
                 url=url,
@@ -68,13 +67,7 @@ class OrionAPIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             logger.error(f"API HTTP error: {e}")
-            logger.error(f"Response status code: {e.response.status_code if e.response else 'No response'}")
-            logger.error(f"Response headers: {e.response.headers if e.response else 'No response'}")
-            try:
-                error_detail = e.response.json() if e.response else None
-                logger.error(f"Response JSON: {error_detail}")
-            except:
-                logger.error(f"Response text: {e.response.text if e.response else 'No response'}")
+            logger.error(f"Response text: {e.response.text if e.response else 'No response'}")
             raise  # Re-raise so Flask can handle it properly
         except requests.exceptions.RequestException as e:
             logger.error(f"API request failed: {e}")
