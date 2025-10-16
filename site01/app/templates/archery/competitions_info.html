@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Gare - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-yellow-500 rounded-full mb-4">
+                <i class="fas fa-bullseye text-white text-3xl"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Gestione Gare
+            </h1>
+            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Sistema di iscrizione e gestione gare riservato ai soci
+            </p>
+        </div>
+
+        <!-- Info Card -->
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8">
+                <!-- Alert Box -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-6 rounded-lg mb-8">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-500 text-2xl mr-4 mt-1"></i>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                Accesso Riservato ai Soci
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 mb-3">
+                                Questa funzionalità è riservata esclusivamente ai soci dell'<strong>ASD Compagnia Arcieri Carraresi</strong>.
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                Se sei già un socio ma non hai accesso, contatta un amministratore per attivare il tuo account.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                        Cosa puoi fare con questo sistema:
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-user-plus text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">
+                                    Iscrizione Rapida alle Gare
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                    Iscriviti alle competizioni FITARCO in pochi click, senza lunghe procedure cartacee
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-users text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">
+                                    Gestione Atleti Autorizzati
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                    Gestisci le iscrizioni per te stesso e per gli atleti autorizzati (genitori per figli minori)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-star text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">
+                                    Espressione di Interesse
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                    Manifesta interesse per gare il cui invito non è ancora pubblicato
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-bell text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">
+                                    Monitoraggio Stato Iscrizioni
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                    Visualizza in tempo reale lo stato delle tue iscrizioni (in attesa, confermate, cancellate)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-calendar-alt text-red-600 dark:text-red-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">
+                                    Calendario Gare
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                    Visualizza tutte le gare disponibili con informazioni su date, luoghi e scadenze
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How to Get Access -->
+                <div class="bg-gradient-to-r from-primary/10 to-blue-500/10 dark:from-primary/20 dark:to-blue-500/20 rounded-xl p-6 border-2 border-primary/20">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-question-circle text-primary mr-3"></i>
+                        Come ottenere l'accesso?
+                    </h3>
+                    <div class="space-y-3 text-gray-700 dark:text-gray-300">
+                        <p class="flex items-start">
+                            <span class="font-bold mr-2">1.</span>
+                            <span><strong>Diventa Socio:</strong> Iscriviti all'ASD Compagnia Arcieri Carraresi</span>
+                        </p>
+                        <p class="flex items-start">
+                            <span class="font-bold mr-2">2.</span>
+                            <span><strong>Registrati:</strong> Crea un account su questa piattaforma se non ne hai già uno</span>
+                        </p>
+                        <p class="flex items-start">
+                            <span class="font-bold mr-2">3.</span>
+                            <span><strong>Attivazione:</strong> Contatta un amministratore per far attivare il tuo account come "Socio del Club"</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url_for('archery.index') }}" 
+                   class="inline-flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition font-semibold">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Torna al Tiro con l'Arco
+                </a>
+                
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" 
+                   class="inline-flex items-center justify-center px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg transition font-semibold">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Accedi
+                </a>
+                <a href="{{ url_for('auth.register') }}" 
+                   class="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Registrati
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Contact Info -->
+            {% if current_user.is_authenticated and not current_user.is_club_member %}
+            <div class="mt-8 text-center">
+                <p class="text-gray-600 dark:text-gray-400 mb-2">
+                    Sei già autenticato ma non hai accesso?
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-500">
+                    <i class="fas fa-envelope mr-2"></i>
+                    Contatta un amministratore per richiedere l'attivazione come socio del club
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

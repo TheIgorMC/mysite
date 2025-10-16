@@ -351,7 +351,8 @@ def get_types_by_category(category):
 def competitions():
     """Competition management page - club members only"""
     if not current_user.is_club_member:
-        return render_template('errors/403.html'), 403
+        # Show informational page for non-club members instead of 403
+        return render_template('archery/competitions_info.html')
     
     return render_template('archery/competitions.html')
 
