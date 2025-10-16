@@ -347,13 +347,19 @@ def get_types_by_category(category):
         return jsonify([]), 500
 
 @bp.route('/competitions')
-@login_required
 def competitions():
-    """Competition management page - club members only"""
-    if not current_user.is_club_member:
-        # Show informational page for non-club members instead of 403
+    """Competition management page - shows info page for non-members, competition page for members"""
+    # Check if user is authenticated
+    if not current_user.is_authenticated:
+        # Show informational page for unauthenticated users
         return render_template('archery/competitions_info.html')
     
+    # Check if authenticated user is a club member
+    if not current_user.is_club_member:
+        # Show informational page for non-club members
+        return render_template('archery/competitions_info.html')
+    
+    # User is authenticated and is a club member - show competition management
     return render_template('archery/competitions.html')
 
 @bp.route('/api/competitions')
