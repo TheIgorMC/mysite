@@ -102,7 +102,7 @@ def update_profile():
     
     # Handle avatar upload
     avatar = request.files.get('avatar')
-    if avatar and avatar.filename:
+    if avatar and avatar.filename:  # Only process if a file was actually uploaded
         filename = secure_filename(avatar.filename)
         # Create unique filename
         import uuid
@@ -113,13 +113,17 @@ def update_profile():
         os.makedirs(upload_folder, exist_ok=True)
         
         # Delete old avatar if not default
-        if current_user.avatar != 'default-avatar.png':
+        if current_user.avatar and current_user.avatar != 'default-avatar.png':
             old_avatar_path = os.path.join(upload_folder, current_user.avatar)
             if os.path.exists(old_avatar_path):
-                os.remove(old_avatar_path)
+                try:
+                    os.remove(old_avatar_path)
+                except Exception as e:
+                    current_app.logger.warning(f'Could not delete old avatar: {e}')
         
         avatar.save(os.path.join(upload_folder, unique_filename))
         current_user.avatar = unique_filename
+    # If no file uploaded, avatar stays the same (preserved automatically)
     
     db.session.commit()
     flash('Profile updated successfully', 'success')

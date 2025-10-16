@@ -914,7 +914,7 @@ function renderCompetitions(competitions) {
             // All subscriptions cancelled - allow resubscription
             subscribeBtn.disabled = false;
             subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>' + (window.translations.competitions?.subscribe || 'Subscribe');
+            subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Iscriviti';
         } else {
             // Not subscribed - configure button based on competition status
             if (competitionStatus.canExpressInterest) {
@@ -924,25 +924,25 @@ function renderCompetitions(competitions) {
                 
                 if (hasExpressedInterest) {
                     // Already expressed interest - allow re-expressing
-                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
+                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>Mi interessa';
                     subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-yellow-500', 'hover:bg-yellow-600');
                     subscribeBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
                     subscribeBtn.disabled = false;
                 } else {
                     // Show "Mi interessa" button for competitions without invites
-                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>' + (window.translations.mi_interessa || 'Mi interessa');
+                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>Mi interessa';
                     subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
                     subscribeBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
                     subscribeBtn.disabled = false;
                 }
             } else if (competitionStatus.canSubscribe) {
                 // Normal subscribe button
-                subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>' + (window.translations.competitions?.subscribe || 'Subscribe');
+                subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Iscriviti';
                 subscribeBtn.classList.add('bg-primary', 'hover:bg-primary-dark');
                 subscribeBtn.disabled = false;
             } else {
                 // Closed - cannot subscribe
-                subscribeBtn.textContent = window.translations.competitions?.closed || 'Chiuso';
+                subscribeBtn.textContent = 'Chiuso';
                 subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
                 subscribeBtn.classList.add('bg-red-600', 'opacity-50', 'cursor-not-allowed');
                 subscribeBtn.disabled = true;
