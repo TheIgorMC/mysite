@@ -276,7 +276,26 @@ async function fetchAthleteResults(athleteId, competitionType, category, startDa
     if (includeAverage) url += `include_average=true&`;
     
     const response = await fetch(url);
+    
+    // Check if response is ok
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text.substring(0, 200));
+        throw new Error('Server returned invalid response (not JSON)');
+    }
+    
     const data = await response.json();
+    
+    // Check for error in response
+    if (data.error) {
+        throw new Error(data.error + (data.details ? ': ' + data.details : ''));
+    }
     
     return {
         athleteId,

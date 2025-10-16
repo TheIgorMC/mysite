@@ -81,53 +81,64 @@ def search_athlete():
 @bp.route('/api/athlete/<athlete_id>/results')
 def get_athlete_results(athlete_id):
     """Get athlete results"""
-    # API parameters - only use parameters that exist in API spec
-    competition_type = request.args.get('competition_type')
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
+    try:
+        # API parameters - NOTE: API only supports 'limit', not event_type/dates
+        # We'll fetch all results and filter locally
+        competition_type = request.args.get('competition_type')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # LOCAL filter parameters - NOT sent to API
+        category = request.args.get('category')  # Filter locally using CSV
+        include_average = request.args.get('include_average', 'false').lower() == 'true'
+        
+        client = OrionAPIClient()
+        # Call API with ONLY the limit parameter (API doesn't support filtering)
+        results = client.get_athlete_results(athlete_id, limit=500)
+        
+        if not results:
+            return jsonify([])
+        
+        # Transform API response to standard format with normalized dates
+        transformed = [
+            {
+                'athlete': result.get('atleta'),
+                'competition_name': result.get('nome_gara'),
+                'competition_type': result.get('tipo_gara'),
+                'date': normalize_date(result.get('data_gara')),  # Normalize date format
+                'position': result.get('posizione'),
+                'score': result.get('punteggio'),
+                'club_code': result.get('codice_societa_atleta'),
+                'club_name': result.get('nome_societa_atleta'),
+                'organizer_code': result.get('codice_societa_organizzatrice'),
+                'organizer_name': result.get('nome_societa_organizzatrice')
+            }
+            for result in results
+        ]
+        
+        # Filter by competition type LOCALLY (API doesn't support this filter)
+        if competition_type:
+            transformed = [r for r in transformed if r.get('competition_type') == competition_type]
+        
+        # Filter by category LOCALLY using CSV data (not API)
+        if category:
+            transformed = filter_by_category(transformed, category)
+        
+        # Filter by date range LOCALLY (API doesn't support this filter)
+        if start_date:
+            transformed = [r for r in transformed if r.get('date', '') >= start_date]
+        if end_date:
+            transformed = [r for r in transformed if r.get('date', '') <= end_date]
+        
+        # Add average per arrow if requested (local calculation using CSV)
+        if include_average:
+            transformed = calculate_average_per_competition(transformed, include_average=True)
+        
+        return jsonify(transformed)
     
-    # LOCAL filter parameters - NOT sent to API
-    category = request.args.get('category')  # Filter locally using CSV
-    include_average = request.args.get('include_average', 'false').lower() == 'true'
-    
-    client = OrionAPIClient()
-    # Call API with ONLY valid parameters (no category!)
-    results = client.get_athlete_results(
-        athlete_id,
-        competition_type=competition_type,
-        start_date=start_date,
-        end_date=end_date
-    )
-    
-    if not results:
-        return jsonify([])
-    
-    # Transform API response to standard format with normalized dates
-    transformed = [
-        {
-            'athlete': result.get('atleta'),
-            'competition_name': result.get('nome_gara'),
-            'competition_type': result.get('tipo_gara'),
-            'date': normalize_date(result.get('data_gara')),  # Normalize date format
-            'position': result.get('posizione'),
-            'score': result.get('punteggio'),
-            'club_code': result.get('codice_societa_atleta'),
-            'club_name': result.get('nome_societa_atleta'),
-            'organizer_code': result.get('codice_societa_organizzatrice'),
-            'organizer_name': result.get('nome_societa_organizzatrice')
-        }
-        for result in results
-    ]
-    
-    # Filter by category LOCALLY using CSV data (not API)
-    if category:
-        transformed = filter_by_category(transformed, category)
-    
-    # Add average per arrow if requested (local calculation using CSV)
-    if include_average:
-        transformed = calculate_average_per_competition(transformed, include_average=True)
-    
-    return jsonify(transformed)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching athlete results: {str(e)}")
+        return jsonify({'error': 'Failed to fetch athlete results', 'details': str(e)}), 500
 
 @bp.route('/api/athlete/<athlete_id>/statistics')
 def get_athlete_statistics(athlete_id):
@@ -135,126 +146,135 @@ def get_athlete_statistics(athlete_id):
     
     Returns both career statistics and filtered statistics when filters are applied
     """
-    # Get filter parameters (same as results endpoint)
-    competition_type = request.args.get('competition_type')
-    category = request.args.get('category')
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    client = OrionAPIClient()
-    
-    # Get stats data (chart format from API) - uses /api/stats endpoint
-    stats_data = client.get_statistics(athlete_id)
-    
-    # Get all results to compute statistics - uses /api/athlete/{tessera}/results
-    all_results = client.get_athlete_results(athlete_id, limit=500)
-    
-    if not all_results:
-        return jsonify({
-            'career': {
-                'total_competitions': 0,
-                'gold_medals': 0,
-                'silver_medals': 0,
-                'bronze_medals': 0,
-                'avg_position': None,
-                'avg_percentile': None,
-                'best_score': None,
-                'best_score_competition': None
-            },
-            'filtered': None,
-            'chart_data': stats_data
-        })
-    
-    # Transform results to standard format with normalized dates
-    transformed_results = [
-        {
-            'athlete': result.get('atleta'),
-            'competition_name': result.get('nome_gara'),
-            'competition_type': result.get('tipo_gara'),
-            'date': normalize_date(result.get('data_gara')),
-            'position': result.get('posizione'),
-            'score': result.get('punteggio')
-        }
-        for result in all_results
-    ]
-    
-    # Calculate CAREER statistics (all data)
-    career_stats = get_statistics_summary(transformed_results, last_n=10)
-    
-    career_statistics = {
-        'total_competitions': career_stats['total_competitions'],
-        'gold_medals': career_stats['medals']['gold'],
-        'silver_medals': career_stats['medals']['silver'],
-        'bronze_medals': career_stats['medals']['bronze'],
-        'avg_position': career_stats['percentile_stats'].get('avg_position'),
-        'avg_percentile': career_stats['percentile_stats'].get('avg_percentile'),
-        'top_finishes': career_stats['percentile_stats'].get('top_finishes', 0),
-        'recent_competitions_analyzed': career_stats['percentile_stats'].get('competitions_analyzed', 0),
-        'best_scores_by_category': career_stats['best_scores'],
-        'category_breakdown': career_stats['categories']
-    }
-    
-    # Find overall best score
-    if transformed_results:
-        best_result = max(transformed_results, key=lambda x: x.get('score', 0))
-        career_statistics['best_score'] = best_result.get('score')
-        career_statistics['best_score_competition'] = best_result.get('competition_name')
-    
-    # Calculate FILTERED statistics if filters are applied
-    filtered_statistics = None
-    has_filters = competition_type or category or start_date or end_date
-    
-    if has_filters:
-        # Apply filters
-        filtered_results = transformed_results.copy()
+    try:
+        # Get filter parameters (same as results endpoint)
+        competition_type = request.args.get('competition_type')
+        category = request.args.get('category')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
         
-        # Filter by competition type
-        if competition_type:
-            filtered_results = [r for r in filtered_results if r.get('competition_type') == competition_type]
+        client = OrionAPIClient()
         
-        # Filter by category (using CSV data)
-        if category:
-            filtered_results = filter_by_category(filtered_results, category)
+        # Get stats data (chart format from API) - uses /api/stats endpoint
+        try:
+            stats_data = client.get_statistics(athlete_id)
+        except Exception as e:
+            current_app.logger.warning(f"Could not load stats chart data: {e}")
+            stats_data = None
         
-        # Filter by date range
-        if start_date:
-            filtered_results = [r for r in filtered_results if r.get('date', '') >= start_date]
-        if end_date:
-            filtered_results = [r for r in filtered_results if r.get('date', '') <= end_date]
+        # Get all results to compute statistics - uses /api/athlete/{tessera}/results
+        all_results = client.get_athlete_results(athlete_id, limit=500)
         
-        # Calculate statistics for filtered data
-        if filtered_results:
-            filtered_stats = get_statistics_summary(filtered_results, last_n=10)
-            
-            filtered_statistics = {
-                'total_competitions': filtered_stats['total_competitions'],
-                'gold_medals': filtered_stats['medals']['gold'],
-                'silver_medals': filtered_stats['medals']['silver'],
-                'bronze_medals': filtered_stats['medals']['bronze'],
-                'avg_position': filtered_stats['percentile_stats'].get('avg_position'),
-                'avg_percentile': filtered_stats['percentile_stats'].get('avg_percentile'),
-                'top_finishes': filtered_stats['percentile_stats'].get('top_finishes', 0),
-                'recent_competitions_analyzed': filtered_stats['percentile_stats'].get('competitions_analyzed', 0),
-                'best_scores_by_category': filtered_stats['best_scores'],
-                'category_breakdown': filtered_stats['categories']
+        if not all_results:
+            return jsonify({
+                'career': {
+                    'total_competitions': 0,
+                    'gold_medals': 0,
+                    'silver_medals': 0,
+                    'bronze_medals': 0,
+                    'avg_position': None,
+                    'avg_percentile': None,
+                    'best_score': None,
+                    'best_score_competition': None
+                },
+                'filtered': None,
+                'chart_data': stats_data
+            })
+        
+        # Transform results to standard format with normalized dates
+        transformed_results = [
+            {
+                'athlete': result.get('atleta'),
+                'competition_name': result.get('nome_gara'),
+                'competition_type': result.get('tipo_gara'),
+                'date': normalize_date(result.get('data_gara')),
+                'position': result.get('posizione'),
+                'score': result.get('punteggio')
             }
+            for result in all_results
+        ]
+        
+        # Calculate CAREER statistics (all data)
+        career_stats = get_statistics_summary(transformed_results, last_n=10)
+        
+        career_statistics = {
+            'total_competitions': career_stats['total_competitions'],
+            'gold_medals': career_stats['medals']['gold'],
+            'silver_medals': career_stats['medals']['silver'],
+            'bronze_medals': career_stats['medals']['bronze'],
+            'avg_position': career_stats['percentile_stats'].get('avg_position'),
+            'avg_percentile': career_stats['percentile_stats'].get('avg_percentile'),
+            'top_finishes': career_stats['percentile_stats'].get('top_finishes', 0),
+            'recent_competitions_analyzed': career_stats['percentile_stats'].get('competitions_analyzed', 0),
+            'best_scores_by_category': career_stats['best_scores'],
+            'category_breakdown': career_stats['categories']
+        }
+        
+        # Find overall best score
+        if transformed_results:
+            best_result = max(transformed_results, key=lambda x: x.get('score', 0))
+            career_statistics['best_score'] = best_result.get('score')
+            career_statistics['best_score_competition'] = best_result.get('competition_name')
+        
+        # Calculate FILTERED statistics if filters are applied
+        filtered_statistics = None
+        has_filters = competition_type or category or start_date or end_date
+        
+        if has_filters:
+            # Apply filters
+            filtered_results = transformed_results.copy()
             
-            # Find best score in filtered results
-            best_filtered = max(filtered_results, key=lambda x: x.get('score', 0))
-            filtered_statistics['best_score'] = best_filtered.get('score')
-            filtered_statistics['best_score_competition'] = best_filtered.get('competition_name')
+            # Filter by competition type
+            if competition_type:
+                filtered_results = [r for r in filtered_results if r.get('competition_type') == competition_type]
+            
+            # Filter by category (using CSV data)
+            if category:
+                filtered_results = filter_by_category(filtered_results, category)
+            
+            # Filter by date range
+            if start_date:
+                filtered_results = [r for r in filtered_results if r.get('date', '') >= start_date]
+            if end_date:
+                filtered_results = [r for r in filtered_results if r.get('date', '') <= end_date]
+            
+            # Calculate statistics for filtered data
+            if filtered_results:
+                filtered_stats = get_statistics_summary(filtered_results, last_n=10)
+                
+                filtered_statistics = {
+                    'total_competitions': filtered_stats['total_competitions'],
+                    'gold_medals': filtered_stats['medals']['gold'],
+                    'silver_medals': filtered_stats['medals']['silver'],
+                    'bronze_medals': filtered_stats['medals']['bronze'],
+                    'avg_position': filtered_stats['percentile_stats'].get('avg_position'),
+                    'avg_percentile': filtered_stats['percentile_stats'].get('avg_percentile'),
+                    'top_finishes': filtered_stats['percentile_stats'].get('top_finishes', 0),
+                    'recent_competitions_analyzed': filtered_stats['percentile_stats'].get('competitions_analyzed', 0),
+                    'best_scores_by_category': filtered_stats['best_scores'],
+                    'category_breakdown': filtered_stats['categories']
+                }
+                
+                # Find best score in filtered results
+                best_filtered = max(filtered_results, key=lambda x: x.get('score', 0))
+                filtered_statistics['best_score'] = best_filtered.get('score')
+                filtered_statistics['best_score_competition'] = best_filtered.get('competition_name')
+        
+        response = {
+            'career': career_statistics,
+            'filtered': filtered_statistics,
+            'athlete_id': athlete_id
+        }
+        
+        # Include chart data if available
+        if stats_data:
+            response['chart_data'] = stats_data
+        
+        return jsonify(response)
     
-    response = {
-        'career': career_statistics,
-        'filtered': filtered_statistics,
-        'athlete_id': athlete_id
-    }
-    
-    # Include chart data if available
-    if stats_data:
-        response['chart_data'] = stats_data
-    
-    return jsonify(response)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching athlete statistics: {str(e)}")
+        return jsonify({'error': 'Failed to fetch athlete statistics', 'details': str(e)}), 500
 
 @bp.route('/api/competition_types')
 def get_competition_types():

@@ -81,14 +81,13 @@ class OrionAPIClient:
         """Search for athletes by name"""
         return self._make_request('GET', '/api/atleti', params={'q': name})
     
-    def get_athlete_results(self, athlete_id, competition_type=None, start_date=None, end_date=None, limit=500):
-        """Get results for an athlete"""
-        # API endpoint is /api/athlete/{tessera}/results
-        params = {'limit': limit}
-        if competition_type:
-            params['event_type'] = competition_type
-        # Note: start_date and end_date don't appear to be supported in the API spec
+    def get_athlete_results(self, athlete_id, limit=500):
+        """Get results for an athlete
         
+        NOTE: API only supports 'limit' parameter.
+        Filtering by event_type, start_date, end_date must be done client-side.
+        """
+        params = {'limit': limit}
         return self._make_request('GET', f'/api/athlete/{athlete_id}/results', params=params)
     
     def get_competition_types(self):
