@@ -121,12 +121,14 @@ def delete_user(user_id):
     username = user.username
     
     try:
-        # Delete related records first
+        # Delete related records first using synchronize_session=False
+        # to avoid SQLAlchemy trying to update relationships
+        
         # Delete authorized athletes
-        AuthorizedAthlete.query.filter_by(user_id=user_id).delete()
+        AuthorizedAthlete.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         
         # Delete competition subscriptions (if any)
-        CompetitionSubscription.query.filter_by(user_id=user_id).delete()
+        CompetitionSubscription.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         
         # Now delete the user
         db.session.delete(user)
