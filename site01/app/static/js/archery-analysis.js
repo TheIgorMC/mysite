@@ -268,13 +268,15 @@ async function analyzeResults() {
 }
 
 async function fetchAthleteResults(athleteId, competitionType, category, startDate, endDate, includeAverage) {
-    let url = `/archery/api/athlete/${athleteId}/results?`;
+    let url = `/archery/api/stats?`;
+    if (athleteId) url += `athlete_id=${encodeURIComponent(athleteId)}&`;
     if (competitionType) url += `competition_type=${encodeURIComponent(competitionType)}&`;
     if (category) url += `category=${encodeURIComponent(category)}&`;
     if (startDate) url += `start_date=${startDate}&`;
     if (endDate) url += `end_date=${endDate}&`;
     if (includeAverage) url += `include_average=true&`;
-    
+    // Remove trailing '&' if present
+    if (url.endsWith('&')) url = url.slice(0, -1);
     const response = await fetch(url);
     
     // Check if response is ok
