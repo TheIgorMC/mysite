@@ -93,8 +93,19 @@ def get_athlete_results(athlete_id):
         include_average = request.args.get('include_average', 'false').lower() == 'true'
         
         client = OrionAPIClient()
-        # Call API with ONLY the limit parameter (API doesn't support filtering)
+        # Call API with athletes as array (client ensures proper shape)
         results = client.get_athlete_results(athlete_id, limit=500)
+        # Defensive: if the API returned a non-list (string or dict), log and return a clear error
+        if results is None:
+            current_app.logger.error(f"API returned None for athlete results (athlete_id={athlete_id})")
+            return jsonify({'error': 'No data from API'}), 502
+        if not isinstance(results, list):
+            current_app.logger.error(f"Unexpected API payload for athlete results (athlete_id={athlete_id}): {results}")
+            # If it's a dict with a key 'results', try to extract it
+            if isinstance(results, dict) and 'results' in results and isinstance(results['results'], list):
+                results = results['results']
+            else:
+                return jsonify({'error': 'Unexpected API response format', 'details': str(type(results))}), 502
         
         if not results:
             return jsonify([])
@@ -154,17 +165,28 @@ def get_athlete_statistics(athlete_id):
         end_date = request.args.get('end_date')
         
         client = OrionAPIClient()
-        
+
         # Get stats data (chart format from API) - uses /api/stats endpoint
         try:
             stats_data = client.get_statistics(athlete_id)
         except Exception as e:
             current_app.logger.warning(f"Could not load stats chart data: {e}")
             stats_data = None
-        
+
         # Get all results to compute statistics - uses /api/athlete/{tessera}/results
         all_results = client.get_athlete_results(athlete_id, limit=500)
-        
+
+        # Defensive checks for all_results
+        if all_results is None:
+            current_app.logger.error(f"API returned None for all_results (athlete_id={athlete_id})")
+            return jsonify({'career': None, 'filtered': None, 'chart_data': stats_data, 'athlete_id': athlete_id}), 502
+        if not isinstance(all_results, list):
+            current_app.logger.error(f"Unexpected API payload for all_results (athlete_id={athlete_id}): {all_results}")
+            if isinstance(all_results, dict) and 'results' in all_results and isinstance(all_results['results'], list):
+                all_results = all_results['results']
+            else:
+                return jsonify({'error': 'Unexpected API response format for results', 'details': str(type(all_results))}), 502
+
         if not all_results:
             return jsonify({
                 'career': {

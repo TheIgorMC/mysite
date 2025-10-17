@@ -53,7 +53,6 @@ class OrionAPIClient:
     def _make_request(self, method, endpoint, data=None, params=None):
         """Make HTTP request to API"""
         url = f"{self.base_url}{endpoint}"
-        
         try:
             response = requests.request(
                 method=method,
@@ -63,15 +62,37 @@ class OrionAPIClient:
                 params=params,
                 timeout=30
             )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"API HTTP error: {e}")
-            logger.error(f"Response text: {e.response.text if e.response else 'No response'}")
-            raise  # Re-raise so Flask can handle it properly
         except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed: {e}")
-            raise  # Re-raise instead of returning None
+            logger.error(f"API request failed for {method} {url}: {e}")
+            raise
+
+        # Log status and content-type for debugging
+        content_type = response.headers.get('Content-Type', '')
+        logger.debug(f"API response {response.status_code} {method} {url} content-type: {content_type}")
+
+        # If there was an HTTP error, log response text (truncated) and raise
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            text_preview = (response.text[:1000] + '...') if response.text and len(response.text) > 1000 else response.text
+            logger.error(f"API HTTP error for {method} {url}: {e}")
+            logger.error(f"Response text (truncated): {text_preview}")
+            raise
+
+        # Try to parse JSON; if it's not JSON, log and raise informative error
+        try:
+            parsed = response.json()
+        except ValueError as e:
+            text_preview = (response.text[:2000] + '...') if response.text and len(response.text) > 2000 else response.text
+            logger.error(f"Failed to parse JSON from API {method} {url}: {e}")
+            logger.error(f"Response text (truncated): {text_preview}")
+            raise
+
+        # If API returned a primitive (string/number) instead of expected dict/list, log it
+        if not isinstance(parsed, (dict, list)):
+            logger.warning(f"API returned unexpected JSON type {type(parsed)} for {method} {url}: {repr(parsed)[:1000]}")
+
+        return parsed
     
     def get_athlete(self, athlete_id):
         """Get athlete information by ID"""
@@ -87,8 +108,9 @@ class OrionAPIClient:
         The API uses /api/stats with athlete parameter to get individual results.
         Returns list of competition results for the athlete.
         """
+        # The API expects 'athletes' as an array. Ensure we send it as a list.
         params = {
-            'athletes': athlete_id,  # Stats endpoint uses 'athletes' parameter
+            'athletes': [athlete_id],
             'limit': limit
         }
         return self._make_request('GET', '/api/stats', params=params)

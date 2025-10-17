@@ -268,40 +268,57 @@ async function analyzeResults() {
 }
 
 async function fetchAthleteResults(athleteId, competitionType, category, startDate, endDate, includeAverage) {
-    let url = `/archery/api/stats?`;
-    if (athleteId) url += `athlete_id=${encodeURIComponent(athleteId)}&`;
+    // Call the Flask backend results endpoint. The backend will call the external API and return
+    // a normalized array of result objects.
+    let url = `/archery/api/athlete/${athleteId}/results?`;
     if (competitionType) url += `competition_type=${encodeURIComponent(competitionType)}&`;
     if (category) url += `category=${encodeURIComponent(category)}&`;
     if (startDate) url += `start_date=${startDate}&`;
     if (endDate) url += `end_date=${endDate}&`;
     if (includeAverage) url += `include_average=true&`;
-    // Remove trailing '&' if present
-    if (url.endsWith('&')) url = url.slice(0, -1);
+
+    // Trim trailing separators
+    url = url.replace(/[&?]+$/g, '');
+
     const response = await fetch(url);
-    
-    // Check if response is ok
+
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to extract JSON error or plain text for better debugging
+        let details = '';
+        try {
+            details = JSON.stringify(await response.json());
+        } catch (e) {
+            try { details = await response.text(); } catch (e2) { details = '<unreadable response>'; }
+        }
+        console.error('Error fetching athlete results', response.status, details);
+        throw new Error(`HTTP error ${response.status}: ${details}`);
     }
-    
-    // Check if response is JSON
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error('Non-JSON response received:', text.substring(0, 200));
-        throw new Error('Server returned invalid response (not JSON)');
+
+    // Ensure we parse JSON safely
+    let data;
+    try {
+        data = await response.json();
+    } catch (err) {
+        console.error('Invalid JSON from results endpoint', err);
+        const txt = await response.text().catch(() => '<no body>');
+        console.error('Raw response:', txt.substring(0, 400));
+        throw new Error('Invalid JSON in response from server');
     }
-    
-    const data = await response.json();
-    
-    // Check for error in response
-    if (data.error) {
-        throw new Error(data.error + (data.details ? ': ' + data.details : ''));
+
+    // The backend returns either an array of results or an object with 'error'
+    if (data && data.error) {
+        const details = data.details ? `: ${data.details}` : '';
+        throw new Error(`Server error: ${data.error}${details}`);
     }
-    
+
+    if (!Array.isArray(data)) {
+        console.error('Unexpected payload for athlete results:', data);
+        throw new Error('Unexpected response format from server');
+    }
+
     return {
         athleteId,
-        athleteName: selectedAthletes.find(a => a.id === athleteId).name,
+        athleteName: (selectedAthletes.find(a => a.id === athleteId) || {}).name || 'Unknown',
         results: data,
         includeAverage
     };
