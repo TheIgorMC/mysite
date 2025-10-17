@@ -369,17 +369,26 @@ def get_types_by_category(category):
 @bp.route('/competitions')
 def competitions():
     """Competition management page - shows info page for non-members, competition page for members"""
+    from flask_login import current_user
+    
+    # Log for debugging
+    current_app.logger.info(f"Competitions page accessed. Authenticated: {current_user.is_authenticated}")
+    
     # Check if user is authenticated
     if not current_user.is_authenticated:
         # Show informational page for unauthenticated users
+        current_app.logger.info("Showing info page for unauthenticated user")
         return render_template('archery/competitions_info.html')
     
     # Check if authenticated user is a club member
+    current_app.logger.info(f"User is authenticated. Club member: {current_user.is_club_member}")
     if not current_user.is_club_member:
         # Show informational page for non-club members
+        current_app.logger.info("Showing info page for non-club member")
         return render_template('archery/competitions_info.html')
     
     # User is authenticated and is a club member - show competition management
+    current_app.logger.info("Showing competition management page for club member")
     return render_template('archery/competitions.html')
 
 @bp.route('/api/competitions')
