@@ -82,13 +82,16 @@ class OrionAPIClient:
         return self._make_request('GET', '/api/atleti', params={'q': name})
     
     def get_athlete_results(self, athlete_id, limit=500):
-        """Get results for an athlete
+        """Get results for an athlete using /api/stats endpoint
         
-        NOTE: API only supports 'limit' parameter.
-        Filtering by event_type, start_date, end_date must be done client-side.
+        The API uses /api/stats with athlete parameter to get individual results.
+        Returns list of competition results for the athlete.
         """
-        params = {'limit': limit}
-        return self._make_request('GET', f'/api/athlete/{athlete_id}/results', params=params)
+        params = {
+            'athletes': athlete_id,  # Stats endpoint uses 'athletes' parameter
+            'limit': limit
+        }
+        return self._make_request('GET', '/api/stats', params=params)
     
     def get_competition_types(self):
         """Get list of available competition types"""
