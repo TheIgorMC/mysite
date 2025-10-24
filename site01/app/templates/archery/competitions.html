@@ -782,18 +782,26 @@ function renderCompetitions(competitions) {
         const activeInterests = hasExpressedInterest ? 
             userInterests.get(competition.codice).filter(i => i.stato === 'attivo') : [];
         
-        // Show interest status if user has expressed interest
-        if (hasExpressedInterest && !subSummary.hasActiveSubscription) {
+        // Filter out interests for athletes who are already subscribed
+        const subscribedTessere = new Set(subSummary.subscriptions
+            .filter(s => s.stato !== 'cancellato')
+            .map(s => s.tessera_atleta));
+        const unsubscribedInterests = activeInterests.filter(
+            interest => !subscribedTessere.has(interest.tessera_atleta)
+        );
+        
+        // Show interest status if there are interests from athletes who are NOT subscribed
+        if (unsubscribedInterests.length > 0) {
             interestStatusBox.classList.remove('hidden');
             const interestText = interestStatusBox.querySelector('.interest-status-text');
-            const count = activeInterests.length;
+            const count = unsubscribedInterests.length;
             interestText.textContent = count === 1 ? 
                 'Interesse espresso' : 
                 `${count} interessati`;
             
             // Populate athlete list
             const athleteListContainer = interestStatusBox.querySelector('.athlete-list');
-            athleteListContainer.innerHTML = activeInterests.map(interest => {
+            athleteListContainer.innerHTML = unsubscribedInterests.map(interest => {
                 const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
                 const athleteName = athlete ? athlete.display : interest.tessera_atleta;
                 return `
@@ -807,10 +815,10 @@ function renderCompetitions(competitions) {
                 `;
             }).join('');
             
-            // Wire up delete button
+            // Wire up delete button (pass only unsubscribed interests)
             interestDeleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                showDeleteInterestModal(activeInterests, competition);
+                showDeleteInterestModal(unsubscribedInterests, competition);
             });
         }
         

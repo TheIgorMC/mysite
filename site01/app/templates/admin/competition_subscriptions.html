@@ -80,6 +80,7 @@ let currentTab = 'subscriptions';
 let allSubscriptions = [];
 let allInterests = [];
 let allCompetitions = {};
+let allInviti = {};
 let allAthletes = {};
 
 // Tab switching
@@ -132,6 +133,16 @@ async function loadData() {
             console.log('Loaded competitions:', Object.keys(allCompetitions).length);
         }
 
+        // Load inviti (subscription dates)
+        const invitiResp = await fetch('/archery/api/inviti?export=full');
+        if (invitiResp.ok) {
+            const inviti = await invitiResp.json();
+            inviti.forEach(invito => {
+                allInviti[invito.codice] = invito;
+            });
+            console.log('Loaded inviti:', Object.keys(allInviti).length);
+        }
+
         renderSubscriptions();
         renderInterest();
     } catch (error) {
@@ -175,18 +186,34 @@ function renderSubscriptions() {
         const competitionCard = document.createElement('div');
         competitionCard.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-md p-6';
         
+        const invito = allInviti[codiceGara];
+        const subscriptionDatesHtml = invito ? `
+            <div class="flex flex-wrap gap-4 mb-4 text-sm">
+                <div class="flex items-center text-green-600 dark:text-green-400">
+                    <i class="fas fa-door-open mr-2"></i>
+                    <span><strong>Apertura:</strong> ${formatDate(invito.data_apertura_iscrizioni)}</span>
+                </div>
+                <div class="flex items-center text-red-600 dark:text-red-400">
+                    <i class="fas fa-door-closed mr-2"></i>
+                    <span><strong>Chiusura:</strong> ${formatDate(invito.data_chiusura_iscrizioni)}</span>
+                </div>
+            </div>
+        ` : '';
+        
         const competitionInfo = competition ? 
             `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 ${competition.nome}
                 <span class="text-sm font-mono text-gray-500 dark:text-gray-400 ml-2">${codiceGara}</span>
             </h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
+            <p class="text-gray-600 dark:text-gray-400 mb-2">
                 <i class="fas fa-calendar mr-2"></i>${formatDate(competition.data_inizio)}
                 <i class="fas fa-map-marker-alt ml-4 mr-2"></i>${competition.luogo || 'N/A'}
-            </p>` :
+            </p>
+            ${subscriptionDatesHtml}` :
             `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Competition ${codiceGara}
-            </h2>`;
+            </h2>
+            ${subscriptionDatesHtml}`;
         
         const subsHtml = subs.map(sub => {
             let statusColor = 'gray';
@@ -291,18 +318,34 @@ function renderInterest() {
         const competitionCard = document.createElement('div');
         competitionCard.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-md p-6';
         
+        const invito = allInviti[codiceGara];
+        const subscriptionDatesHtml = invito ? `
+            <div class="flex flex-wrap gap-4 mb-4 text-sm">
+                <div class="flex items-center text-green-600 dark:text-green-400">
+                    <i class="fas fa-door-open mr-2"></i>
+                    <span><strong>Apertura:</strong> ${formatDate(invito.data_apertura_iscrizioni)}</span>
+                </div>
+                <div class="flex items-center text-red-600 dark:text-red-400">
+                    <i class="fas fa-door-closed mr-2"></i>
+                    <span><strong>Chiusura:</strong> ${formatDate(invito.data_chiusura_iscrizioni)}</span>
+                </div>
+            </div>
+        ` : '';
+        
         const competitionInfo = competition ? 
             `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 ${competition.nome}
                 <span class="text-sm font-mono text-gray-500 dark:text-gray-400 ml-2">${codiceGara}</span>
             </h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
+            <p class="text-gray-600 dark:text-gray-400 mb-2">
                 <i class="fas fa-calendar mr-2"></i>${formatDate(competition.data_inizio)}
                 <i class="fas fa-map-marker-alt ml-4 mr-2"></i>${competition.luogo || 'N/A'}
-            </p>` :
+            </p>
+            ${subscriptionDatesHtml}` :
             `<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Competition ${codiceGara}
-            </h2>`;
+            </h2>
+            ${subscriptionDatesHtml}`;
         
         const interestHtml = interests.map(sub => `
             <tr class="border-b border-gray-200 dark:border-gray-700">
