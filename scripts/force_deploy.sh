@@ -30,7 +30,7 @@ fi
 # Step 2: Stop containers
 echo ""
 echo "🛑 Step 2: Stopping containers..."
-docker-compose down
+docker compose down
 
 # Step 3: Clear local Docker cache
 echo ""
@@ -45,7 +45,7 @@ CACHE_BUST=$(date +%s) docker-compose build --no-cache --pull
 # Step 5: Start containers
 echo ""
 echo "▶️  Step 5: Starting containers..."
-docker-compose up -d
+docker compose up -d
 
 # Step 6: Run database migrations
 echo ""
