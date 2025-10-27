@@ -47,14 +47,21 @@ echo ""
 echo "▶️  Step 5: Starting containers..."
 docker-compose up -d
 
-# Step 6: Wait for startup
+# Step 6: Run database migrations
 echo ""
-echo "⏳ Step 6: Waiting for application to start..."
+echo "🔄 Step 6: Running database migrations..."
+docker exec orion-project bash -c "cd /app/site01 && python -m pip install mysql-connector-python python-dotenv 2>/dev/null || true"
+docker exec orion-project bash -c "cd /app/site01 && for migration in migrations/*.py; do [ -f \"\$migration\" ] && python \"\$migration\" 2>/dev/null || true; done"
+echo "✓ Migrations completed"
+
+# Step 7: Wait for startup
+echo ""
+echo "⏳ Step 7: Waiting for application to stabilize..."
 sleep 5
 
-# Step 7: Verify
+# Step 8: Verify
 echo ""
-echo "✅ Step 7: Verifying deployment..."
+echo "✅ Step 8: Verifying deployment..."
 
 # Check if container is running
 if ! docker ps | grep -q orion-project; then

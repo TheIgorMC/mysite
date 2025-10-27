@@ -220,6 +220,10 @@ class Product(db.Model):
     in_stock = db.Column(db.Boolean, default=True)
     stock_quantity = db.Column(db.Integer)
     
+    # Customization flags
+    is_custom_string = db.Column(db.Boolean, default=False)  # Enable string customizer
+    is_custom_print = db.Column(db.Boolean, default=False)   # Enable 3D print customizer
+    
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
