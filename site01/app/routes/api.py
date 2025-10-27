@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import AuthorizedAthlete, User
 from datetime import datetime
+import requests
 
 bp = Blueprint('website_api', __name__)
 
@@ -239,3 +240,146 @@ def admin_remove_athlete(athlete_id):
         'success': True,
         'message': 'Athlete removed from user'
     })
+
+
+# ==================== MATERIALS (STRINGMAKING STOCK) API PROXY ====================
+
+@bp.route('/api/materiali', methods=['GET'])
+@login_required
+def get_materials():
+    """
+    Get materials with optional filters
+    Query params: q, tipo, low_stock_lt, limit, offset
+    """
+    from app.api import OrionAPIClient
+    
+    # Get query parameters
+    q = request.args.get('q')
+    tipo = request.args.get('tipo')
+    low_stock_lt = request.args.get('low_stock_lt', type=float)
+    limit = request.args.get('limit', default=100, type=int)
+    offset = request.args.get('offset', default=0, type=int)
+    
+    try:
+        api = OrionAPIClient()
+        materials = api.get_materials(
+            q=q,
+            tipo=tipo,
+            low_stock_lt=low_stock_lt,
+            limit=limit,
+            offset=offset
+        )
+        return jsonify(materials)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/materiali', methods=['POST'])
+@login_required
+def create_material():
+    """
+    Create a new material entry
+    Required: materiale, colore, spessore, rimasto, costo, tipo
+    """
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    from app.api import OrionAPIClient
+    
+    data = request.get_json()
+    required_fields = ['materiale', 'colore', 'spessore', 'rimasto', 'costo', 'tipo']
+    
+    # Validate required fields
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+    
+    try:
+        api = OrionAPIClient()
+        result = api.create_material(
+            materiale=data['materiale'],
+            colore=data['colore'],
+            spessore=data['spessore'],
+            rimasto=data['rimasto'],
+            costo=data['costo'],
+            tipo=data['tipo']
+        )
+        return jsonify(result), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/materiali/<int:material_id>', methods=['PATCH'])
+@login_required
+def update_material(material_id):
+    """
+    Update material fields (partial update)
+    Accepts any combination of: rimasto, costo, materiale, colore, spessore, tipo
+    """
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    from app.api import OrionAPIClient
+    
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'error': 'No update data provided'}), 400
+    
+    try:
+        api = OrionAPIClient()
+        result = api.update_material(material_id, **data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/materiali/<int:material_id>/consume', methods=['POST'])
+@login_required
+def consume_material(material_id):
+    """
+    Consume a quantity from stock (atomic, non-negative)
+    Required: quantita
+    Returns: 409 if stock insufficient
+    """
+    from app.api import OrionAPIClient
+    
+    data = request.get_json()
+    
+    if 'quantita' not in data:
+        return jsonify({'error': 'Missing required field: quantita'}), 400
+    
+    try:
+        quantita = float(data['quantita'])
+        if quantita <= 0:
+            return jsonify({'error': 'Quantity must be positive'}), 400
+        
+        api = OrionAPIClient()
+        result = api.consume_material(material_id, quantita)
+        return jsonify(result)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 409:
+            return jsonify({'error': 'Insufficient stock'}), 409
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/materiali/<int:material_id>', methods=['DELETE'])
+@login_required
+def delete_material(material_id):
+    """
+    Delete a material entry
+    Admin only
+    """
+    if not current_user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    from app.api import OrionAPIClient
+    
+    try:
+        api = OrionAPIClient()
+        result = api.delete_material(material_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

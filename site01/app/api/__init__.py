@@ -221,3 +221,82 @@ class OrionAPIClient:
     def delete_interest(self, interest_id):
         """Delete an interest expression by ID"""
         return self._make_request('DELETE', f'/api/interesse/{interest_id}')
+    
+    # ==================== MATERIALS (STRINGMAKING STOCK) ====================
+    
+    def get_materials(self, q=None, tipo=None, low_stock_lt=None, limit=100, offset=0):
+        """
+        Get materials with optional filters
+        
+        Args:
+            q: Search in materiale/colore/spessore
+            tipo: Filter by type (string, serving, center, etc.)
+            low_stock_lt: Show only items with rimasto below threshold
+            limit: Number of results (default 100)
+            offset: Offset for pagination (default 0)
+        """
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        if q:
+            params['q'] = q
+        if tipo:
+            params['tipo'] = tipo
+        if low_stock_lt is not None:
+            params['low_stock_lt'] = low_stock_lt
+        
+        return self._make_request('GET', '/api/materiali', params=params)
+    
+    def create_material(self, materiale, colore, spessore, rimasto, costo, tipo):
+        """
+        Create a new material entry
+        
+        Args:
+            materiale: Material name (e.g., "BCY X99")
+            colore: Color
+            spessore: Thickness
+            rimasto: Remaining quantity
+            costo: Cost per unit
+            tipo: Type (string, serving, center, etc.)
+        """
+        data = {
+            'materiale': materiale,
+            'colore': colore,
+            'spessore': spessore,
+            'rimasto': float(rimasto),
+            'costo': float(costo),
+            'tipo': tipo
+        }
+        return self._make_request('POST', '/api/materiali', data=data)
+    
+    def update_material(self, material_id, **fields):
+        """
+        Update material fields (partial update)
+        
+        Args:
+            material_id: ID of the material
+            **fields: Any fields to update (rimasto, costo, etc.)
+        """
+        return self._make_request('PATCH', f'/api/materiali/{material_id}', data=fields)
+    
+    def consume_material(self, material_id, quantita):
+        """
+        Consume a quantity from stock (atomic, non-negative)
+        
+        Args:
+            material_id: ID of the material
+            quantita: Quantity to consume
+        
+        Returns:
+            Updated material with new rimasto value
+        
+        Raises:
+            409 if stock insufficient
+        """
+        data = {'quantita': float(quantita)}
+        return self._make_request('POST', f'/api/materiali/{material_id}/consume', data=data)
+    
+    def delete_material(self, material_id):
+        """Delete a material entry"""
+        return self._make_request('DELETE', f'/api/materiali/{material_id}')

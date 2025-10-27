@@ -2,6 +2,19 @@
 
 **Passione, Precisione, Innovazione** - A comprehensive platform for archery analysis, 3D printing projects, and electronics.
 
+## 📚 Documentation
+
+All documentation has been organized in `site01/docs/` for easy navigation:
+
+- **[Setup Guides](site01/docs/setup/)** - Installation, environment configuration, admin setup
+- **[Deployment](site01/docs/deployment/)** - Docker setup, deployment procedures, recovery guides
+- **[API Documentation](site01/docs/api/)** - API specifications and usage guides
+- **[Features](site01/docs/features/)** - Feature-specific documentation and guides
+- **[Troubleshooting](site01/docs/troubleshooting/)** - Common issues and solutions
+- **[Scripts](scripts/)** - Utility scripts for deployment, diagnostics, and maintenance
+
+For a complete overview, see [site01/docs/INDEX.md](site01/docs/INDEX.md).
+
 ## Features
 
 ### 🏹 Archery Analysis

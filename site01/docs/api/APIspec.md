@@ -433,6 +433,107 @@ Modules:
 
 ---
 
+📦 Materiali (Stringmaking Stock)
+GET /api/materiali
+
+List materials with filters.
+
+Query params
+
+Param	Type	Description
+q	string	Search in materiale/colore/spessore
+tipo	string	Filter by type (string, serving, center, …)
+low_stock_lt	number	Show only items with rimasto below threshold
+limit	int	Default 100
+offset	int	Default 0
+
+Response
+
+[
+  {
+    "id": 3,
+    "materiale": "BCY 652",
+    "colore": "Flo Green",
+    "spessore": "0.021",
+    "rimasto": 132.50,
+    "costo": 0.18,
+    "tipo": "string",
+    "created_at": "2025-10-01T10:22:00",
+    "updated_at": "2025-10-27T09:12:34"
+  }
+]
+
+POST /api/materiali
+
+Create a new material entry.
+
+Body
+
+{
+  "materiale": "BCY X99",
+  "colore": "Black",
+  "spessore": "0.026",
+  "rimasto": 250.00,
+  "costo": 0.22,
+  "tipo": "string"
+}
+
+
+Response
+
+{"id": 7, "status": "created"}
+
+PATCH /api/materiali/{id}
+
+Update any field (partial update).
+
+Body (example)
+
+{
+  "rimasto": 210.00,
+  "costo": 0.21
+}
+
+
+Response
+
+{"id": 7, "status": "updated"}
+
+POST /api/materiali/{id}/consume
+
+Consume a quantity from stock (atomic, non-negative).
+
+Body
+
+{
+  "quantita": 12.50
+}
+
+
+Response
+
+{"id": 7, "rimasto": "197.50", "status": "consumed"}
+
+
+Errors:
+
+409: stock insufficient (rimasto too low)
+
+DELETE /api/materiali/{id}
+
+Delete a material entry.
+
+Response
+
+{"id": 7, "status": "deleted"}
+
+🔬 Suggested indexes (performance)
+CREATE INDEX idx_mat_variant ON ARC_materiali (materiale, colore, spessore, tipo);
+CREATE INDEX idx_mat_low ON ARC_materiali (rimasto);
+CREATE INDEX idx_mat_tipo ON ARC_materiali (tipo);
+
+---
+
 ## 🧠 Notes for Frontend Developers
 
 * JSON format throughout
@@ -443,5 +544,4 @@ Modules:
 
   ```http
   Content-Type: application/json
-  Accept: application/json
-  ```
+  Accept: application/json```

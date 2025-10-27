@@ -1,46 +1,91 @@
 # Documentation Index
 
-Welcome to the Archery Analysis System documentation! This folder contains all technical documentation, guides, and references.
+Welcome to the Orion Project documentation! All documentation has been organized by category for easy navigation.
 
 ## 📚 Quick Navigation
 
-### Getting Started
-- [Project README](../../README.md) - Main project information
-- [Quick Start Guide](QUICK_START.txt) - Get up and running quickly
-- [Setup Guide](SETUP_GUIDE.md) - Detailed installation instructions
-- [Project Summary](PROJECT_SUMMARY.md) - Complete project summary
-- [Project Overview](OVERVIEW.md) - High-level overview
+### 🚀 Getting Started
+- **[Main README](../../README.md)** - Project overview and quick links
+- **[Setup Guides](setup/)** - Installation, environment configuration, admin setup
+  - [Quickstart Guide](setup/QUICKSTART.md)
+  - [Setup Guide](setup/SETUP_GUIDE.md)
+  - [Environment Guide](setup/ENV_GUIDE.md)
+  - [Admin Setup](setup/ADMIN_SETUP.md)
 
-### Deployment & Operations
-- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Complete debugging guide
-- **[Force Rebuild](FORCE_REBUILD.md)** - How to force rebuilds in Dockge
-- **[Emergency Rebuild](EMERGENCY_REBUILD.md)** - Manual rebuild via SSH
-- **[Quick Rebuild](REBUILD.md)** - Quick rebuild reference
-- **[Import Fix](IMPORT_FIX.md)** - Config import fix details
-- **[Fix Summary](FIX_SUMMARY.md)** - Complete deployment fix summary
-- **[Urgent Fix](URGENT_FIX.md)** - Naming conflict resolution
+### 🐳 Deployment & Operations
+- **[Deployment](deployment/)** - Docker setup, deployment procedures, recovery guides
+  - [Deployment Guide](deployment/DEPLOYMENT.md)
+  - [Dockge Setup](deployment/DOCKGE_SETUP.md)
+  - [Docker Database Guide](deployment/DOCKER_DATABASE_GUIDE.md)
+  - [Database Recovery](deployment/DATABASE_RECOVERY.md)
+  - [Emergency Rebuild](deployment/EMERGENCY_REBUILD.md)
+  - [Force Rebuild](deployment/FORCE_REBUILD.md)
+  - [Rebuild Guide](deployment/REBUILD.md)
+  - [Deployment Checklist](deployment/CHECKLIST.md)
 
-### Architecture & Design
+### 🔧 Troubleshooting
+- **[Troubleshooting](troubleshooting/)** - Common issues and solutions
+  - [General Troubleshooting](troubleshooting/TROUBLESHOOTING.md)
+  - [Image Troubleshooting](troubleshooting/IMAGE_TROUBLESHOOTING.md)
+  - [Cache Issues](troubleshooting/CACHE_TROUBLESHOOTING.md)
+  - [Anti-Cache Update](troubleshooting/ANTI_CACHE_UPDATE.md)
+  - [Critical Fixes Needed](troubleshooting/CRITICAL_FIXES_NEEDED.md)
+
+### 🏗️ Architecture & Design
 - [System Architecture](ARCHITECTURE.md) - Overall system design
-- [Project Specifications](specifications.md) - Original project requirements
+- [Project Overview](OVERVIEW.md) - High-level overview
+- [Project Summary](PROJECT_SUMMARY.md) - Complete project summary
 - [File Index](FILE_INDEX.md) - Complete file structure reference
+- [Project Specifications](specifications.md) - Original project requirements
 
-### Features Documentation
-- **[Statistics Features](features/statistics.md)** - Career vs filtered stats, multi-athlete comparison
-- **[Statistics Quick Reference](features/statistics-quick-reference.md)** - Quick usage guide
-- **[Statistics Summary](features/statistics-summary.md)** - Implementation details
-- **[Date Handling](features/date-handling.md)** - Date normalization system
-- **[Date Fix Summary](features/date-fix-summary.md)** - Date handling improvements
-- **[Loading States](features/loading-states.md)** - Loading indicators implementation
-- **[Internationalization](features/internationalization.md)** - Bilingual EN/IT translation system
-- [Archery Analysis Features](ARCHERY_ANALYSIS_FEATURES.md) - Complete feature list
+### ✨ Features Documentation
+- **[Features](features/)** - Feature-specific documentation and guides
+  - [Archery Analysis Features](features/ARCHERY_ANALYSIS_FEATURES.md)
+  - [Competition Class Feature](features/COMPETITION_CLASS_FEATURE.md)
+  - [Statistics Features](features/STATISTICS_FEATURES.md)
+  - [Statistics Quick Reference](features/STATISTICS_QUICK_REFERENCE.md)
+  - [Statistics Enhancement Summary](features/STATISTICS_ENHANCEMENT_SUMMARY.md)
+  - [Date Handling Guide](features/DATE_HANDLING_GUIDE.md)
+  - [Date Fix Summary](features/FIX_SUMMARY_DATES.md)
+  - [Loading States](features/loading-states.md)
+  - [Mobile Improvements](features/MOBILE_IMPROVEMENTS.md)
+  - [Notification Update](features/NOTIFICATION_UPDATE.md)
+  - [Tags & Drag-Drop Features](features/FEATURES_TAGS_DRAGDROP.md)
+  - [Internationalization](features/internationalization.md)
+  - [i18n Testing](features/i18n-testing.md)
+  - [i18n Summary](features/i18n-summary.md)
 
-### API Documentation
-- **[API Usage Guide](api/usage-guide.md)** - How to use the Orion API
-- **[API Specification](api/spec.json)** - OpenAPI 3.1 specification
+### 🔌 API Documentation
+- **[API](api/)** - API specifications and usage guides
+  - [API Specification](api/APIspec.md)
+  - [API Usage Guide](api/usage-guide.md)
+  - [Competition API Spec](COMPETITION_API_SPEC.md)
 
-### Implementation Documentation
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Latest updates and changes
+### 🛠️ Utilities & Scripts
+- **[Scripts](../../scripts/)** - Utility scripts for deployment, diagnostics, and maintenance
+  - `check_deployment.sh` - Verify deployment status
+  - `check_images.sh` - Validate images
+  - `check_local_changes.ps1` - Check local modifications (PowerShell)
+  - `diagnose_images.ps1` - Diagnose image issues (PowerShell)
+  - `emergency-rebuild.sh` - Emergency rebuild procedure
+  - `force_deploy.sh` - Force deployment
+  - `force_update.sh` - Force update
+  - `setup.sh` - Initial setup script
+
+### 📖 Reference Guides
+- [Quick Reference](QUICK_REFERENCE.md) - Quick command and feature reference
+- [Admin Panel Guide](ADMIN_PANEL_GUIDE.md) - Admin interface documentation
+- [Authorized Athletes Guide](AUTHORIZED_ATHLETES_GUIDE.md) - Athlete management
+- [Automatic Migrations](AUTOMATIC_MIGRATIONS.md) - Database migration guide
+- [Documentation Organization](DOCS_ORGANIZATION.md) - This documentation structure
+
+### 📦 Examples
+- **[Examples](examples/)** - Code examples and demonstrations
+
+### 📜 Historical Documentation
+- **[Archive](../../archive/)** - Historical fix documentation and temporal files
+  - Contains 20+ archived documents from previous bug fixes and feature implementations
+  - Preserved for reference but not needed for current development
 
 ## 🎯 Feature Highlights
 
