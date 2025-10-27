@@ -269,67 +269,90 @@ function drawStringPreview() {
     }
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // String dimensions
-    const stringStartX = 100;
-    const stringEndX = canvas.width - 100;
-    const stringY = canvas.height / 2;
-    const stringThickness = 8;
-    
-    // Draw main string
+    // Draw main string using twisted strand algorithm from C# reference
     if (selectedConfig.stringColor) {
-        ctx.strokeStyle = getColorCode(selectedConfig.stringColor);
-        ctx.lineWidth = stringThickness;
-        ctx.lineCap = 'round';
-        
-        // Draw twisted effect (multiple strands)
         const strandCount = parseInt(selectedConfig.strandCount) || 16;
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.moveTo(stringStartX, stringY + (i - 1) * 2);
-            ctx.lineTo(stringEndX, stringY + (i - 1) * 2);
-            ctx.stroke();
+        const strandColor = getColorCode(selectedConfig.stringColor);
+        
+        // Canvas dimensions for string area
+        const w = canvas.width * 0.8; // 80% of canvas width for string
+        const h = 120; // Height for string drawing area
+        const offsetX = canvas.width * 0.1; // 10% margin on each side
+        const offsetY = 15; // Top margin
+        
+        const y1 = offsetY;
+        const y0 = -h - 90;
+        
+        const off = 8; // Offset between strands (reduced for web)
+        const length = off * strandCount;
+        
+        // Draw 4 passes for twisted effect (like C# reference)
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 4;
+        
+        for(let j = 0; j < 4; j++) {
+            for(let i = 0; i < strandCount; i++) {
+                // Coordinates for diagonal lines
+                const xi = offsetX - 30;
+                const yi = y0 + i * off + j * length;
+                
+                const xf = offsetX + w + 30;
+                const yf = y1 + i * off + j * length;
+                
+                ctx.strokeStyle = strandColor;
+                ctx.globalAlpha = 0.8; // Slight transparency for depth
+                
+                ctx.beginPath();
+                ctx.moveTo(xi, yi);
+                ctx.lineTo(xf, yf);
+                ctx.stroke();
+            }
         }
         
-        // Add strand label
-        if (selectedConfig.strandCount) {
-            ctx.fillStyle = '#6b7280';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillText(`${strandCount} strands`, stringStartX, stringY - 20);
-        }
+        ctx.globalAlpha = 1.0; // Reset alpha
+        
+        // Add strand count label
+        ctx.fillStyle = '#6b7280';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${strandCount} strands`, 20, canvas.height - 45);
     } else {
         // Placeholder
+        const centerY = canvas.height / 2;
         ctx.strokeStyle = '#d1d5db';
-        ctx.lineWidth = stringThickness;
+        ctx.lineWidth = 8;
         ctx.setLineDash([10, 5]);
         ctx.beginPath();
-        ctx.moveTo(stringStartX, stringY);
-        ctx.lineTo(stringEndX, stringY);
+        ctx.moveTo(100, centerY);
+        ctx.lineTo(canvas.width - 100, centerY);
         ctx.stroke();
         ctx.setLineDash([]);
         
         ctx.fillStyle = '#9ca3af';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Select string material and color', canvas.width / 2, stringY - 25);
+        ctx.fillText('Select string material and color', canvas.width / 2, centerY - 25);
     }
     
-    // Draw end servings
+    // Draw end servings (overlay on top of string)
     if (selectedConfig.servingColor) {
         const servingColor = getColorCode(selectedConfig.servingColor);
         const servingWidth = 80;
+        const servingY = canvas.height / 2;
+        const servingThickness = 12;
         
         // Left serving
-        drawServing(ctx, stringStartX, stringY, servingWidth, stringThickness + 2, servingColor, 'left');
+        drawServing(ctx, 100, servingY, servingWidth, servingThickness, servingColor);
         
-        // Right serving
-        drawServing(ctx, stringEndX - servingWidth, stringY, servingWidth, stringThickness + 2, servingColor, 'right');
+        // Right serving  
+        drawServing(ctx, canvas.width - 100 - servingWidth, servingY, servingWidth, servingThickness, servingColor);
         
         // Labels
         ctx.fillStyle = '#6b7280';
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('End Serving', stringStartX + servingWidth / 2, stringY + 35);
-        ctx.fillText('End Serving', stringEndX - servingWidth / 2, stringY + 35);
+        ctx.fillText('End Serving', 100 + servingWidth / 2, canvas.height - 15);
+        ctx.fillText('End Serving', canvas.width - 100 - servingWidth / 2, canvas.height - 15);
     }
     
     // Draw center serving (if enabled)
@@ -337,35 +360,38 @@ function drawStringPreview() {
         const centerColor = getColorCode(selectedConfig.centerColor);
         const centerWidth = 100;
         const centerX = canvas.width / 2 - centerWidth / 2;
+        const centerY = canvas.height / 2;
+        const centerThickness = 12;
         
-        drawServing(ctx, centerX, stringY, centerWidth, stringThickness + 2, centerColor, 'center');
+        drawServing(ctx, centerX, centerY, centerWidth, centerThickness, centerColor);
         
         // Label
         ctx.fillStyle = '#6b7280';
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Center Serving', canvas.width / 2, stringY + 35);
-        ctx.fillText('(Nocking Point)', canvas.width / 2, stringY + 48);
+        ctx.fillText('Center Serving', canvas.width / 2, canvas.height - 30);
+        ctx.fillText('(Nocking Point)', canvas.width / 2, canvas.height - 15);
     }
     
     // Draw length indicator
     if (selectedConfig.length) {
+        const margin = 100;
         ctx.strokeStyle = '#9ca3af';
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         
         // Top line
         ctx.beginPath();
-        ctx.moveTo(stringStartX, 20);
-        ctx.lineTo(stringEndX, 20);
+        ctx.moveTo(margin, 20);
+        ctx.lineTo(canvas.width - margin, 20);
         ctx.stroke();
         
         // End markers
         ctx.beginPath();
-        ctx.moveTo(stringStartX, 15);
-        ctx.lineTo(stringStartX, 25);
-        ctx.moveTo(stringEndX, 15);
-        ctx.lineTo(stringEndX, 25);
+        ctx.moveTo(margin, 15);
+        ctx.lineTo(margin, 25);
+        ctx.moveTo(canvas.width - margin, 15);
+        ctx.lineTo(canvas.width - margin, 25);
         ctx.stroke();
         
         ctx.setLineDash([]);
@@ -383,22 +409,22 @@ function drawStringPreview() {
         ctx.fillStyle = '#059669';
         ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(selectedConfig.stringType.toUpperCase(), stringStartX, canvas.height - 15);
+        ctx.fillText(selectedConfig.stringType.toUpperCase(), 20, canvas.height - 60);
     }
 }
 
-function drawServing(ctx, x, y, width, thickness, color, type) {
+function drawServing(ctx, x, y, width, thickness, color) {
     ctx.fillStyle = color;
     
-    // Draw wrapped serving effect
-    for (let i = 0; i < width; i += 3) {
-        const waveOffset = Math.sin(i / 3) * 1;
-        ctx.fillRect(x + i, y - thickness / 2 + waveOffset, 2, thickness);
+    // Draw wrapped serving effect with tighter wraps
+    for (let i = 0; i < width; i += 2) {
+        const waveOffset = Math.sin(i / 2) * 0.5;
+        ctx.fillRect(x + i, y - thickness / 2 + waveOffset, 1.5, thickness);
     }
     
-    // Add highlight effect
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    for (let i = 0; i < width; i += 6) {
+    // Add highlight effect for shine
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    for (let i = 0; i < width; i += 4) {
         ctx.fillRect(x + i, y - thickness / 2, 1, thickness / 3);
     }
 }
