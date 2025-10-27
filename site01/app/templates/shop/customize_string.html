@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}String Customizer - {{ product.name_en }}{% endblock %}
+{% block title %}{{ t('customize.string_customizer') }} - {{ product.name_en }}{% endblock %}
 
 {% block content %}
 <section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
@@ -9,10 +9,10 @@
         <div class="mb-8">
             <a href="{{ url_for('shop.product_detail', product_id=product.id) }}" 
                class="inline-flex items-center text-primary hover:text-primary-dark transition mb-4">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Product
+                <i class="fas fa-arrow-left mr-2"></i>{{ t('common.back') }}
             </a>
             <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
-                <i class="fas fa-sliders-h text-primary mr-3"></i>String Customizer
+                <i class="fas fa-sliders-h text-primary mr-3"></i>{{ t('customize.string_customizer') }}
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-2">{{ product.name_en }}</p>
         </div>
@@ -22,7 +22,7 @@
             <div class="lg:col-span-3 mb-8">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                     <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white text-center">
-                        String Preview
+                        {{ t('customize.string_preview') }}
                     </h2>
                     <div class="relative w-full overflow-x-auto">
                         <canvas id="string-canvas" 
@@ -32,7 +32,7 @@
                         </canvas>
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-3">
-                        Real-time visualization of your custom string configuration
+                        {{ t('customize.preview_description') }}
                     </p>
                 </div>
             </div>
@@ -41,28 +41,27 @@
             <div class="lg:col-span-2">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                     <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                        Configure Your String
+                        {{ t('customize.configure_string') }}
                     </h2>
 
                     <!-- String Type -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            String Type *
+                            {{ t('customize.string_type') }} *
                         </label>
                         <select id="string-type" 
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                onchange="updatePrice()">
-                            <option value="">Select string type...</option>
-                            <option value="recurve">Recurve String</option>
-                            <option value="compound">Compound String</option>
-                            <option value="longbow">Longbow String</option>
+                                onchange="updateSummary()">
+                            <option value="">{{ t('customize.select_string_type') }}</option>
+                            <option value="recurve">{{ t('customize.recurve') }}</option>
+                            <option value="compound">{{ t('customize.compound') }}</option>
                         </select>
                     </div>
 
                     <!-- Length -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            String Length (inches) *
+                            {{ t('customize.string_length') }} (inches) *
                         </label>
                         <input type="number" 
                                id="string-length" 
@@ -71,28 +70,28 @@
                                step="0.25"
                                placeholder="e.g., 68.5"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                               onchange="updatePrice()">
+                               onchange="updateSummary()">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Typical range: 58-72 inches for recurve, 40-50 for compound
+                            {{ t('customize.length_hint') }}
                         </p>
                     </div>
 
                     <!-- Main String Material -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Main String Material (Corda) *
+                            {{ t('customize.string_material') }} *
                         </label>
                         <select id="string-material" 
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                onchange="loadMaterialColors('string'); updatePrice()">
-                            <option value="">Select material...</option>
+                                onchange="loadMaterialColors('string'); updateSummary()">
+                            <option value="">{{ t('customize.loading_materials') }}</option>
                         </select>
                     </div>
 
                     <!-- Main String Color -->
                     <div class="mb-6" id="string-color-container" style="display: none;">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Main String Color *
+                            {{ t('customize.string_color') }} *
                         </label>
                         <div id="string-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
                             <!-- Color options will be loaded here -->
@@ -102,7 +101,7 @@
                     <!-- Number of Strands -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Number of Strands *
+                            {{ t('customize.strand_count') }} *
                         </label>
                         <input type="number" 
                                id="strand-count" 
@@ -111,78 +110,190 @@
                                step="2"
                                placeholder="e.g., 16"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                               onchange="updatePrice()">
+                               onchange="updateSummary()">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Common: 14-18 strands for recurve, 18-24 for compound
+                            {{ t('customize.strand_hint') }}
                         </p>
                     </div>
 
-                    <!-- Serving Material -->
+                    <!-- Nock Size -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Serving Material *
+                            {{ t('customize.nock_size') }} *
                         </label>
-                        <select id="serving-material" 
+                        <select id="nock-size"
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                onchange="loadMaterialColors('serving'); updatePrice()">
-                            <option value="">Select serving...</option>
+                                onchange="updateSummary()">
+                            <option value="">{{ t('customize.select_nock_size') }}</option>
+                            <option value="1">{{ t('customize.small_nock') }}</option>
+                            <option value="2">{{ t('customize.large_nock') }}</option>
                         </select>
                     </div>
 
-                    <!-- Serving Color -->
+                    <!-- End Serving Material -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('customize.end_serving_material') }} *
+                        </label>
+                        <select id="serving-material" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="loadMaterialColors('serving'); updateSummary()">
+                            <option value="">{{ t('customize.loading_materials') }}</option>
+                        </select>
+                    </div>
+
+                    <!-- End Serving Color -->
                     <div class="mb-6" id="serving-color-container" style="display: none;">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Serving Color *
+                            {{ t('customize.end_serving_color') }} *
                         </label>
                         <div id="serving-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
                             <!-- Color options will be loaded here -->
                         </div>
                     </div>
 
+                    <!-- End Serving Length -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('customize.end_serving_length') }} (inches)
+                        </label>
+                        <input type="number" 
+                               id="end-serving-length" 
+                               min="1" 
+                               max="10" 
+                               step="0.25"
+                               value="2.5"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               onchange="updateSummary()">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {{ t('customize.end_serving_hint') }}
+                        </p>
+                    </div>
+
                     <!-- Center Serving (Optional) -->
                     <div class="mb-6">
-                        <label class="flex items-center">
+                        <label class="flex items-center cursor-pointer">
                             <input type="checkbox" 
                                    id="include-center-serving"
                                    class="rounded border-gray-300 text-primary focus:ring-primary"
                                    onchange="toggleCenterServing()">
                             <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Add center serving (nocking point area)
+                                {{ t('customize.add_center_serving') }}
                             </span>
                         </label>
                     </div>
 
                     <!-- Center Serving Options (Hidden by default) -->
                     <div id="center-serving-options" style="display: none;">
-                        <div class="mb-6 pl-6 border-l-2 border-primary">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Center Serving Material
-                            </label>
-                            <select id="center-serving-material" 
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    onchange="loadMaterialColors('center'); updatePrice()">
-                                <option value="">Select serving...</option>
-                            </select>
-                        </div>
+                        <div class="mb-6 pl-6 border-l-2 border-primary space-y-4">
+                            <!-- Center Serving Material -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ t('customize.center_serving_material') }}
+                                </label>
+                                <select id="center-serving-material" 
+                                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        onchange="loadMaterialColors('center'); updateSummary()">
+                                    <option value="">{{ t('customize.same_as_end_serving') }}</option>
+                                </select>
+                            </div>
 
-                        <div class="mb-6 pl-6 border-l-2 border-primary" id="center-color-container" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Center Serving Color
-                            </label>
-                            <div id="center-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                <!-- Color options will be loaded here -->
+                            <!-- Center Serving Color -->
+                            <div id="center-color-container" style="display: none;">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ t('customize.center_serving_color') }}
+                                </label>
+                                <div id="center-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                    <!-- Color options will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Center Serving Length -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ t('customize.center_serving_length') }} (inches)
+                                </label>
+                                <input type="number" 
+                                       id="center-serving-length" 
+                                       min="3" 
+                                       max="12" 
+                                       step="0.25"
+                                       value="6"
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       onchange="updateSummary()">
+                            </div>
+
+                            <!-- Center Serving Position -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ t('customize.center_serving_position') }}
+                                </label>
+                                <select id="center-serving-position"
+                                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        onchange="toggleCustomPosition(); updateSummary()">
+                                    <option value="middle">{{ t('customize.position_middle') }}</option>
+                                    <option value="upper">{{ t('customize.position_upper') }}</option>
+                                    <option value="lower">{{ t('customize.position_lower') }}</option>
+                                    <option value="custom">{{ t('customize.position_custom') }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Custom Position (Hidden by default) -->
+                            <div id="custom-position-section" style="display: none;">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ t('customize.custom_position') }}
+                                </label>
+                                <input type="number" 
+                                       id="custom-position" 
+                                       min="0" 
+                                       step="0.25"
+                                       placeholder="inches from bottom"
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       onchange="updateSummary()">
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Pre-stretch Option -->
+                    <div class="mb-6">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   id="pre-stretch"
+                                   class="rounded border-gray-300 text-primary focus:ring-primary"
+                                   onchange="updateSummary()">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ t('customize.pre_stretch') }}
+                            </span>
+                        </label>
+                        <p class="ml-6 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ t('customize.pre_stretch_hint') }}
+                        </p>
+                    </div>
+
+                    <!-- Have Existing String Option -->
+                    <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   id="have-existing-string"
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   onchange="updateSummary()">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ t('customize.have_existing_string') }}
+                            </span>
+                        </label>
+                        <p class="ml-6 mt-2 text-xs text-gray-600 dark:text-gray-400">
+                            {{ t('customize.have_existing_string_hint') }}
+                        </p>
                     </div>
 
                     <!-- Special Instructions -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Special Instructions (Optional)
+                            {{ t('customize.special_instructions') }}
                         </label>
                         <textarea id="special-instructions" 
                                   rows="3"
-                                  placeholder="Any special requests or notes..."
+                                  placeholder="{{ t('customize.instructions_placeholder') }}"
                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
                     </div>
                 </div>
@@ -192,26 +303,26 @@
             <div class="lg:col-span-1">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sticky top-4">
                     <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-                        Configuration Summary
+                        {{ t('customize.configuration_summary') }}
                     </h3>
 
                     <div id="summary-content" class="space-y-3 mb-6 text-sm">
                         <p class="text-gray-500 dark:text-gray-400 italic">
-                            Select options to see your configuration
+                            {{ t('customize.select_options') }}
                         </p>
                     </div>
 
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-700 dark:text-gray-300">Base Price:</span>
+                            <span class="text-gray-700 dark:text-gray-300">{{ t('customize.base_price') }}:</span>
                             <span class="font-semibold text-gray-900 dark:text-white" id="base-price">€15.00</span>
                         </div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-700 dark:text-gray-300">Customization:</span>
+                            <span class="text-gray-700 dark:text-gray-300">{{ t('customize.customization') }}:</span>
                             <span class="font-semibold text-gray-900 dark:text-white" id="custom-price">€0.00</span>
                         </div>
                         <div class="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <span class="text-gray-900 dark:text-white">Total:</span>
+                            <span class="text-gray-900 dark:text-white">{{ t('customize.total') }}:</span>
                             <span class="text-primary" id="total-price">€15.00</span>
                         </div>
                     </div>
@@ -220,11 +331,11 @@
                             id="add-to-cart-btn"
                             disabled
                             class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
+                        <i class="fas fa-shopping-cart mr-2"></i>{{ t('customize.add_to_cart') }}
                     </button>
 
                     <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                        Handcrafted strings - Allow 3-5 business days for production
+                        {{ t('customize.production_time') }}
                     </p>
                 </div>
             </div>
@@ -240,268 +351,151 @@ let selectedConfig = {
     stringMaterial: null,
     stringColor: null,
     strandCount: null,
-    servingMaterial: null,
-    servingColor: null,
+    nockSize: null,
+    
+    endServingMaterial: null,
+    endServingColor: null,
+    endServingLength: 2.5,
+    
     centerServing: false,
-    centerMaterial: null,
-    centerColor: null,
+    centerServingMaterial: null,
+    centerServingColor: null,
+    centerServingLength: 6,
+    centerServingPosition: 'middle',
+    centerServingCustomPosition: null,
+    
+    preStretch: false,
+    haveExistingString: false,
+    
     instructions: ''
 };
 
 const basePrice = 15.00;
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadMaterials();
-    drawStringPreview(); // Initialize canvas
+// Load materials on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadMaterials();
+    updateSummary();
 });
-
-function drawStringPreview() {
-    const canvas = document.getElementById('string-canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Background
-    ctx.fillStyle = '#f9fafb';
-    if (document.documentElement.classList.contains('dark')) {
-        ctx.fillStyle = '#111827';
-    }
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw main string using twisted strand algorithm from C# reference
-    if (selectedConfig.stringColor) {
-        const strandCount = parseInt(selectedConfig.strandCount) || 16;
-        const strandColor = getColorCode(selectedConfig.stringColor);
-        
-        // Canvas dimensions for string area
-        const w = canvas.width * 0.8; // 80% of canvas width for string
-        const h = 120; // Height for string drawing area
-        const offsetX = canvas.width * 0.1; // 10% margin on each side
-        const offsetY = 15; // Top margin
-        
-        const y1 = offsetY;
-        const y0 = -h - 90;
-        
-        const off = 8; // Offset between strands (reduced for web)
-        const length = off * strandCount;
-        
-        // Draw 4 passes for twisted effect (like C# reference)
-        ctx.lineCap = 'round';
-        ctx.lineWidth = 4;
-        
-        for(let j = 0; j < 4; j++) {
-            for(let i = 0; i < strandCount; i++) {
-                // Coordinates for diagonal lines
-                const xi = offsetX - 30;
-                const yi = y0 + i * off + j * length;
-                
-                const xf = offsetX + w + 30;
-                const yf = y1 + i * off + j * length;
-                
-                ctx.strokeStyle = strandColor;
-                ctx.globalAlpha = 0.8; // Slight transparency for depth
-                
-                ctx.beginPath();
-                ctx.moveTo(xi, yi);
-                ctx.lineTo(xf, yf);
-                ctx.stroke();
-            }
-        }
-        
-        ctx.globalAlpha = 1.0; // Reset alpha
-        
-        // Add strand count label
-        ctx.fillStyle = '#6b7280';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${strandCount} strands`, 20, canvas.height - 45);
-    } else {
-        // Placeholder
-        const centerY = canvas.height / 2;
-        ctx.strokeStyle = '#d1d5db';
-        ctx.lineWidth = 8;
-        ctx.setLineDash([10, 5]);
-        ctx.beginPath();
-        ctx.moveTo(100, centerY);
-        ctx.lineTo(canvas.width - 100, centerY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        ctx.fillStyle = '#9ca3af';
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Select string material and color', canvas.width / 2, centerY - 25);
-    }
-    
-    // Draw end servings (overlay on top of string)
-    if (selectedConfig.servingColor) {
-        const servingColor = getColorCode(selectedConfig.servingColor);
-        const servingWidth = 80;
-        const servingY = canvas.height / 2;
-        const servingThickness = 12;
-        
-        // Left serving
-        drawServing(ctx, 100, servingY, servingWidth, servingThickness, servingColor);
-        
-        // Right serving  
-        drawServing(ctx, canvas.width - 100 - servingWidth, servingY, servingWidth, servingThickness, servingColor);
-        
-        // Labels
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('End Serving', 100 + servingWidth / 2, canvas.height - 15);
-        ctx.fillText('End Serving', canvas.width - 100 - servingWidth / 2, canvas.height - 15);
-    }
-    
-    // Draw center serving (if enabled)
-    if (selectedConfig.centerServing && selectedConfig.centerColor) {
-        const centerColor = getColorCode(selectedConfig.centerColor);
-        const centerWidth = 100;
-        const centerX = canvas.width / 2 - centerWidth / 2;
-        const centerY = canvas.height / 2;
-        const centerThickness = 12;
-        
-        drawServing(ctx, centerX, centerY, centerWidth, centerThickness, centerColor);
-        
-        // Label
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Center Serving', canvas.width / 2, canvas.height - 30);
-        ctx.fillText('(Nocking Point)', canvas.width / 2, canvas.height - 15);
-    }
-    
-    // Draw length indicator
-    if (selectedConfig.length) {
-        const margin = 100;
-        ctx.strokeStyle = '#9ca3af';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        
-        // Top line
-        ctx.beginPath();
-        ctx.moveTo(margin, 20);
-        ctx.lineTo(canvas.width - margin, 20);
-        ctx.stroke();
-        
-        // End markers
-        ctx.beginPath();
-        ctx.moveTo(margin, 15);
-        ctx.lineTo(margin, 25);
-        ctx.moveTo(canvas.width - margin, 15);
-        ctx.lineTo(canvas.width - margin, 25);
-        ctx.stroke();
-        
-        ctx.setLineDash([]);
-        
-        // Length text
-        ctx.fillStyle = '#4b5563';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        const lengthInCm = (parseFloat(selectedConfig.length) * 2.54).toFixed(1);
-        ctx.fillText(`${selectedConfig.length}" (${lengthInCm} cm)`, canvas.width / 2, 13);
-    }
-    
-    // Draw string type label
-    if (selectedConfig.stringType) {
-        ctx.fillStyle = '#059669';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(selectedConfig.stringType.toUpperCase(), 20, canvas.height - 60);
-    }
-}
-
-function drawServing(ctx, x, y, width, thickness, color) {
-    ctx.fillStyle = color;
-    
-    // Draw wrapped serving effect with tighter wraps
-    for (let i = 0; i < width; i += 2) {
-        const waveOffset = Math.sin(i / 2) * 0.5;
-        ctx.fillRect(x + i, y - thickness / 2 + waveOffset, 1.5, thickness);
-    }
-    
-    // Add highlight effect for shine
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    for (let i = 0; i < width; i += 4) {
-        ctx.fillRect(x + i, y - thickness / 2, 1, thickness / 3);
-    }
-}
 
 async function loadMaterials() {
     try {
         const response = await fetch('/api/materiali');
+        if (!response.ok) throw new Error('Failed to load materials');
         materials = await response.json();
         
-        // Populate material dropdowns
+        // Populate string materials (corda)
         const stringMaterials = materials.filter(m => m.tipo === 'corda');
-        const servingMaterials = materials.filter(m => m.tipo === 'serving');
-        
         populateSelect('string-material', stringMaterials);
+        
+        // Populate serving materials
+        const servingMaterials = materials.filter(m => m.tipo === 'serving');
         populateSelect('serving-material', servingMaterials);
-        populateSelect('center-serving-material', servingMaterials);
+        populateSelect('center-serving-material', servingMaterials, true); // true = add "same as" option
     } catch (error) {
         console.error('Error loading materials:', error);
-        showNotification('Error loading materials', 'error');
     }
 }
 
-function populateSelect(selectId, materialList) {
+function populateSelect(selectId, materialsList, addSameAsOption = false) {
     const select = document.getElementById(selectId);
-    const existingOptions = Array.from(select.options).filter(opt => opt.value === '');
-    select.innerHTML = '';
-    existingOptions.forEach(opt => select.appendChild(opt));
+    if (!select) return;
     
-    // Group by material name
+    // Clear existing options except first
+    select.innerHTML = select.options[0].outerHTML;
+    
+    // Group materials by name
     const grouped = {};
-    materialList.forEach(mat => {
-        if (!grouped[mat.materiale]) {
-            grouped[mat.materiale] = [];
-        }
-        grouped[mat.materiale].push(mat);
+    materialsList.forEach(m => {
+        if (!grouped[m.nome]) grouped[m.nome] = [];
+        grouped[m.nome].push(m);
     });
     
-    Object.keys(grouped).forEach(name => {
+    // Add options
+    Object.keys(grouped).sort().forEach(name => {
+        const colors = grouped[name];
         const option = document.createElement('option');
         option.value = name;
-        option.textContent = `${name} (${grouped[name].length} colors)`;
+        option.textContent = `${name} (${colors.length} colors)`;
         select.appendChild(option);
     });
 }
 
 function loadMaterialColors(type) {
-    const materialSelect = document.getElementById(`${type}-material`);
-    const colorContainer = document.getElementById(`${type}-color-container`);
-    const colorOptions = document.getElementById(`${type}-color-options`);
+    const materialName = document.getElementById(`${type === 'string' ? 'string' : type === 'serving' ? 'serving' : 'center-serving'}-material`).value;
+    if (!materialName) return;
     
-    const selectedMaterial = materialSelect.value;
+    const materialsList = materials.filter(m => m.nome === materialName);
+    const containerMap = {
+        'string': 'string-color-container',
+        'serving': 'serving-color-container',
+        'center': 'center-color-container'
+    };
+    const optionsMap = {
+        'string': 'string-color-options',
+        'serving': 'serving-color-options',
+        'center': 'center-color-options'
+    };
     
-    if (!selectedMaterial) {
-        colorContainer.style.display = 'none';
-        return;
-    }
+    const container = document.getElementById(containerMap[type]);
+    const optionsDiv = document.getElementById(optionsMap[type]);
     
-    const materialColors = materials.filter(m => m.materiale === selectedMaterial);
+    if (!container || !optionsDiv) return;
     
-    colorOptions.innerHTML = '';
-    materialColors.forEach(mat => {
-        const colorDiv = document.createElement('div');
-        colorDiv.className = 'relative cursor-pointer group';
-        colorDiv.onclick = () => selectColor(type, mat);
+    // Clear existing colors
+    optionsDiv.innerHTML = '';
+    
+    // Add color options
+    materialsList.forEach(material => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'relative p-3 rounded-lg border-2 border-transparent hover:border-primary transition flex flex-col items-center gap-2';
+        colorBtn.onclick = () => selectColor(type, material);
         
-        colorDiv.innerHTML = `
-            <div class="aspect-square rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-primary transition p-2 flex flex-col items-center justify-center bg-white dark:bg-gray-700">
-                <div class="w-full h-8 rounded mb-1" style="background-color: ${getColorCode(mat.colore)}"></div>
-                <span class="text-xs text-gray-700 dark:text-gray-300 text-center">${mat.colore}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">${mat.spessore}</span>
-            </div>
-        `;
+        const colorSwatch = document.createElement('div');
+        colorSwatch.className = 'w-12 h-12 rounded-lg shadow-md';
+        colorSwatch.style.backgroundColor = getColorCode(material.colore);
         
-        colorOptions.appendChild(colorDiv);
+        const colorName = document.createElement('span');
+        colorName.className = 'text-xs text-gray-700 dark:text-gray-300 text-center';
+        colorName.textContent = material.colore;
+        
+        colorBtn.appendChild(colorSwatch);
+        colorBtn.appendChild(colorName);
+        optionsDiv.appendChild(colorBtn);
     });
     
-    colorContainer.style.display = 'block';
+    container.style.display = 'block';
+}
+
+function selectColor(type, material) {
+    // Update config
+    if (type === 'string') {
+        selectedConfig.stringMaterial = material.nome;
+        selectedConfig.stringColor = material.colore;
+    } else if (type === 'serving') {
+        selectedConfig.endServingMaterial = material.nome;
+        selectedConfig.endServingColor = material.colore;
+    } else if (type === 'center') {
+        selectedConfig.centerServingMaterial = material.nome;
+        selectedConfig.centerServingColor = material.colore;
+    }
+    
+    // Visual feedback
+    const optionsMap = {
+        'string': 'string-color-options',
+        'serving': 'serving-color-options',
+        'center': 'center-color-options'
+    };
+    const optionsDiv = document.getElementById(optionsMap[type]);
+    if (optionsDiv) {
+        optionsDiv.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('border-primary', 'bg-primary/10');
+        });
+        event.currentTarget.classList.add('border-primary', 'bg-primary/10');
+    }
+    
+    updateSummary();
 }
 
 function getColorCode(colorName) {
@@ -514,168 +508,308 @@ function getColorCode(colorName) {
         'yellow': '#FFFF00', 'giallo': '#FFFF00',
         'orange': '#FFA500', 'arancione': '#FFA500',
         'purple': '#800080', 'viola': '#800080',
+        'pink': '#FFC0CB', 'rosa': '#FFC0CB',
         'brown': '#8B4513', 'marrone': '#8B4513',
         'gray': '#808080', 'grigio': '#808080',
-        'pink': '#FFC0CB', 'rosa': '#FFC0CB'
+        'grey': '#808080'
     };
-    
-    const lowerName = colorName.toLowerCase();
-    return colors[lowerName] || '#888888';
-}
-
-function selectColor(type, material) {
-    // Remove previous selection
-    const colorOptions = document.getElementById(`${type}-color-options`);
-    colorOptions.querySelectorAll('.border-primary').forEach(el => {
-        el.classList.remove('border-primary', 'border-4');
-        el.classList.add('border-gray-300', 'dark:border-gray-600', 'border-2');
-    });
-    
-    // Mark as selected
-    event.currentTarget.querySelector('div').classList.remove('border-gray-300', 'dark:border-gray-600', 'border-2');
-    event.currentTarget.querySelector('div').classList.add('border-primary', 'border-4');
-    
-    // Update config
-    if (type === 'string') {
-        selectedConfig.stringMaterial = material.materiale;
-        selectedConfig.stringColor = material.colore;
-    } else if (type === 'serving') {
-        selectedConfig.servingMaterial = material.materiale;
-        selectedConfig.servingColor = material.colore;
-    } else if (type === 'center') {
-        selectedConfig.centerMaterial = material.materiale;
-        selectedConfig.centerColor = material.colore;
-    }
-    
-    updateSummary();
-    updatePrice();
-    drawStringPreview(); // Update canvas
+    return colors[colorName.toLowerCase()] || '#CCCCCC';
 }
 
 function toggleCenterServing() {
-    const checked = document.getElementById('include-center-serving').checked;
+    const checkbox = document.getElementById('include-center-serving');
     const options = document.getElementById('center-serving-options');
-    options.style.display = checked ? 'block' : 'none';
-    selectedConfig.centerServing = checked;
+    selectedConfig.centerServing = checkbox.checked;
+    options.style.display = checkbox.checked ? 'block' : 'none';
     updateSummary();
-    updatePrice();
-    drawStringPreview(); // Update canvas
+}
+
+function toggleCustomPosition() {
+    const position = document.getElementById('center-serving-position').value;
+    const customSection = document.getElementById('custom-position-section');
+    customSection.style.display = position === 'custom' ? 'block' : 'none';
+    updateSummary();
 }
 
 function updateSummary() {
-    // Get all values
+    // Collect all configuration values
     selectedConfig.stringType = document.getElementById('string-type').value;
-    selectedConfig.length = document.getElementById('string-length').value;
-    selectedConfig.strandCount = document.getElementById('strand-count').value;
+    selectedConfig.length = parseFloat(document.getElementById('string-length').value) || null;
+    selectedConfig.strandCount = parseInt(document.getElementById('strand-count').value) || null;
+    selectedConfig.nockSize = document.getElementById('nock-size').value;
+    selectedConfig.endServingLength = parseFloat(document.getElementById('end-serving-length').value) || 2.5;
+    selectedConfig.centerServingLength = parseFloat(document.getElementById('center-serving-length')?.value) || 6;
+    selectedConfig.centerServingPosition = document.getElementById('center-serving-position')?.value || 'middle';
+    selectedConfig.centerServingCustomPosition = parseFloat(document.getElementById('custom-position')?.value) || null;
+    selectedConfig.preStretch = document.getElementById('pre-stretch').checked;
+    selectedConfig.haveExistingString = document.getElementById('have-existing-string').checked;
     selectedConfig.instructions = document.getElementById('special-instructions').value;
     
-    const summary = document.getElementById('summary-content');
+    // Build summary HTML
+    const summaryDiv = document.getElementById('summary-content');
     let html = '';
     
     if (selectedConfig.stringType) {
-        html += `<div><strong>Type:</strong> ${selectedConfig.stringType}</div>`;
+        html += `<div><span class="font-semibold">Type:</span> ${selectedConfig.stringType}</div>`;
     }
     if (selectedConfig.length) {
-        html += `<div><strong>Length:</strong> ${selectedConfig.length}" (${(selectedConfig.length * 2.54).toFixed(1)} cm)</div>`;
+        html += `<div><span class="font-semibold">Length:</span> ${selectedConfig.length}"</div>`;
     }
     if (selectedConfig.stringMaterial && selectedConfig.stringColor) {
-        html += `<div><strong>String:</strong> ${selectedConfig.stringMaterial} - ${selectedConfig.stringColor}</div>`;
+        html += `<div><span class="font-semibold">String:</span> ${selectedConfig.stringMaterial} - ${selectedConfig.stringColor}</div>`;
     }
     if (selectedConfig.strandCount) {
-        html += `<div><strong>Strands:</strong> ${selectedConfig.strandCount}</div>`;
+        html += `<div><span class="font-semibold">Strands:</span> ${selectedConfig.strandCount}</div>`;
     }
-    if (selectedConfig.servingMaterial && selectedConfig.servingColor) {
-        html += `<div><strong>Serving:</strong> ${selectedConfig.servingMaterial} - ${selectedConfig.servingColor}</div>`;
+    if (selectedConfig.nockSize) {
+        html += `<div><span class="font-semibold">Nock:</span> ${selectedConfig.nockSize === '1' ? 'Small' : 'Large'}</div>`;
     }
-    if (selectedConfig.centerServing && selectedConfig.centerMaterial && selectedConfig.centerColor) {
-        html += `<div><strong>Center:</strong> ${selectedConfig.centerMaterial} - ${selectedConfig.centerColor}</div>`;
+    if (selectedConfig.endServingMaterial && selectedConfig.endServingColor) {
+        html += `<div><span class="font-semibold">End Serving:</span> ${selectedConfig.endServingMaterial} - ${selectedConfig.endServingColor} (${selectedConfig.endServingLength}")</div>`;
+    }
+    if (selectedConfig.centerServing) {
+        const centerMat = selectedConfig.centerServingMaterial || selectedConfig.endServingMaterial;
+        const centerCol = selectedConfig.centerServingColor || selectedConfig.endServingColor;
+        html += `<div><span class="font-semibold">Center Serving:</span> ${centerMat} - ${centerCol} (${selectedConfig.centerServingLength}")</div>`;
+    }
+    if (selectedConfig.preStretch) {
+        html += `<div class="text-blue-600 dark:text-blue-400"><i class="fas fa-check mr-1"></i>Pre-stretched</div>`;
+    }
+    if (selectedConfig.haveExistingString) {
+        html += `<div class="text-blue-600 dark:text-blue-400"><i class="fas fa-copy mr-1"></i>1:1 copy of existing string</div>`;
     }
     
-    if (html === '') {
-        html = '<p class="text-gray-500 dark:text-gray-400 italic">Select options to see your configuration</p>';
-    }
+    summaryDiv.innerHTML = html || '<p class="text-gray-500 dark:text-gray-400 italic">Select options to see your configuration</p>';
     
-    summary.innerHTML = html;
+    // Check if all required fields are filled
+    const isValid = selectedConfig.stringType && 
+                    selectedConfig.length && 
+                    selectedConfig.stringMaterial && 
+                    selectedConfig.stringColor && 
+                    selectedConfig.strandCount && 
+                    selectedConfig.nockSize &&
+                    selectedConfig.endServingMaterial && 
+                    selectedConfig.endServingColor;
     
-    // Enable/disable add to cart button
-    const isComplete = selectedConfig.stringType && selectedConfig.length && 
-                      selectedConfig.stringMaterial && selectedConfig.stringColor &&
-                      selectedConfig.strandCount && selectedConfig.servingMaterial && 
-                      selectedConfig.servingColor;
-    document.getElementById('add-to-cart-btn').disabled = !isComplete;
+    document.getElementById('add-to-cart-btn').disabled = !isValid;
     
-    drawStringPreview(); // Update canvas
+    // Update pricing
+    updatePrice();
+    
+    // Redraw canvas
+    drawStringPreview();
 }
 
 function updatePrice() {
-    updateSummary();
+    let price = basePrice;
+    let customizationCost = 0;
     
-    let customPrice = 0;
+    // Count unique colors (for extra cost calculation)
+    const colors = new Set();
+    if (selectedConfig.stringColor) colors.add(selectedConfig.stringColor);
+    if (selectedConfig.endServingColor) colors.add(selectedConfig.endServingColor);
+    if (selectedConfig.centerServingColor) colors.add(selectedConfig.centerServingColor);
     
-    // Add cost based on length (longer = more material)
-    if (selectedConfig.length) {
-        const length = parseFloat(selectedConfig.length);
-        if (length > 68) {
-            customPrice += (length - 68) * 0.5; // €0.50 per extra inch
+    // Extra cost for 3+ colors
+    if (colors.size >= 3) {
+        customizationCost += 3.00;
+    }
+    
+    // Extra cost for different loop/center serving colors
+    if (selectedConfig.centerServing && 
+        selectedConfig.centerServingColor && 
+        selectedConfig.centerServingColor !== selectedConfig.endServingColor) {
+        customizationCost += 2.00;
+    }
+    
+    // Extra cost for longer strings
+    if (selectedConfig.length && selectedConfig.length > 68) {
+        customizationCost += (selectedConfig.length - 68) * 0.50;
+    }
+    
+    // Extra cost for more strands
+    if (selectedConfig.strandCount && selectedConfig.strandCount > 16) {
+        customizationCost += (selectedConfig.strandCount - 16) * 0.25;
+    }
+    
+    // Extra cost for pre-stretch
+    if (selectedConfig.preStretch) {
+        customizationCost += 2.00;
+    }
+    
+    // Extra cost for custom center serving position
+    if (selectedConfig.centerServing && selectedConfig.centerServingPosition === 'custom') {
+        customizationCost += 1.00;
+    }
+    
+    const totalPrice = price + customizationCost;
+    
+    document.getElementById('base-price').textContent = `€${price.toFixed(2)}`;
+    document.getElementById('custom-price').textContent = `€${customizationCost.toFixed(2)}`;
+    document.getElementById('total-price').textContent = `€${totalPrice.toFixed(2)}`;
+}
+
+function drawStringPreview() {
+    const canvas = document.getElementById('string-canvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas
+    const isDark = document.documentElement.classList.contains('dark');
+    ctx.fillStyle = isDark ? '#111827' : '#F9FAFB';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Get configuration
+    const strandCount = selectedConfig.strandCount || 16;
+    const stringColor = selectedConfig.stringColor ? getColorCode(selectedConfig.stringColor) : '#8B4513';
+    const servingColor = selectedConfig.endServingColor ? getColorCode(selectedConfig.endServingColor) : '#000000';
+    const centerServingColor = selectedConfig.centerServingColor ? getColorCode(selectedConfig.centerServingColor) : servingColor;
+    
+    // Drawing parameters (from C# reference)
+    const w = width * 0.8;
+    const h = 120;
+    const offsetX = (width - w) / 2;
+    const offsetY = 15;
+    const y1 = offsetY;
+    const y0 = -h - 90;
+    const off = 8;
+    const length = off * strandCount;
+    
+    // Draw twisted string (4 passes from C# algorithm)
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.8;
+    
+    for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < strandCount; i++) {
+            const xi = offsetX - 30;
+            const yi = y0 + i * off + j * length;
+            const xf = offsetX + w + 30;
+            const yf = y1 + i * off + j * length;
+            
+            ctx.strokeStyle = stringColor;
+            ctx.beginPath();
+            ctx.moveTo(xi, yi);
+            ctx.lineTo(xf, yf);
+            ctx.stroke();
         }
     }
     
-    // Add cost for center serving
+    ctx.globalAlpha = 1.0;
+    
+    // Draw end servings (rectangular shape as requested)
+    const endServingLen = (selectedConfig.endServingLength / (selectedConfig.length || 68)) * w;
+    drawRectServing(ctx, offsetX, offsetY, endServingLen, 30, servingColor);
+    drawRectServing(ctx, offsetX + w - endServingLen, offsetY, endServingLen, 30, servingColor);
+    
+    // Draw center serving if enabled
     if (selectedConfig.centerServing) {
-        customPrice += 3.00;
-    }
-    
-    // Add cost for extra strands
-    if (selectedConfig.strandCount) {
-        const strands = parseInt(selectedConfig.strandCount);
-        if (strands > 16) {
-            customPrice += (strands - 16) * 0.25; // €0.25 per extra strand
+        const centerLen = (selectedConfig.centerServingLength / (selectedConfig.length || 68)) * w;
+        let centerX = offsetX + (w - centerLen) / 2; // default middle
+        
+        if (selectedConfig.centerServingPosition === 'upper') {
+            centerX = offsetX + w * 0.3 - centerLen / 2;
+        } else if (selectedConfig.centerServingPosition === 'lower') {
+            centerX = offsetX + w * 0.7 - centerLen / 2;
+        } else if (selectedConfig.centerServingPosition === 'custom' && selectedConfig.centerServingCustomPosition) {
+            const customPos = (selectedConfig.centerServingCustomPosition / (selectedConfig.length || 68));
+            centerX = offsetX + w * customPos - centerLen / 2;
         }
+        
+        drawRectServing(ctx, centerX, offsetY, centerLen, 30, centerServingColor);
     }
     
-    const total = basePrice + customPrice;
+    // Draw labels
+    ctx.font = '12px Arial';
+    ctx.fillStyle = isDark ? '#9CA3AF' : '#4B5563';
+    ctx.textAlign = 'left';
     
-    document.getElementById('base-price').textContent = `€${basePrice.toFixed(2)}`;
-    document.getElementById('custom-price').textContent = `€${customPrice.toFixed(2)}`;
-    document.getElementById('total-price').textContent = `€${total.toFixed(2)}`;
+    const labelY = offsetY + 50;
+    ctx.fillText(`${selectedConfig.stringType || 'String'} - ${strandCount} strands`, offsetX, labelY);
+    
+    if (selectedConfig.length) {
+        ctx.textAlign = 'center';
+        ctx.fillText(`${selectedConfig.length}"`, width / 2, offsetY - 5);
+        
+        // Draw arrows for length
+        ctx.strokeStyle = isDark ? '#9CA3AF' : '#4B5563';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY - 10);
+        ctx.lineTo(offsetX + w, offsetY - 10);
+        ctx.stroke();
+        
+        // Arrow heads
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY - 10);
+        ctx.lineTo(offsetX + 5, offsetY - 13);
+        ctx.moveTo(offsetX, offsetY - 10);
+        ctx.lineTo(offsetX + 5, offsetY - 7);
+        ctx.moveTo(offsetX + w, offsetY - 10);
+        ctx.lineTo(offsetX + w - 5, offsetY - 13);
+        ctx.moveTo(offsetX + w, offsetY - 10);
+        ctx.lineTo(offsetX + w - 5, offsetY - 7);
+        ctx.stroke();
+    }
+}
+
+function drawRectServing(ctx, x, y, width, height, color) {
+    // Draw rectangular serving area
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(x, y, width, height);
+    
+    // Add texture lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    for (let i = x; i < x + width; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(i, y);
+        ctx.lineTo(i, y + height);
+        ctx.stroke();
+    }
+    
+    ctx.globalAlpha = 1.0;
 }
 
 function addToCart() {
-    // Create cart item
-    const cartItem = {
-        productId: {{ product.id }},
-        productName: '{{ product.name_en }}',
-        type: 'custom_string',
-        config: selectedConfig,
-        price: parseFloat(document.getElementById('total-price').textContent.replace('€', ''))
-    };
-    
-    // Get existing cart
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    cart.push(cartItem);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    
-    showNotification('Custom string added to cart!', 'success');
-    
-    // Redirect to cart
-    setTimeout(() => {
-        window.location.href = '{{ url_for("shop.cart") }}';
-    }, 1500);
+    // Validate configuration
+    if (!document.getElementById('add-to-cart-btn').disabled) {
+        // Create cart item
+        const cartItem = {
+            productId: {{ product.id }},
+            name: '{{ product.name_en }}',
+            type: 'custom_string',
+            config: selectedConfig,
+            price: parseFloat(document.getElementById('total-price').textContent.replace('€', ''))
+        };
+        
+        // Get existing cart
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        cart.push(cartItem);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        // Show notification and redirect
+        showNotification('String configuration added to cart!');
+        setTimeout(() => {
+            window.location.href = '/shop/cart';
+        }, 1500);
+    }
 }
 
-function showNotification(message, type = 'info') {
+function showNotification(message) {
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 
-        'bg-blue-500'
-    } text-white`;
-    notification.textContent = message;
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
     document.body.appendChild(notification);
-
+    
     setTimeout(() => {
         notification.remove();
     }, 3000);
 }
 </script>
+
 {% endblock %}

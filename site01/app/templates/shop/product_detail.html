@@ -100,14 +100,14 @@
                     {% if product.is_custom_string %}
                     <a href="{{ url_for('shop.customize_string', product_id=product.id) }}"
                        class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition font-semibold flex items-center justify-center gap-2">
-                        <i class="fas fa-sliders-h"></i>Customize Your String
+                        <i class="fas fa-sliders-h"></i>{{ t('shop.customize_string') }}
                     </a>
                     {% endif %}
                     
                     {% if product.is_custom_print %}
                     <a href="{{ url_for('shop.customize_print', product_id=product.id) }}"
                        class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition font-semibold flex items-center justify-center gap-2">
-                        <i class="fas fa-cube"></i>Customize Your Print
+                        <i class="fas fa-cube"></i>{{ t('shop.customize_print') }}
                     </a>
                     {% endif %}
                     
