@@ -48,13 +48,14 @@ def create_app(config_name='default'):
         return response
     
     # Register blueprints
-    from app.routes import main, auth, archery, printing, electronics, shop, api_routes, api
+    from app.routes import main, auth, archery, printing, electronics, shop, admin, api_routes, api
     
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(archery.bp)
     app.register_blueprint(printing.bp)
     app.register_blueprint(electronics.bp)
+    app.register_blueprint(admin.bp)
     app.register_blueprint(shop.bp)
     app.register_blueprint(api_routes.bp)
     app.register_blueprint(api.bp)  # Website-level API (authorized athletes, etc.)

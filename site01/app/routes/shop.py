@@ -57,8 +57,3 @@ def cart():
     """Shopping cart"""
     return render_template('shop/cart.html')
 
-@bp.route('/materials')
-@login_required
-def materials():
-    """Materials management page for stringmaking stock"""
-    return render_template('shop/materials.html')

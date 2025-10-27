@@ -155,10 +155,10 @@ def calculate_percentile_stats(results: List[Dict], last_n: int = 10) -> Dict:
             'top_finishes': 0
         }
     
-    # Sort by date (most recent first)
+    # Sort by date (most recent first) - handle None/missing dates safely
     sorted_results = sorted(
         results, 
-        key=lambda x: parse_date_safely(x.get('date', ''), '2000-01-01'),
+        key=lambda x: parse_date_safely(x.get('date') or '', '2000-01-01') or '2000-01-01',
         reverse=True
     )
     
