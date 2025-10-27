@@ -392,7 +392,6 @@ async function consumeMaterial(event) {
     const quantita = parseDecimal(document.getElementById('consume-quantity').value);
 
     try {
-    try {
         const response = await fetch(`/api/materiali/${id}/consume`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
