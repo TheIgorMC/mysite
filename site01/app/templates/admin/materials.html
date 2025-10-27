@@ -3,7 +3,6 @@
 {% block title %}{{ t('materials.title') }} - {{ t('site.title') }}{% endblock %}
 
 {% block content %}
-<!-- Moved materials UI into admin section -->
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
@@ -30,9 +29,8 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('materials.type') }}</label>
                 <select id="type-filter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
                     <option value="">{{ t('materials.all_types') }}</option>
-                    <option value="string">{{ t('materials.type_string') }}</option>
+                    <option value="corda">{{ t('materials.type_corda') }}</option>
                     <option value="serving">{{ t('materials.type_serving') }}</option>
-                    <option value="center">{{ t('materials.type_center') }}</option>
                 </select>
             </div>
             <div>
@@ -92,30 +90,29 @@
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {{ t('materials.remaining') }}*
+                        {{ t('materials.remaining_meters') }}*
                     </label>
-                    <input type="number" step="0.01" id="rimasto" required
+                    <input type="text" id="rimasto" required
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {{ t('materials.cost') }}*
+                        {{ t('materials.cost_euro') }}*
                     </label>
-                    <input type="number" step="0.01" id="costo" required
+                    <input type="text" id="costo" required
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
                 </div>
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm font medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {{ t('materials.type') }}*
                 </label>
                 <select id="tipo" required
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-                    <option value="string">{{ t('materials.type_string') }}</option>
+                    <option value="corda">{{ t('materials.type_corda') }}</option>
                     <option value="serving">{{ t('materials.type_serving') }}</option>
-                    <option value="center">{{ t('materials.type_center') }}</option>
                 </select>
             </div>
 
@@ -137,7 +134,7 @@
 <div id="consume-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-            {{ t('materials.consume') }}
+            {{ t('materials.consume_material') }}
         </h2>
 
         <p class="text-gray-600 dark:text-gray-400 mb-4" id="consume-material-name"></p>
@@ -147,9 +144,9 @@
 
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {{ t('materials.quantity') }}*
+                    {{ t('materials.quantity_meters') }}*
                 </label>
-                <input type="number" step="0.01" id="consume-quantity" required min="0.01"
+                <input type="text" id="consume-quantity" required
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
             </div>
 
@@ -169,6 +166,14 @@
 
 <script>
 let currentMaterials = [];
+
+// Helper function to parse decimal with both comma and dot support
+function parseDecimal(value) {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    // Replace comma with dot for parsing
+    return parseFloat(value.toString().replace(',', '.')) || 0;
+}
 
 // Load materials on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -222,6 +227,9 @@ function createMaterialCard(material) {
 
     const lowStock = material.rimasto < 50;
     const stockClass = lowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+    
+    const tipoLabel = material.tipo === 'corda' ? '{{ t("materials.type_corda") }}' : '{{ t("materials.type_serving") }}';
+    const tipoColor = material.tipo === 'corda' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
 
     card.innerHTML = `
         <div class="flex justify-between items-start mb-3">
@@ -229,19 +237,15 @@ function createMaterialCard(material) {
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white">${material.materiale}</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">${material.colore} - ${material.spessore}</p>
             </div>
-            <span class="px-2 py-1 text-xs font-semibold rounded ${
-                material.tipo === 'string' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                material.tipo === 'serving' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-            }">
-                ${material.tipo}
+            <span class="px-2 py-1 text-xs font-semibold rounded ${tipoColor}">
+                ${tipoLabel}
             </span>
         </div>
 
         <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
             <div>
                 <span class="text-gray-600 dark:text-gray-400">{{ t('materials.remaining') }}:</span>
-                <span class="${stockClass} font-semibold">${material.rimasto.toFixed(2)}</span>
+                <span class="${stockClass} font-semibold">${material.rimasto.toFixed(2)}m</span>
             </div>
             <div>
                 <span class="text-gray-600 dark:text-gray-400">{{ t('materials.cost') }}:</span>
@@ -251,6 +255,24 @@ function createMaterialCard(material) {
 
         <div class="flex gap-2">
             <button onclick="showConsumeModal(${material.id}, '${material.materiale} ${material.colore}')" 
+                class="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition">
+                <i class="fas fa-minus mr-1"></i>{{ t('materials.consume') }}
+            </button>
+            {% if current_user.is_admin %}
+            <button onclick="editMaterial(${material.id})" 
+                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteMaterial(${material.id})" 
+                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">
+                <i class="fas fa-trash"></i>
+            </button>
+            {% endif %}
+        </div>
+    `;
+
+    return card;
+}
                 class="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition">
                 <i class="fas fa-minus mr-1"></i>{{ t('materials.consume') }}
             </button>
@@ -304,8 +326,8 @@ async function saveMaterial(event) {
         materiale: document.getElementById('materiale').value,
         colore: document.getElementById('colore').value,
         spessore: document.getElementById('spessore').value,
-        rimasto: parseFloat(document.getElementById('rimasto').value),
-        costo: parseFloat(document.getElementById('costo').value),
+        rimasto: parseDecimal(document.getElementById('rimasto').value),
+        costo: parseDecimal(document.getElementById('costo').value),
         tipo: document.getElementById('tipo').value
     };
 
@@ -367,8 +389,9 @@ async function consumeMaterial(event) {
     event.preventDefault();
 
     const id = document.getElementById('consume-material-id').value;
-    const quantita = parseFloat(document.getElementById('consume-quantity').value);
+    const quantita = parseDecimal(document.getElementById('consume-quantity').value);
 
+    try {
     try {
         const response = await fetch(`/api/materiali/${id}/consume`, {
             method: 'POST',
