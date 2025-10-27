@@ -40,7 +40,7 @@ docker builder prune -f
 # Step 4: Rebuild with no cache
 echo ""
 echo "🔨 Step 4: Rebuilding container (no cache)..."
-CACHE_BUST=$(date +%s) docker-compose build --no-cache --pull
+CACHE_BUST=$(date +%s) docker compose build --no-cache --pull
 
 # Step 5: Start containers
 echo ""
@@ -91,6 +91,6 @@ echo "   3. Clear browser cache if needed"
 echo ""
 echo "📊 Useful commands:"
 echo "   docker logs -f orion-project      # Follow logs"
-echo "   docker-compose restart            # Restart container"
+echo "   docker compose restart            # Restart container"
 echo "   docker exec -it orion-project bash  # Enter container"
 echo ""
