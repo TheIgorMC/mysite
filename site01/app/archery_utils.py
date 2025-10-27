@@ -199,7 +199,8 @@ def get_best_score_by_category(results: List[Dict]) -> Dict:
         comp_type = result.get('competition_type')
         score = result.get('score')
         
-        if not comp_type or not score:
+        # Skip if missing data or score is None/0
+        if not comp_type or score is None or score == 0:
             continue
         
         # Find category for this competition type
@@ -281,9 +282,11 @@ def get_statistics_summary(results: List[Dict], last_n: int = 10) -> Dict:
     categories = {}
     for category in get_categories():
         cat_results = filter_by_category(results, category)
+        # Filter out None scores before finding max
+        valid_scores = [r.get('score', 0) for r in cat_results if r.get('score') is not None]
         categories[category] = {
             'count': len(cat_results),
-            'best_score': max([r.get('score', 0) for r in cat_results], default=0)
+            'best_score': max(valid_scores, default=0) if valid_scores else 0
         }
     
     return {

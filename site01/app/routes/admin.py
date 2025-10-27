@@ -27,3 +27,14 @@ def materials():
         from flask import abort
         abort(403)
     return render_template('admin/materials.html')
+
+
+@bp.route('/products')
+@login_required
+def products():
+    """Products management page for admins"""
+    # Only admins should access this page
+    if not getattr(current_user, 'is_admin', False):
+        from flask import abort
+        abort(403)
+    return render_template('admin/products.html')

@@ -383,3 +383,63 @@ def delete_material(material_id):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Product Management Endpoints
+@bp.route('/api/products', methods=['GET'])
+@login_required
+def list_products():
+    """Get all products (admin only for management)"""
+    from app.models import Product
+    
+    products = Product.query.all()
+    
+    return jsonify([
+        {
+            'id': p.id,
+            'name_it': p.name_it,
+            'name_en': p.name_en,
+            'category': p.category,
+            'price': p.price,
+            'is_active': p.is_active,
+            'is_custom_string': p.is_custom_string,
+            'is_custom_print': p.is_custom_print,
+            'in_stock': p.in_stock
+        }
+        for p in products
+    ])
+
+
+@bp.route('/api/products/<int:product_id>', methods=['PATCH'])
+@login_required
+def update_product(product_id):
+    """Update product flags (admin only)"""
+    from app.models import Product
+    
+    if not getattr(current_user, 'is_admin', False):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    product = Product.query.get_or_404(product_id)
+    data = request.get_json()
+    
+    try:
+        # Update customization flags
+        if 'is_custom_string' in data:
+            product.is_custom_string = bool(data['is_custom_string'])
+        if 'is_custom_print' in data:
+            product.is_custom_print = bool(data['is_custom_print'])
+        if 'is_active' in data:
+            product.is_active = bool(data['is_active'])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'id': product.id,
+            'is_custom_string': product.is_custom_string,
+            'is_custom_print': product.is_custom_print,
+            'is_active': product.is_active
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
