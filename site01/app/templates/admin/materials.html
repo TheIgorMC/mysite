@@ -273,24 +273,6 @@ function createMaterialCard(material) {
 
     return card;
 }
-                class="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition">
-                <i class="fas fa-minus mr-1"></i>{{ t('materials.consume') }}
-            </button>
-            {% if current_user.is_admin %}
-            <button onclick="editMaterial(${material.id})" 
-                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button onclick="deleteMaterial(${material.id})" 
-                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">
-                <i class="fas fa-trash"></i>
-            </button>
-            {% endif %}
-        </div>
-    `;
-
-    return card;
-}
 
 function showAddMaterialModal() {
     document.getElementById('modal-title').textContent = '{{ t("materials.add_material") }}';
