@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+
+{% block title %}String Customizer - {{ product.name_en }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-7xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="{{ url_for('shop.product_detail', product_id=product.id) }}" 
+               class="inline-flex items-center text-primary hover:text-primary-dark transition mb-4">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Product
+            </a>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+                <i class="fas fa-sliders-h text-primary mr-3"></i>String Customizer
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">{{ product.name_en }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- String Preview Canvas -->
+            <div class="lg:col-span-3 mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white text-center">
+                        String Preview
+                    </h2>
+                    <div class="relative w-full overflow-x-auto">
+                        <canvas id="string-canvas" 
+                                width="1200" 
+                                height="150" 
+                                class="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900">
+                        </canvas>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-3">
+                        Real-time visualization of your custom string configuration
+                    </p>
+                </div>
+            </div>
+
+            <!-- Customization Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                        Configure Your String
+                    </h2>
+
+                    <!-- String Type -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            String Type *
+                        </label>
+                        <select id="string-type" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="updatePrice()">
+                            <option value="">Select string type...</option>
+                            <option value="recurve">Recurve String</option>
+                            <option value="compound">Compound String</option>
+                            <option value="longbow">Longbow String</option>
+                        </select>
+                    </div>
+
+                    <!-- Length -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            String Length (inches) *
+                        </label>
+                        <input type="number" 
+                               id="string-length" 
+                               min="40" 
+                               max="75" 
+                               step="0.25"
+                               placeholder="e.g., 68.5"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               onchange="updatePrice()">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Typical range: 58-72 inches for recurve, 40-50 for compound
+                        </p>
+                    </div>
+
+                    <!-- Main String Material -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Main String Material (Corda) *
+                        </label>
+                        <select id="string-material" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="loadMaterialColors('string'); updatePrice()">
+                            <option value="">Select material...</option>
+                        </select>
+                    </div>
+
+                    <!-- Main String Color -->
+                    <div class="mb-6" id="string-color-container" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Main String Color *
+                        </label>
+                        <div id="string-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            <!-- Color options will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Number of Strands -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Number of Strands *
+                        </label>
+                        <input type="number" 
+                               id="strand-count" 
+                               min="8" 
+                               max="24" 
+                               step="2"
+                               placeholder="e.g., 16"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               onchange="updatePrice()">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Common: 14-18 strands for recurve, 18-24 for compound
+                        </p>
+                    </div>
+
+                    <!-- Serving Material -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Serving Material *
+                        </label>
+                        <select id="serving-material" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="loadMaterialColors('serving'); updatePrice()">
+                            <option value="">Select serving...</option>
+                        </select>
+                    </div>
+
+                    <!-- Serving Color -->
+                    <div class="mb-6" id="serving-color-container" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Serving Color *
+                        </label>
+                        <div id="serving-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            <!-- Color options will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Center Serving (Optional) -->
+                    <div class="mb-6">
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   id="include-center-serving"
+                                   class="rounded border-gray-300 text-primary focus:ring-primary"
+                                   onchange="toggleCenterServing()">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Add center serving (nocking point area)
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Center Serving Options (Hidden by default) -->
+                    <div id="center-serving-options" style="display: none;">
+                        <div class="mb-6 pl-6 border-l-2 border-primary">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Center Serving Material
+                            </label>
+                            <select id="center-serving-material" 
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    onchange="loadMaterialColors('center'); updatePrice()">
+                                <option value="">Select serving...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-6 pl-6 border-l-2 border-primary" id="center-color-container" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Center Serving Color
+                            </label>
+                            <div id="center-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                <!-- Color options will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Instructions -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Special Instructions (Optional)
+                        </label>
+                        <textarea id="special-instructions" 
+                                  rows="3"
+                                  placeholder="Any special requests or notes..."
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sticky top-4">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                        Configuration Summary
+                    </h3>
+
+                    <div id="summary-content" class="space-y-3 mb-6 text-sm">
+                        <p class="text-gray-500 dark:text-gray-400 italic">
+                            Select options to see your configuration
+                        </p>
+                    </div>
+
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-700 dark:text-gray-300">Base Price:</span>
+                            <span class="font-semibold text-gray-900 dark:text-white" id="base-price">€15.00</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-700 dark:text-gray-300">Customization:</span>
+                            <span class="font-semibold text-gray-900 dark:text-white" id="custom-price">€0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
+                            <span class="text-gray-900 dark:text-white">Total:</span>
+                            <span class="text-primary" id="total-price">€15.00</span>
+                        </div>
+                    </div>
+
+                    <button onclick="addToCart()" 
+                            id="add-to-cart-btn"
+                            disabled
+                            class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
+                    </button>
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                        Handcrafted strings - Allow 3-5 business days for production
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+let materials = [];
+let selectedConfig = {
+    stringType: null,
+    length: null,
+    stringMaterial: null,
+    stringColor: null,
+    strandCount: null,
+    servingMaterial: null,
+    servingColor: null,
+    centerServing: false,
+    centerMaterial: null,
+    centerColor: null,
+    instructions: ''
+};
+
+const basePrice = 15.00;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadMaterials();
+    drawStringPreview(); // Initialize canvas
+});
+
+function drawStringPreview() {
+    const canvas = document.getElementById('string-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Background
+    ctx.fillStyle = '#f9fafb';
+    if (document.documentElement.classList.contains('dark')) {
+        ctx.fillStyle = '#111827';
+    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // String dimensions
+    const stringStartX = 100;
+    const stringEndX = canvas.width - 100;
+    const stringY = canvas.height / 2;
+    const stringThickness = 8;
+    
+    // Draw main string
+    if (selectedConfig.stringColor) {
+        ctx.strokeStyle = getColorCode(selectedConfig.stringColor);
+        ctx.lineWidth = stringThickness;
+        ctx.lineCap = 'round';
+        
+        // Draw twisted effect (multiple strands)
+        const strandCount = parseInt(selectedConfig.strandCount) || 16;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(stringStartX, stringY + (i - 1) * 2);
+            ctx.lineTo(stringEndX, stringY + (i - 1) * 2);
+            ctx.stroke();
+        }
+        
+        // Add strand label
+        if (selectedConfig.strandCount) {
+            ctx.fillStyle = '#6b7280';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`${strandCount} strands`, stringStartX, stringY - 20);
+        }
+    } else {
+        // Placeholder
+        ctx.strokeStyle = '#d1d5db';
+        ctx.lineWidth = stringThickness;
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(stringStartX, stringY);
+        ctx.lineTo(stringEndX, stringY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Select string material and color', canvas.width / 2, stringY - 25);
+    }
+    
+    // Draw end servings
+    if (selectedConfig.servingColor) {
+        const servingColor = getColorCode(selectedConfig.servingColor);
+        const servingWidth = 80;
+        
+        // Left serving
+        drawServing(ctx, stringStartX, stringY, servingWidth, stringThickness + 2, servingColor, 'left');
+        
+        // Right serving
+        drawServing(ctx, stringEndX - servingWidth, stringY, servingWidth, stringThickness + 2, servingColor, 'right');
+        
+        // Labels
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('End Serving', stringStartX + servingWidth / 2, stringY + 35);
+        ctx.fillText('End Serving', stringEndX - servingWidth / 2, stringY + 35);
+    }
+    
+    // Draw center serving (if enabled)
+    if (selectedConfig.centerServing && selectedConfig.centerColor) {
+        const centerColor = getColorCode(selectedConfig.centerColor);
+        const centerWidth = 100;
+        const centerX = canvas.width / 2 - centerWidth / 2;
+        
+        drawServing(ctx, centerX, stringY, centerWidth, stringThickness + 2, centerColor, 'center');
+        
+        // Label
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Center Serving', canvas.width / 2, stringY + 35);
+        ctx.fillText('(Nocking Point)', canvas.width / 2, stringY + 48);
+    }
+    
+    // Draw length indicator
+    if (selectedConfig.length) {
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        
+        // Top line
+        ctx.beginPath();
+        ctx.moveTo(stringStartX, 20);
+        ctx.lineTo(stringEndX, 20);
+        ctx.stroke();
+        
+        // End markers
+        ctx.beginPath();
+        ctx.moveTo(stringStartX, 15);
+        ctx.lineTo(stringStartX, 25);
+        ctx.moveTo(stringEndX, 15);
+        ctx.lineTo(stringEndX, 25);
+        ctx.stroke();
+        
+        ctx.setLineDash([]);
+        
+        // Length text
+        ctx.fillStyle = '#4b5563';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        const lengthInCm = (parseFloat(selectedConfig.length) * 2.54).toFixed(1);
+        ctx.fillText(`${selectedConfig.length}" (${lengthInCm} cm)`, canvas.width / 2, 13);
+    }
+    
+    // Draw string type label
+    if (selectedConfig.stringType) {
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(selectedConfig.stringType.toUpperCase(), stringStartX, canvas.height - 15);
+    }
+}
+
+function drawServing(ctx, x, y, width, thickness, color, type) {
+    ctx.fillStyle = color;
+    
+    // Draw wrapped serving effect
+    for (let i = 0; i < width; i += 3) {
+        const waveOffset = Math.sin(i / 3) * 1;
+        ctx.fillRect(x + i, y - thickness / 2 + waveOffset, 2, thickness);
+    }
+    
+    // Add highlight effect
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    for (let i = 0; i < width; i += 6) {
+        ctx.fillRect(x + i, y - thickness / 2, 1, thickness / 3);
+    }
+}
+
+async function loadMaterials() {
+    try {
+        const response = await fetch('/api/materiali');
+        materials = await response.json();
+        
+        // Populate material dropdowns
+        const stringMaterials = materials.filter(m => m.tipo === 'corda');
+        const servingMaterials = materials.filter(m => m.tipo === 'serving');
+        
+        populateSelect('string-material', stringMaterials);
+        populateSelect('serving-material', servingMaterials);
+        populateSelect('center-serving-material', servingMaterials);
+    } catch (error) {
+        console.error('Error loading materials:', error);
+        showNotification('Error loading materials', 'error');
+    }
+}
+
+function populateSelect(selectId, materialList) {
+    const select = document.getElementById(selectId);
+    const existingOptions = Array.from(select.options).filter(opt => opt.value === '');
+    select.innerHTML = '';
+    existingOptions.forEach(opt => select.appendChild(opt));
+    
+    // Group by material name
+    const grouped = {};
+    materialList.forEach(mat => {
+        if (!grouped[mat.materiale]) {
+            grouped[mat.materiale] = [];
+        }
+        grouped[mat.materiale].push(mat);
+    });
+    
+    Object.keys(grouped).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = `${name} (${grouped[name].length} colors)`;
+        select.appendChild(option);
+    });
+}
+
+function loadMaterialColors(type) {
+    const materialSelect = document.getElementById(`${type}-material`);
+    const colorContainer = document.getElementById(`${type}-color-container`);
+    const colorOptions = document.getElementById(`${type}-color-options`);
+    
+    const selectedMaterial = materialSelect.value;
+    
+    if (!selectedMaterial) {
+        colorContainer.style.display = 'none';
+        return;
+    }
+    
+    const materialColors = materials.filter(m => m.materiale === selectedMaterial);
+    
+    colorOptions.innerHTML = '';
+    materialColors.forEach(mat => {
+        const colorDiv = document.createElement('div');
+        colorDiv.className = 'relative cursor-pointer group';
+        colorDiv.onclick = () => selectColor(type, mat);
+        
+        colorDiv.innerHTML = `
+            <div class="aspect-square rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-primary transition p-2 flex flex-col items-center justify-center bg-white dark:bg-gray-700">
+                <div class="w-full h-8 rounded mb-1" style="background-color: ${getColorCode(mat.colore)}"></div>
+                <span class="text-xs text-gray-700 dark:text-gray-300 text-center">${mat.colore}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">${mat.spessore}</span>
+            </div>
+        `;
+        
+        colorOptions.appendChild(colorDiv);
+    });
+    
+    colorContainer.style.display = 'block';
+}
+
+function getColorCode(colorName) {
+    const colors = {
+        'black': '#000000', 'nero': '#000000',
+        'white': '#FFFFFF', 'bianco': '#FFFFFF',
+        'red': '#FF0000', 'rosso': '#FF0000',
+        'blue': '#0000FF', 'blu': '#0000FF',
+        'green': '#00FF00', 'verde': '#00FF00',
+        'yellow': '#FFFF00', 'giallo': '#FFFF00',
+        'orange': '#FFA500', 'arancione': '#FFA500',
+        'purple': '#800080', 'viola': '#800080',
+        'brown': '#8B4513', 'marrone': '#8B4513',
+        'gray': '#808080', 'grigio': '#808080',
+        'pink': '#FFC0CB', 'rosa': '#FFC0CB'
+    };
+    
+    const lowerName = colorName.toLowerCase();
+    return colors[lowerName] || '#888888';
+}
+
+function selectColor(type, material) {
+    // Remove previous selection
+    const colorOptions = document.getElementById(`${type}-color-options`);
+    colorOptions.querySelectorAll('.border-primary').forEach(el => {
+        el.classList.remove('border-primary', 'border-4');
+        el.classList.add('border-gray-300', 'dark:border-gray-600', 'border-2');
+    });
+    
+    // Mark as selected
+    event.currentTarget.querySelector('div').classList.remove('border-gray-300', 'dark:border-gray-600', 'border-2');
+    event.currentTarget.querySelector('div').classList.add('border-primary', 'border-4');
+    
+    // Update config
+    if (type === 'string') {
+        selectedConfig.stringMaterial = material.materiale;
+        selectedConfig.stringColor = material.colore;
+    } else if (type === 'serving') {
+        selectedConfig.servingMaterial = material.materiale;
+        selectedConfig.servingColor = material.colore;
+    } else if (type === 'center') {
+        selectedConfig.centerMaterial = material.materiale;
+        selectedConfig.centerColor = material.colore;
+    }
+    
+    updateSummary();
+    updatePrice();
+    drawStringPreview(); // Update canvas
+}
+
+function toggleCenterServing() {
+    const checked = document.getElementById('include-center-serving').checked;
+    const options = document.getElementById('center-serving-options');
+    options.style.display = checked ? 'block' : 'none';
+    selectedConfig.centerServing = checked;
+    updateSummary();
+    updatePrice();
+    drawStringPreview(); // Update canvas
+}
+
+function updateSummary() {
+    // Get all values
+    selectedConfig.stringType = document.getElementById('string-type').value;
+    selectedConfig.length = document.getElementById('string-length').value;
+    selectedConfig.strandCount = document.getElementById('strand-count').value;
+    selectedConfig.instructions = document.getElementById('special-instructions').value;
+    
+    const summary = document.getElementById('summary-content');
+    let html = '';
+    
+    if (selectedConfig.stringType) {
+        html += `<div><strong>Type:</strong> ${selectedConfig.stringType}</div>`;
+    }
+    if (selectedConfig.length) {
+        html += `<div><strong>Length:</strong> ${selectedConfig.length}" (${(selectedConfig.length * 2.54).toFixed(1)} cm)</div>`;
+    }
+    if (selectedConfig.stringMaterial && selectedConfig.stringColor) {
+        html += `<div><strong>String:</strong> ${selectedConfig.stringMaterial} - ${selectedConfig.stringColor}</div>`;
+    }
+    if (selectedConfig.strandCount) {
+        html += `<div><strong>Strands:</strong> ${selectedConfig.strandCount}</div>`;
+    }
+    if (selectedConfig.servingMaterial && selectedConfig.servingColor) {
+        html += `<div><strong>Serving:</strong> ${selectedConfig.servingMaterial} - ${selectedConfig.servingColor}</div>`;
+    }
+    if (selectedConfig.centerServing && selectedConfig.centerMaterial && selectedConfig.centerColor) {
+        html += `<div><strong>Center:</strong> ${selectedConfig.centerMaterial} - ${selectedConfig.centerColor}</div>`;
+    }
+    
+    if (html === '') {
+        html = '<p class="text-gray-500 dark:text-gray-400 italic">Select options to see your configuration</p>';
+    }
+    
+    summary.innerHTML = html;
+    
+    // Enable/disable add to cart button
+    const isComplete = selectedConfig.stringType && selectedConfig.length && 
+                      selectedConfig.stringMaterial && selectedConfig.stringColor &&
+                      selectedConfig.strandCount && selectedConfig.servingMaterial && 
+                      selectedConfig.servingColor;
+    document.getElementById('add-to-cart-btn').disabled = !isComplete;
+    
+    drawStringPreview(); // Update canvas
+}
+
+function updatePrice() {
+    updateSummary();
+    
+    let customPrice = 0;
+    
+    // Add cost based on length (longer = more material)
+    if (selectedConfig.length) {
+        const length = parseFloat(selectedConfig.length);
+        if (length > 68) {
+            customPrice += (length - 68) * 0.5; // €0.50 per extra inch
+        }
+    }
+    
+    // Add cost for center serving
+    if (selectedConfig.centerServing) {
+        customPrice += 3.00;
+    }
+    
+    // Add cost for extra strands
+    if (selectedConfig.strandCount) {
+        const strands = parseInt(selectedConfig.strandCount);
+        if (strands > 16) {
+            customPrice += (strands - 16) * 0.25; // €0.25 per extra strand
+        }
+    }
+    
+    const total = basePrice + customPrice;
+    
+    document.getElementById('base-price').textContent = `€${basePrice.toFixed(2)}`;
+    document.getElementById('custom-price').textContent = `€${customPrice.toFixed(2)}`;
+    document.getElementById('total-price').textContent = `€${total.toFixed(2)}`;
+}
+
+function addToCart() {
+    // Create cart item
+    const cartItem = {
+        productId: {{ product.id }},
+        productName: '{{ product.name_en }}',
+        type: 'custom_string',
+        config: selectedConfig,
+        price: parseFloat(document.getElementById('total-price').textContent.replace('€', ''))
+    };
+    
+    // Get existing cart
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart.push(cartItem);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    showNotification('Custom string added to cart!', 'success');
+    
+    // Redirect to cart
+    setTimeout(() => {
+        window.location.href = '{{ url_for("shop.cart") }}';
+    }, 1500);
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    } text-white`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

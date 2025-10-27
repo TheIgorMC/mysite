@@ -95,7 +95,23 @@
                 
                 <!-- Add to Cart Button -->
                 {% if product.in_stock %}
-                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                    <!-- Customize Button (if customization enabled) -->
+                    {% if product.is_custom_string %}
+                    <a href="{{ url_for('shop.customize_string', product_id=product.id) }}"
+                       class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition font-semibold flex items-center justify-center gap-2">
+                        <i class="fas fa-sliders-h"></i>Customize Your String
+                    </a>
+                    {% endif %}
+                    
+                    {% if product.is_custom_print %}
+                    <a href="{{ url_for('shop.customize_print', product_id=product.id) }}"
+                       class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition font-semibold flex items-center justify-center gap-2">
+                        <i class="fas fa-cube"></i>Customize Your Print
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Standard Add to Cart (always show if in stock) -->
                     <button 
                         data-product-id="{{ product.id }}"
                         data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"

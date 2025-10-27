@@ -57,3 +57,16 @@ def cart():
     """Shopping cart"""
     return render_template('shop/cart.html')
 
+
+@bp.route('/customize/string/<int:product_id>')
+@login_required
+def customize_string(product_id):
+    """String customizer for custom bowstrings"""
+    product = Product.query.get_or_404(product_id)
+    
+    # Verify product has customization enabled
+    if not product.is_custom_string:
+        from flask import abort
+        abort(404)
+    
+    return render_template('shop/customize_string.html', product=product)
