@@ -103,11 +103,11 @@ class OrionAPIClient:
         return self._make_request('GET', '/api/atleti', params={'q': name})
     
     def get_athlete_results(self, athlete_id, limit=500):
-        """Get results for an athlete using /api/athlete/{tessera}/results endpoint
+        """Get results/registrations for an athlete using /api/iscrizioni endpoint
         
-        Returns list of competition results for the athlete.
+        Returns list of competition registrations/results for the athlete.
         """
-        return self._make_request('GET', f'/api/athlete/{athlete_id}/results', params={'limit': limit})
+        return self._make_request('GET', '/api/iscrizioni', params={'tessera': athlete_id, 'limit': limit})
     
     def get_competition_types(self):
         """Get list of available competition types"""
