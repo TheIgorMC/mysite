@@ -25,11 +25,9 @@
                         {{ t('customize.string_preview') }}
                     </h2>
                     <div class="relative w-full overflow-x-auto">
-                        <!-- Layered canvas approach -->
+                        <!-- Canvas preview - simplified for custom implementation -->
                         <div id="string-preview-container" class="relative w-full h-[150px] border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-hidden">
-                            <canvas id="string-base" width="1200" height="150" class="absolute top-0 left-0 w-full h-full" style="z-index: 1;"></canvas>
-                            <canvas id="string-servings" width="1200" height="150" class="absolute top-0 left-0 w-full h-full" style="z-index: 2;"></canvas>
-                            <canvas id="string-labels" width="1200" height="150" class="absolute top-0 left-0 w-full h-full" style="z-index: 3;"></canvas>
+                            <canvas id="string-canvas" width="1200" height="150" class="w-full h-full"></canvas>
                         </div>
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-3">
@@ -82,6 +80,61 @@
                         </label>
                         <div id="string-color-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
                             <!-- Color options will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Color Pattern (shown after first color selected) -->
+                    <div class="mb-6" id="color-pattern-container" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('customize.color_pattern') }}
+                        </label>
+                        <select id="color-pattern"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                onchange="updateColorPattern()">
+                            <option value="single">{{ t('customize.pattern_single') }}</option>
+                            <option value="double">{{ t('customize.pattern_double') }}</option>
+                            <option value="triple">{{ t('customize.pattern_triple') }}</option>
+                        </select>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {{ t('customize.pattern_hint') }}
+                        </p>
+                    </div>
+
+                    <!-- Pinstripe Option (shown after base pattern selected) -->
+                    <div class="mb-6" id="pinstripe-container" style="display: none;">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="add-pinstripe" 
+                                   class="w-4 h-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary"
+                                   onchange="updateColorPattern()">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ t('customize.add_pinstripe') }}
+                            </span>
+                        </label>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                            {{ t('customize.pinstripe_hint') }}
+                        </p>
+                    </div>
+
+                    <!-- Additional Colors (shown for multi-color patterns) -->
+                    <div class="mb-6" id="additional-colors-container" style="display: none;">
+                        <!-- Second Color -->
+                        <div class="mb-4" id="color2-section">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ t('customize.second_color') }} *
+                            </label>
+                            <div id="string-color2-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                <!-- Color options will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Third Color (for triple pattern) -->
+                        <div class="mb-4" id="color3-section" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ t('customize.third_color') }} *
+                            </label>
+                            <div id="string-color3-options" class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                <!-- Color options will be loaded here -->
+                            </div>
                         </div>
                     </div>
 
@@ -327,6 +380,10 @@ let selectedConfig = {
     length: null,
     stringMaterial: null,
     stringColor: null,
+    stringColor2: null,
+    stringColor3: null,
+    colorPattern: 'single', // single, double, triple
+    hasPinstripe: false,
     strandCount: null,
     nockSize: null,
     
@@ -391,11 +448,11 @@ function populateSelect(selectId, materialsList) {
     select.innerHTML = '';
     select.appendChild(firstOption);
     
-    // Group materials by name
+    // Group materials by name (materiale property, not nome)
     const grouped = {};
     materialsList.forEach(m => {
-        if (!grouped[m.nome]) grouped[m.nome] = [];
-        grouped[m.nome].push(m);
+        if (!grouped[m.materiale]) grouped[m.materiale] = [];
+        grouped[m.materiale].push(m);
     });
     
     console.log('Grouped materials for', selectId, ':', grouped); // Debug
@@ -415,18 +472,24 @@ function loadMaterialColors(type) {
     
     if (type === 'string') {
         materialSelect = document.getElementById('string-material');
+    } else if (type === 'string2' || type === 'string3') {
+        // For additional colors, use the same material as the primary string
+        materialName = selectedConfig.stringMaterial;
     } else if (type === 'serving') {
         materialSelect = document.getElementById('serving-material');
     } else if (type === 'center') {
         materialSelect = document.getElementById('center-serving-material');
     }
     
-    if (!materialSelect) {
+    if (materialSelect && !materialName) {
+        materialName = materialSelect.value;
+    }
+    
+    if (!materialSelect && !materialName) {
         console.error('Material select not found for type:', type);
         return;
     }
     
-    materialName = materialSelect.value;
     console.log('Loading colors for', type, ':', materialName); // Debug
     
     if (!materialName) {
@@ -437,16 +500,20 @@ function loadMaterialColors(type) {
         return;
     }
     
-    const materialsList = materials.filter(m => m.nome === materialName);
+    const materialsList = materials.filter(m => m.materiale === materialName);
     console.log('Filtered materials:', materialsList); // Debug
     
     const containerMap = {
         'string': 'string-color-container',
+        'string2': 'additional-colors-container',
+        'string3': 'additional-colors-container',
         'serving': 'serving-color-container',
         'center': 'center-color-container'
     };
     const optionsMap = {
         'string': 'string-color-options',
+        'string2': 'string-color2-options',
+        'string3': 'string-color3-options',
         'serving': 'serving-color-options',
         'center': 'center-color-options'
     };
@@ -491,19 +558,28 @@ function selectColor(type, material) {
     
     // Update config
     if (type === 'string') {
-        selectedConfig.stringMaterial = material.nome;
+        selectedConfig.stringMaterial = material.materiale;
         selectedConfig.stringColor = material.colore;
+        // Show color pattern options after first color is selected
+        document.getElementById('color-pattern-container').style.display = 'block';
+        document.getElementById('pinstripe-container').style.display = 'block';
+    } else if (type === 'string2') {
+        selectedConfig.stringColor2 = material.colore;
+    } else if (type === 'string3') {
+        selectedConfig.stringColor3 = material.colore;
     } else if (type === 'serving') {
-        selectedConfig.endServingMaterial = material.nome;
+        selectedConfig.endServingMaterial = material.materiale;
         selectedConfig.endServingColor = material.colore;
     } else if (type === 'center') {
-        selectedConfig.centerServingMaterial = material.nome;
+        selectedConfig.centerServingMaterial = material.materiale;
         selectedConfig.centerServingColor = material.colore;
     }
     
     // Visual feedback
     const optionsMap = {
         'string': 'string-color-options',
+        'string2': 'string-color2-options',
+        'string3': 'string-color3-options',
         'serving': 'serving-color-options',
         'center': 'center-color-options'
     };
@@ -513,6 +589,90 @@ function selectColor(type, material) {
             btn.classList.remove('border-primary', 'bg-primary/10');
         });
         event.currentTarget.classList.add('border-primary', 'bg-primary/10');
+    }
+    
+    updateSummary();
+}
+
+function updateColorPattern() {
+    const pattern = document.getElementById('color-pattern').value;
+    const hasPinstripe = document.getElementById('add-pinstripe').checked;
+    
+    selectedConfig.colorPattern = pattern;
+    selectedConfig.hasPinstripe = hasPinstripe;
+    
+    const pinstripeContainer = document.getElementById('pinstripe-container');
+    const additionalColorsContainer = document.getElementById('additional-colors-container');
+    const color2Section = document.getElementById('color2-section');
+    const color3Section = document.getElementById('color3-section');
+    
+    // Show pinstripe checkbox after pattern is selected
+    pinstripeContainer.style.display = 'block';
+    
+    // Determine how many colors are needed
+    let needsColor2 = false;
+    let needsColor3 = false;
+    
+    if (pattern === 'single') {
+        // Single color: pinstripe becomes 2nd color
+        needsColor2 = hasPinstripe;
+    } else if (pattern === 'double') {
+        // Double color: always needs 2nd, pinstripe becomes 3rd
+        needsColor2 = true;
+        needsColor3 = hasPinstripe;
+    } else if (pattern === 'triple') {
+        // Triple color: always needs 2nd and 3rd, pinstripe checkbox disabled
+        needsColor2 = true;
+        needsColor3 = true;
+        document.getElementById('add-pinstripe').disabled = true;
+        document.getElementById('add-pinstripe').checked = false;
+        selectedConfig.hasPinstripe = false;
+    } else {
+        // Re-enable pinstripe checkbox for single/double
+        document.getElementById('add-pinstripe').disabled = false;
+    }
+    
+    // Show/hide additional color sections
+    if (needsColor2 || needsColor3) {
+        additionalColorsContainer.style.display = 'block';
+        color2Section.style.display = needsColor2 ? 'block' : 'none';
+        color3Section.style.display = needsColor3 ? 'block' : 'none';
+        
+        // Update labels based on whether it's a pinstripe or not
+        const color2Label = document.querySelector('#color2-section label');
+        const color3Label = document.querySelector('#color3-section label');
+        
+        if (pattern === 'single' && hasPinstripe) {
+            color2Label.innerHTML = '{{ t("customize.pinstripe_color") }} *';
+        } else if (pattern === 'double' && !hasPinstripe) {
+            color2Label.innerHTML = '{{ t("customize.second_color") }} *';
+        } else if (pattern === 'double' && hasPinstripe) {
+            color2Label.innerHTML = '{{ t("customize.second_color") }} *';
+            color3Label.innerHTML = '{{ t("customize.pinstripe_color") }} *';
+        } else if (pattern === 'triple') {
+            color2Label.innerHTML = '{{ t("customize.second_color") }} *';
+            color3Label.innerHTML = '{{ t("customize.third_color") }} *';
+        }
+        
+        // Load colors if not already loaded
+        if (selectedConfig.stringMaterial) {
+            if (needsColor2 && document.getElementById('string-color2-options').children.length === 0) {
+                loadMaterialColors('string2');
+            }
+            if (needsColor3 && document.getElementById('string-color3-options').children.length === 0) {
+                loadMaterialColors('string3');
+            }
+        }
+    } else {
+        additionalColorsContainer.style.display = 'none';
+    }
+    
+    // Reset colors that are no longer needed
+    if (!needsColor2) {
+        selectedConfig.stringColor2 = null;
+    }
+    if (!needsColor3) {
+        selectedConfig.stringColor3 = null;
     }
     
     updateSummary();
@@ -571,7 +731,22 @@ function updateSummary() {
         html += `<div><span class="font-semibold">{{ t("customize.length") }}:</span> ${selectedConfig.length}"</div>`;
     }
     if (selectedConfig.stringMaterial && selectedConfig.stringColor) {
-        html += `<div><span class="font-semibold">{{ t("customize.string") }}:</span> ${selectedConfig.stringMaterial} - ${selectedConfig.stringColor}</div>`;
+        let colorText = selectedConfig.stringColor;
+        
+        // Build color description based on pattern and pinstripe
+        if (selectedConfig.colorPattern === 'single' && selectedConfig.hasPinstripe && selectedConfig.stringColor2) {
+            colorText = `${selectedConfig.stringColor} with ${selectedConfig.stringColor2} pinstripe`;
+        } else if (selectedConfig.colorPattern === 'double' && selectedConfig.stringColor2) {
+            if (selectedConfig.hasPinstripe && selectedConfig.stringColor3) {
+                colorText = `${selectedConfig.stringColor} + ${selectedConfig.stringColor2} with ${selectedConfig.stringColor3} pinstripe`;
+            } else {
+                colorText = `${selectedConfig.stringColor} + ${selectedConfig.stringColor2}`;
+            }
+        } else if (selectedConfig.colorPattern === 'triple' && selectedConfig.stringColor2 && selectedConfig.stringColor3) {
+            colorText = `${selectedConfig.stringColor} + ${selectedConfig.stringColor2} + ${selectedConfig.stringColor3}`;
+        }
+        
+        html += `<div><span class="font-semibold">{{ t("customize.string") }}:</span> ${selectedConfig.stringMaterial} - ${colorText}</div>`;
     }
     if (selectedConfig.strandCount) {
         html += `<div><span class="font-semibold">{{ t("customize.strands") }}:</span> ${selectedConfig.strandCount}</div>`;
@@ -601,13 +776,33 @@ function updateSummary() {
     summaryDiv.innerHTML = html || '<p class="text-gray-500 dark:text-gray-400 italic">{{ t("customize.select_options") }}</p>';
     
     // Check if all required fields are filled
-    const isValid = selectedConfig.length && 
+    let isValid = selectedConfig.length && 
                     selectedConfig.stringMaterial && 
                     selectedConfig.stringColor && 
                     selectedConfig.strandCount && 
                     selectedConfig.nockSize &&
                     selectedConfig.endServingMaterial && 
                     selectedConfig.endServingColor;
+    
+    // Additional validation for multicolor patterns
+    if (isValid) {
+        // Single + pinstripe: needs 2nd color
+        if (selectedConfig.colorPattern === 'single' && selectedConfig.hasPinstripe) {
+            isValid = isValid && selectedConfig.stringColor2;
+        }
+        // Double: always needs 2nd color
+        else if (selectedConfig.colorPattern === 'double') {
+            isValid = isValid && selectedConfig.stringColor2;
+            // Double + pinstripe: also needs 3rd color
+            if (selectedConfig.hasPinstripe) {
+                isValid = isValid && selectedConfig.stringColor3;
+            }
+        }
+        // Triple: always needs 2nd and 3rd colors
+        else if (selectedConfig.colorPattern === 'triple') {
+            isValid = isValid && selectedConfig.stringColor2 && selectedConfig.stringColor3;
+        }
+    }
     
     document.getElementById('add-to-cart-btn').disabled = !isValid;
     
@@ -655,133 +850,45 @@ function updatePrice() {
 }
 
 function drawStringPreview() {
-    // Get canvases
-    const baseCanvas = document.getElementById('string-base');
-    const servingsCanvas = document.getElementById('string-servings');
-    const labelsCanvas = document.getElementById('string-labels');
+    // Get canvas
+    const canvas = document.getElementById('string-canvas');
+    if (!canvas) return;
     
-    if (!baseCanvas || !servingsCanvas || !labelsCanvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
     
-    const baseCtx = baseCanvas.getContext('2d');
-    const servingsCtx = servingsCanvas.getContext('2d');
-    const labelsCtx = labelsCanvas.getContext('2d');
-    
-    const width = baseCanvas.width;
-    const height = baseCanvas.height;
-    
-    // Clear all canvases
+    // Clear canvas
     const isDark = document.documentElement.classList.contains('dark');
     const bgColor = isDark ? '#111827' : '#F9FAFB';
     
-    baseCtx.fillStyle = bgColor;
-    baseCtx.fillRect(0, 0, width, height);
-    servingsCtx.clearRect(0, 0, width, height);
-    labelsCtx.clearRect(0, 0, width, height);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
     
     // Get configuration
     const strandCount = selectedConfig.strandCount || 16;
     const stringColor = selectedConfig.stringColor ? getColorCode(selectedConfig.stringColor) : '#8B4513';
     const servingColor = selectedConfig.endServingColor ? getColorCode(selectedConfig.endServingColor) : '#000000';
     const centerServingColor = selectedConfig.centerServingColor ? getColorCode(selectedConfig.centerServingColor) : servingColor;
+    const stringLength = selectedConfig.length || 68;
     
-    // Drawing parameters
-    const w = width * 0.75;
-    const h = 120;
-    const offsetX = (width - w) / 2;
-    const offsetY = (height - 40) / 2;
-    const y1 = offsetY;
-    const y0 = -h - 90;
-    const off = 8;
-    const length = off * strandCount;
-    
-    // Draw twisted string on base layer
-    baseCtx.lineCap = 'round';
-    baseCtx.lineWidth = 4;
-    baseCtx.globalAlpha = 0.8;
-    
-    for (let j = 0; j < 4; j++) {
-        for (let i = 0; i < strandCount; i++) {
-            const xi = offsetX - 30;
-            const yi = y0 + i * off + j * length;
-            const xf = offsetX + w + 30;
-            const yf = y1 + i * off + j * length;
-            
-            baseCtx.strokeStyle = stringColor;
-            baseCtx.beginPath();
-            baseCtx.moveTo(xi, yi);
-            baseCtx.lineTo(xf, yf);
-            baseCtx.stroke();
-        }
-    }
-    
-    baseCtx.globalAlpha = 1.0;
-    
-    // Draw servings on separate layer (MORE VISIBLE)
-    const endServingLen = (selectedConfig.endServingLength / (selectedConfig.length || 68)) * w;
-    
-    // End servings
-    drawVisibleServing(servingsCtx, offsetX, offsetY, endServingLen, 40, servingColor);
-    drawVisibleServing(servingsCtx, offsetX + w - endServingLen, offsetY, endServingLen, 40, servingColor);
-    
-    // Center serving (EXTRA VISIBLE)
-    const centerLen = (selectedConfig.centerServingLength / (selectedConfig.length || 68)) * w;
-    let centerX = offsetX + (w - centerLen) / 2; // default middle
-    
-    if (selectedConfig.centerServingPosition === 'upper') {
-        centerX = offsetX + w * 0.3 - centerLen / 2;
-    } else if (selectedConfig.centerServingPosition === 'lower') {
-        centerX = offsetX + w * 0.7 - centerLen / 2;
-    } else if (selectedConfig.centerServingPosition === 'custom' && selectedConfig.centerServingCustomPosition) {
-        const customPos = (selectedConfig.centerServingCustomPosition / (selectedConfig.length || 68));
-        centerX = offsetX + w * customPos - centerLen / 2;
-    }
-    
-    drawVisibleServing(servingsCtx, centerX, offsetY, centerLen, 40, centerServingColor, true); // true = center serving (extra visible)
-    
-    // Draw labels on top layer
-    labelsCtx.font = '12px Arial';
-    labelsCtx.fillStyle = isDark ? '#9CA3AF' : '#4B5563';
-    labelsCtx.textAlign = 'left';
-    
-    const labelY = offsetY + 55;
-    labelsCtx.fillText(`{{ t("customize.recurve_label") }} - ${strandCount} {{ t("customize.strands_label") }}`, offsetX, labelY);
-    
-    if (selectedConfig.length) {
-        labelsCtx.textAlign = 'center';
-        labelsCtx.fillText(`${selectedConfig.length}"`, width / 2, offsetY - 10);
-    }
-}
+    // TODO: Implement your custom string visualization here
+    // Available configuration:
+    // - strandCount: number of strands
+    // - stringColor: hex color code for main string
+    // - servingColor: hex color code for end servings
+    // - centerServingColor: hex color code for center serving
+    // - stringLength: total length in inches
+    // - selectedConfig.endServingLength: length of end servings
+    // - selectedConfig.centerServingLength: length of center serving
+    // - selectedConfig.centerServingPosition: 'middle', 'upper', 'lower', or 'custom'
 
-function drawVisibleServing(ctx, x, y, width, height, color, isCenter = false) {
-    // Make servings much more visible with solid fill and border
-    ctx.fillStyle = color;
-    ctx.globalAlpha = isCenter ? 0.95 : 0.85; // Center serving is more opaque
-    ctx.fillRect(x, y, width, height);
     
-    // Add border for definition
-    ctx.strokeStyle = isCenter ? '#FFFFFF' : 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = isCenter ? 2 : 1;
-    ctx.globalAlpha = 1.0;
-    ctx.strokeRect(x, y, width, height);
-    
-    // Add texture lines (tighter for center)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 1;
-    const step = isCenter ? 1 : 2; // Tighter wraps for center
-    for (let i = x; i < x + width; i += step) {
-        ctx.beginPath();
-        ctx.moveTo(i, y);
-        ctx.lineTo(i, y + height);
-        ctx.stroke();
-    }
-    
-    // Add highlight for center serving
-    if (isCenter) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.fillRect(x, y, width, height / 3);
-    }
-    
-    ctx.globalAlpha = 1.0;
+    // Placeholder text
+    ctx.fillStyle = isDark ? '#9CA3AF' : '#4B5563';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('String preview - custom implementation coming soon', width / 2, height / 2);
 }
 
 function addToCart() {
