@@ -325,7 +325,17 @@
     "error_loading": "Errore nel caricamento dei materiali",
     "error_saving": "Errore nel salvataggio",
     "error_deleting": "Errore nell'eliminazione",
-    "error_consuming": "Errore nel consumo"
+    "error_consuming": "Errore nel consumo",
+    "spool_weight_calculator": "Calcolatore Peso Rocchetto",
+    "calculate_net_weight": "Calcola il peso netto del materiale sottraendo il peso del rocchetto",
+    "current_weight_g": "Peso Attuale (g)",
+    "spool_type": "Tipo Rocchetto",
+    "select": "Seleziona...",
+    "custom": "Personalizzato",
+    "custom_spool_weight_g": "Peso Rocchetto Personalizzato (g)",
+    "net_material_weight": "Peso Netto Materiale",
+    "apply_to_remaining_grams": "Applica a Grammi Rimanenti",
+    "quantity_meters": "Quantità (metri)"
   },
   "customize": {
     "string_customizer": "Configuratore Corde",

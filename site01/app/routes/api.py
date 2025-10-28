@@ -404,7 +404,8 @@ def list_products():
             'is_active': p.is_active,
             'is_custom_string': p.is_custom_string,
             'is_custom_print': p.is_custom_print,
-            'in_stock': p.in_stock
+            'in_stock': p.in_stock,
+            'variant_config': p.variant_config
         }
         for p in products
     ])
@@ -431,13 +432,29 @@ def update_product(product_id):
         if 'is_active' in data:
             product.is_active = bool(data['is_active'])
         
+        # Update variant configuration
+        if 'variant_config' in data:
+            # If variant_config is None or empty, set to None
+            # Otherwise, store as JSON string
+            variant_config = data['variant_config']
+            if variant_config:
+                # If it's already a string, use it; if it's a dict, convert to JSON
+                if isinstance(variant_config, dict):
+                    import json
+                    product.variant_config = json.dumps(variant_config)
+                else:
+                    product.variant_config = variant_config
+            else:
+                product.variant_config = None
+        
         db.session.commit()
         
         return jsonify({
             'id': product.id,
             'is_custom_string': product.is_custom_string,
             'is_custom_print': product.is_custom_print,
-            'is_active': product.is_active
+            'is_active': product.is_active,
+            'variant_config': product.variant_config
         })
     
     except Exception as e:

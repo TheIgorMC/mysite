@@ -324,7 +324,17 @@
     "error_loading": "Error loading materials",
     "error_saving": "Error saving",
     "error_deleting": "Error deleting",
-    "error_consuming": "Error consuming"
+    "error_consuming": "Error consuming",
+    "spool_weight_calculator": "Spool Weight Calculator",
+    "calculate_net_weight": "Calculate net material weight by subtracting spool weight",
+    "current_weight_g": "Current Weight (g)",
+    "spool_type": "Spool Type",
+    "select": "Select...",
+    "custom": "Custom",
+    "custom_spool_weight_g": "Custom Spool Weight (g)",
+    "net_material_weight": "Net Material Weight",
+    "apply_to_remaining_grams": "Apply to Remaining Grams",
+    "quantity_meters": "Quantity (meters)"
   },
   "customize": {
     "string_customizer": "String Customizer",

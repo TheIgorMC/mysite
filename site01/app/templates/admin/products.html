@@ -49,6 +49,9 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Custom Print
                                     </th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Variants
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="products-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -66,6 +69,53 @@
         </div>
     </div>
 </section>
+
+<!-- Variant Editor Modal -->
+<div id="variantModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-sliders-h text-orange-500 mr-2"></i>
+                    Product Variants Configuration
+                </h2>
+                <button onclick="closeVariantEditor()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Configure variant options for: <span id="modalProductName" class="font-semibold"></span></p>
+        </div>
+
+        <div class="p-6">
+            <!-- Variant Fields -->
+            <div id="variantFields" class="space-y-4">
+                <!-- Fields will be dynamically added here -->
+            </div>
+
+            <!-- Add Field Button -->
+            <button onclick="addVariantField()" class="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-orange-500 hover:text-orange-500 transition">
+                <i class="fas fa-plus mr-2"></i>Add Variant Field
+            </button>
+
+            <!-- JSON Preview -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-code mr-1"></i>JSON Preview
+                </label>
+                <pre id="jsonPreview" class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto"></pre>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+            <button onclick="closeVariantEditor()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                Cancel
+            </button>
+            <button onclick="saveVariantConfig()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition">
+                <i class="fas fa-save mr-2"></i>Save Configuration
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 let products = [];
@@ -149,6 +199,13 @@ function createProductRow(product) {
                 <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
             </label>
         </td>
+        <td class="px-6 py-4 whitespace-nowrap text-center">
+            <button onclick="openVariantEditor(${product.id})" 
+                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white ${product.variant_config ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition">
+                <i class="fas fa-sliders-h mr-1"></i>
+                ${product.variant_config ? 'Edit' : 'Add'}
+            </button>
+        </td>
     `;
 
     return tr;
@@ -197,5 +254,263 @@ function showNotification(message, type = 'info') {
         notification.remove();
     }, 3000);
 }
+
+// Variant Editor
+let currentProductId = null;
+let variantConfig = {};
+let fieldCounter = 0;
+
+function openVariantEditor(productId) {
+    currentProductId = productId;
+    const product = products.find(p => p.id === productId);
+    
+    document.getElementById('modalProductName').textContent = product.name_en;
+    document.getElementById('variantModal').classList.remove('hidden');
+    document.getElementById('variantModal').classList.add('flex');
+    
+    // Load existing configuration
+    if (product.variant_config) {
+        try {
+            variantConfig = typeof product.variant_config === 'string' 
+                ? JSON.parse(product.variant_config) 
+                : product.variant_config;
+        } catch (e) {
+            variantConfig = {};
+        }
+    } else {
+        variantConfig = {};
+    }
+    
+    renderVariantFields();
+    updateJsonPreview();
+}
+
+function closeVariantEditor() {
+    document.getElementById('variantModal').classList.add('hidden');
+    document.getElementById('variantModal').classList.remove('flex');
+    currentProductId = null;
+    variantConfig = {};
+    fieldCounter = 0;
+}
+
+function addVariantField(fieldName = '', fieldData = null) {
+    const fieldId = `field_${fieldCounter++}`;
+    const container = document.getElementById('variantFields');
+    
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-900';
+    fieldDiv.id = fieldId;
+    
+    const type = fieldData?.type || 'select';
+    const label = fieldData?.label || '';
+    const unit = fieldData?.unit || '';
+    const required = fieldData?.required !== false;
+    
+    let optionsHtml = '';
+    if (type === 'select' && fieldData?.options) {
+        optionsHtml = fieldData.options.map((opt, i) => 
+            `<input type="text" value="${opt}" onchange="updateVariantField('${fieldId}')" 
+                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white mb-2" 
+                    placeholder="Option ${i+1}">`
+        ).join('');
+    } else if (type === 'color' && fieldData?.options) {
+        optionsHtml = Object.entries(fieldData.options).map(([name, hex]) => 
+            `<div class="flex gap-2 mb-2">
+                <input type="text" value="${name}" onchange="updateVariantField('${fieldId}')" 
+                       class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                       placeholder="Color name">
+                <input type="color" value="${hex}" onchange="updateVariantField('${fieldId}')" 
+                       class="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded-md">
+            </div>`
+        ).join('');
+    }
+    
+    fieldDiv.innerHTML = `
+        <div class="flex items-start justify-between mb-3">
+            <input type="text" value="${fieldName}" onchange="updateVariantField('${fieldId}')" 
+                   class="text-lg font-semibold px-2 py-1 border-b border-transparent hover:border-gray-400 dark:bg-gray-900 dark:text-white flex-1" 
+                   placeholder="Field name (e.g., 'length', 'color')">
+            <button onclick="removeVariantField('${fieldId}')" class="text-red-500 hover:text-red-700 ml-2">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-3 mb-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <select onchange="updateVariantField('${fieldId}')" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white">
+                    <option value="select" ${type === 'select' ? 'selected' : ''}>Select Dropdown</option>
+                    <option value="color" ${type === 'color' ? 'selected' : ''}>Color Picker</option>
+                    <option value="number" ${type === 'number' ? 'selected' : ''}>Number Input</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label</label>
+                <input type="text" value="${label}" onchange="updateVariantField('${fieldId}')" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                       placeholder="Display label">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                <input type="text" value="${unit}" onchange="updateVariantField('${fieldId}')" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                       placeholder="e.g., inches">
+            </div>
+        </div>
+        
+        <div class="mb-2">
+            <label class="inline-flex items-center">
+                <input type="checkbox" ${required ? 'checked' : ''} onchange="updateVariantField('${fieldId}')" 
+                       class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Required field</span>
+            </label>
+        </div>
+        
+        <div class="options-container">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Options ${type === 'color' ? '(name & color)' : ''}
+            </label>
+            <div class="options-list mb-2">
+                ${optionsHtml}
+            </div>
+            <button onclick="addOption('${fieldId}')" class="text-sm text-orange-600 hover:text-orange-700">
+                <i class="fas fa-plus mr-1"></i>Add Option
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(fieldDiv);
+}
+
+function renderVariantFields() {
+    const container = document.getElementById('variantFields');
+    container.innerHTML = '';
+    fieldCounter = 0;
+    
+    Object.entries(variantConfig).forEach(([fieldName, fieldData]) => {
+        addVariantField(fieldName, fieldData);
+    });
+}
+
+function removeVariantField(fieldId) {
+    document.getElementById(fieldId).remove();
+    updateVariantField();
+}
+
+function addOption(fieldId) {
+    const fieldDiv = document.getElementById(fieldId);
+    const typeSelect = fieldDiv.querySelector('select');
+    const type = typeSelect.value;
+    const optionsList = fieldDiv.querySelector('.options-list');
+    
+    if (type === 'color') {
+        const colorDiv = document.createElement('div');
+        colorDiv.className = 'flex gap-2 mb-2';
+        colorDiv.innerHTML = `
+            <input type="text" onchange="updateVariantField('${fieldId}')" 
+                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                   placeholder="Color name">
+            <input type="color" value="#000000" onchange="updateVariantField('${fieldId}')" 
+                   class="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded-md">
+        `;
+        optionsList.appendChild(colorDiv);
+    } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white mb-2';
+        input.placeholder = 'Option';
+        input.onchange = () => updateVariantField(fieldId);
+        optionsList.appendChild(input);
+    }
+    
+    updateVariantField(fieldId);
+}
+
+function updateVariantField(fieldId = null) {
+    variantConfig = {};
+    
+    const fields = document.getElementById('variantFields').children;
+    for (let fieldDiv of fields) {
+        const fieldName = fieldDiv.querySelector('input[type="text"]').value.trim();
+        if (!fieldName) continue;
+        
+        const inputs = Array.from(fieldDiv.querySelectorAll('input, select'));
+        const typeSelect = inputs.find(i => i.tagName === 'SELECT');
+        const type = typeSelect.value;
+        const label = inputs.find(i => i.placeholder === 'Display label')?.value || '';
+        const unit = inputs.find(i => i.placeholder === 'e.g., inches')?.value || '';
+        const required = inputs.find(i => i.type === 'checkbox')?.checked !== false;
+        
+        const fieldConfig = { type, label, unit, required };
+        
+        if (type === 'select') {
+            const optionInputs = fieldDiv.querySelectorAll('.options-list input[type="text"]');
+            fieldConfig.options = Array.from(optionInputs).map(i => i.value).filter(v => v);
+        } else if (type === 'color') {
+            const colorDivs = fieldDiv.querySelectorAll('.options-list > div');
+            fieldConfig.options = {};
+            colorDivs.forEach(div => {
+                const nameInput = div.querySelector('input[type="text"]');
+                const colorInput = div.querySelector('input[type="color"]');
+                if (nameInput?.value) {
+                    fieldConfig.options[nameInput.value] = colorInput.value;
+                }
+            });
+        } else if (type === 'number') {
+            // Number fields don't need options
+            delete fieldConfig.options;
+        }
+        
+        // Clean up empty values
+        Object.keys(fieldConfig).forEach(key => {
+            if (fieldConfig[key] === '' || (Array.isArray(fieldConfig[key]) && fieldConfig[key].length === 0)) {
+                delete fieldConfig[key];
+            }
+        });
+        
+        variantConfig[fieldName] = fieldConfig;
+    }
+    
+    updateJsonPreview();
+}
+
+function updateJsonPreview() {
+    const preview = document.getElementById('jsonPreview');
+    preview.textContent = Object.keys(variantConfig).length > 0 
+        ? JSON.stringify(variantConfig, null, 2)
+        : '{}';
+}
+
+async function saveVariantConfig() {
+    if (!currentProductId) return;
+    
+    try {
+        const response = await fetch(`/api/products/${currentProductId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                variant_config: Object.keys(variantConfig).length > 0 ? JSON.stringify(variantConfig) : null 
+            })
+        });
+
+        if (response.ok) {
+            showNotification('Variant configuration saved!', 'success');
+            // Update local product data
+            const product = products.find(p => p.id === currentProductId);
+            if (product) {
+                product.variant_config = Object.keys(variantConfig).length > 0 ? variantConfig : null;
+            }
+            closeVariantEditor();
+            loadProducts(); // Refresh to update button color
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'Error saving configuration', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving variant config:', error);
+        showNotification('Error saving configuration', 'error');
+    }
+}
+
 </script>
 {% endblock %}
