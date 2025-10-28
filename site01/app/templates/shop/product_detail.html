@@ -52,7 +52,11 @@
                         <span class="text-4xl font-bold text-primary">€{{ "%.2f"|format(product.price) }}</span>
                         {% if product.stock_quantity %}
                         <span class="text-sm text-gray-600 dark:text-gray-400">
+                            {% if product.stock_quantity == 999 %}
+                            (<i class="fas fa-tools mr-1"></i>{{ t('shop.made_to_order') if session.get('language') == 'it' else 'Made to Order' }})
+                            {% else %}
                             ({{ product.stock_quantity }} {{ t('common.available') if session.get('language') == 'it' else 'available' }})
+                            {% endif %}
                         </span>
                         {% endif %}
                     </div>
@@ -78,6 +82,18 @@
                             {{ tag.strip() }}
                         </span>
                         {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Variant Selection -->
+                {% if product.variant_config and not product.is_custom_string and not product.is_custom_print %}
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        {{ t('shop.select_options') if session.get('language') == 'it' else 'Select Options' }}
+                    </h2>
+                    <div id="variant-options" class="space-y-4">
+                        <!-- Variant options will be inserted here by JavaScript -->
                     </div>
                 </div>
                 {% endif %}
@@ -167,4 +183,64 @@
         {% endif %}
     </div>
 </section>
+
+<script>
+// Render variant options
+document.addEventListener('DOMContentLoaded', () => {
+    const variantConfig = {{ product.variant_config|tojson if product.variant_config else '{}' }};
+    const variantContainer = document.getElementById('variant-options');
+    
+    if (variantContainer && Object.keys(variantConfig).length > 0) {
+        Object.entries(variantConfig).forEach(([fieldName, fieldConfig]) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'variant-field';
+            
+            const label = fieldConfig.label || fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+            const required = fieldConfig.required !== false;
+            
+            let fieldHTML = `
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ${label}${fieldConfig.unit ? ` (${fieldConfig.unit})` : ''}
+                    ${required ? '<span class="text-red-500">*</span>' : ''}
+                </label>
+            `;
+            
+            if (fieldConfig.type === 'select' && fieldConfig.options) {
+                fieldHTML += `
+                    <select name="variant_${fieldName}" ${required ? 'required' : ''}
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                        <option value="">{{ t('common.select') if session.get('language') == 'it' else 'Select...' }}</option>
+                        ${fieldConfig.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    </select>
+                `;
+            } else if (fieldConfig.type === 'color' && fieldConfig.options) {
+                fieldHTML += '<div class="grid grid-cols-4 gap-2">';
+                Object.entries(fieldConfig.options).forEach(([name, hex]) => {
+                    fieldHTML += `
+                        <label class="cursor-pointer">
+                            <input type="radio" name="variant_${fieldName}" value="${name}" ${required ? 'required' : ''}
+                                   class="sr-only peer">
+                            <div class="border-2 border-gray-300 peer-checked:border-primary rounded-lg p-2 hover:border-gray-400 transition text-center">
+                                <div class="w-full h-8 rounded mb-1" style="background-color: ${hex}"></div>
+                                <span class="text-xs text-gray-700 dark:text-gray-300">${name}</span>
+                            </div>
+                        </label>
+                    `;
+                });
+                fieldHTML += '</div>';
+            } else if (fieldConfig.type === 'number') {
+                fieldHTML += `
+                    <input type="number" name="variant_${fieldName}" ${required ? 'required' : ''}
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+                           placeholder="${label}">
+                `;
+            }
+            
+            fieldDiv.innerHTML = fieldHTML;
+            variantContainer.appendChild(fieldDiv);
+        });
+    }
+});
+</script>
 {% endblock %}
+

@@ -192,7 +192,10 @@
     "proceedToCheckout": "Proceed to Checkout",
     "confirmRemove": "Remove this item from cart?",
     "checkoutComingSoon": "Checkout functionality coming soon!",
-    "view_project": "View Project Gallery"
+    "view_project": "View Project Gallery",
+    "customization_required": "Customization required for this product",
+    "made_to_order": "Made to Order",
+    "select_options": "Select Options"
   },
   "auth": {
     "login": "Login",

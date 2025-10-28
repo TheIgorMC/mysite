@@ -193,7 +193,11 @@
     "total": "Totale",
     "proceedToCheckout": "Procedi al Pagamento",
     "confirmRemove": "Rimuovere questo articolo dal carrello?",
-    "checkoutComingSoon": "Funzionalità di checkout in arrivo!"
+    "checkoutComingSoon": "Funzionalità di checkout in arrivo!",
+    "view_project": "Visualizza Galleria Progetto",
+    "customization_required": "Personalizzazione richiesta per questo prodotto",
+    "made_to_order": "Realizzato su Ordinazione",
+    "select_options": "Seleziona Opzioni"
   },
   "auth": {
     "login": "Accedi",

@@ -300,86 +300,124 @@ function addVariantField(fieldName = '', fieldData = null) {
     const fieldDiv = document.createElement('div');
     fieldDiv.className = 'border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-900';
     fieldDiv.id = fieldId;
+    fieldDiv.dataset.fieldName = fieldName;
     
     const type = fieldData?.type || 'select';
     const label = fieldData?.label || '';
     const unit = fieldData?.unit || '';
     const required = fieldData?.required !== false;
     
-    let optionsHtml = '';
-    if (type === 'select' && fieldData?.options) {
-        optionsHtml = fieldData.options.map((opt, i) => 
-            `<input type="text" value="${opt}" onchange="updateVariantField('${fieldId}')" 
-                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white mb-2" 
-                    placeholder="Option ${i+1}">`
-        ).join('');
-    } else if (type === 'color' && fieldData?.options) {
-        optionsHtml = Object.entries(fieldData.options).map(([name, hex]) => 
-            `<div class="flex gap-2 mb-2">
-                <input type="text" value="${name}" onchange="updateVariantField('${fieldId}')" 
-                       class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
-                       placeholder="Color name">
-                <input type="color" value="${hex}" onchange="updateVariantField('${fieldId}')" 
-                       class="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded-md">
-            </div>`
-        ).join('');
-    }
+    // Header
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'flex items-start justify-between mb-3';
+    headerDiv.innerHTML = `
+        <input type="text" value="${fieldName.replace(/"/g, '&quot;')}" data-role="fieldname" 
+               class="text-lg font-semibold px-2 py-1 border-b border-transparent hover:border-gray-400 dark:bg-gray-900 dark:text-white flex-1" 
+               placeholder="Field name (e.g., 'length', 'color')">
+        <button type="button" class="text-red-500 hover:text-red-700 ml-2">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    headerDiv.querySelector('input').addEventListener('change', () => updateVariantField());
+    headerDiv.querySelector('button').addEventListener('click', () => removeVariantField(fieldId));
+    fieldDiv.appendChild(headerDiv);
     
-    fieldDiv.innerHTML = `
-        <div class="flex items-start justify-between mb-3">
-            <input type="text" value="${fieldName}" onchange="updateVariantField('${fieldId}')" 
-                   class="text-lg font-semibold px-2 py-1 border-b border-transparent hover:border-gray-400 dark:bg-gray-900 dark:text-white flex-1" 
-                   placeholder="Field name (e.g., 'length', 'color')">
-            <button onclick="removeVariantField('${fieldId}')" class="text-red-500 hover:text-red-700 ml-2">
-                <i class="fas fa-trash"></i>
-            </button>
+    // Config grid
+    const configDiv = document.createElement('div');
+    configDiv.className = 'grid grid-cols-3 gap-3 mb-3';
+    configDiv.innerHTML = `
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+            <select data-role="type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white">
+                <option value="select" ${type === 'select' ? 'selected' : ''}>Select Dropdown</option>
+                <option value="color" ${type === 'color' ? 'selected' : ''}>Color Picker</option>
+                <option value="number" ${type === 'number' ? 'selected' : ''}>Number Input</option>
+            </select>
         </div>
-        
-        <div class="grid grid-cols-3 gap-3 mb-3">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-                <select onchange="updateVariantField('${fieldId}')" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white">
-                    <option value="select" ${type === 'select' ? 'selected' : ''}>Select Dropdown</option>
-                    <option value="color" ${type === 'color' ? 'selected' : ''}>Color Picker</option>
-                    <option value="number" ${type === 'number' ? 'selected' : ''}>Number Input</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label</label>
-                <input type="text" value="${label}" onchange="updateVariantField('${fieldId}')" 
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
-                       placeholder="Display label">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-                <input type="text" value="${unit}" onchange="updateVariantField('${fieldId}')" 
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
-                       placeholder="e.g., inches">
-            </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label</label>
+            <input type="text" data-role="label" value="${label.replace(/"/g, '&quot;')}" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                   placeholder="Display label">
         </div>
-        
-        <div class="mb-2">
-            <label class="inline-flex items-center">
-                <input type="checkbox" ${required ? 'checked' : ''} onchange="updateVariantField('${fieldId}')" 
-                       class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Required field</span>
-            </label>
-        </div>
-        
-        <div class="options-container">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Options ${type === 'color' ? '(name & color)' : ''}
-            </label>
-            <div class="options-list mb-2">
-                ${optionsHtml}
-            </div>
-            <button onclick="addOption('${fieldId}')" class="text-sm text-orange-600 hover:text-orange-700">
-                <i class="fas fa-plus mr-1"></i>Add Option
-            </button>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+            <input type="text" data-role="unit" value="${unit.replace(/"/g, '&quot;')}" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+                   placeholder="e.g., inches">
         </div>
     `;
+    configDiv.querySelectorAll('select, input').forEach(el => el.addEventListener('change', () => updateVariantField()));
+    fieldDiv.appendChild(configDiv);
+    
+    // Required checkbox
+    const requiredDiv = document.createElement('div');
+    requiredDiv.className = 'mb-2';
+    requiredDiv.innerHTML = `
+        <label class="inline-flex items-center">
+            <input type="checkbox" data-role="required" ${required ? 'checked' : ''} 
+                   class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Required field</span>
+        </label>
+    `;
+    requiredDiv.querySelector('input').addEventListener('change', () => updateVariantField());
+    fieldDiv.appendChild(requiredDiv);
+    
+    // Options container
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'options-container';
+    optionsContainer.innerHTML = `
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <span data-role="options-label">Options</span>
+        </label>
+        <div class="options-list mb-2" data-role="options-list"></div>
+        <button type="button" class="text-sm text-orange-600 hover:text-orange-700">
+            <i class="fas fa-plus mr-1"></i>Add Option
+        </button>
+    `;
+    optionsContainer.querySelector('button').addEventListener('click', () => addOption(fieldId));
+    fieldDiv.appendChild(optionsContainer);
+    
+    // Add existing options
+    const optionsList = fieldDiv.querySelector('[data-role="options-list"]');
+    if (type === 'select' && fieldData?.options) {
+        fieldData.options.forEach(opt => addSelectOption(optionsList, opt));
+    } else if (type === 'color' && fieldData?.options) {
+        Object.entries(fieldData.options).forEach(([name, hex]) => addColorOption(optionsList, name, hex));
+    }
     
     container.appendChild(fieldDiv);
+}
+
+function addSelectOption(optionsList, value = '') {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = value;
+    input.className = 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white mb-2 w-full';
+    input.placeholder = 'Option';
+    input.addEventListener('change', () => updateVariantField());
+    optionsList.appendChild(input);
+}
+
+function addColorOption(optionsList, name = '', hex = '#000000') {
+    const colorDiv = document.createElement('div');
+    colorDiv.className = 'flex gap-2 mb-2';
+    colorDiv.innerHTML = `
+        <input type="text" value="${name.replace(/"/g, '&quot;')}" 
+               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
+               placeholder="Color name">
+        <input type="color" value="${hex}" 
+               class="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded-md">
+        <button type="button" class="text-red-500 hover:text-red-700">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    colorDiv.querySelectorAll('input').forEach(el => el.addEventListener('change', () => updateVariantField()));
+    colorDiv.querySelector('button').addEventListener('click', () => {
+        colorDiv.remove();
+        updateVariantField();
+    });
+    optionsList.appendChild(colorDiv);
 }
 
 function renderVariantFields() {
@@ -399,74 +437,59 @@ function removeVariantField(fieldId) {
 
 function addOption(fieldId) {
     const fieldDiv = document.getElementById(fieldId);
-    const typeSelect = fieldDiv.querySelector('select');
+    const typeSelect = fieldDiv.querySelector('[data-role="type"]');
     const type = typeSelect.value;
-    const optionsList = fieldDiv.querySelector('.options-list');
+    const optionsList = fieldDiv.querySelector('[data-role="options-list"]');
     
     if (type === 'color') {
-        const colorDiv = document.createElement('div');
-        colorDiv.className = 'flex gap-2 mb-2';
-        colorDiv.innerHTML = `
-            <input type="text" onchange="updateVariantField('${fieldId}')" 
-                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white" 
-                   placeholder="Color name">
-            <input type="color" value="#000000" onchange="updateVariantField('${fieldId}')" 
-                   class="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded-md">
-        `;
-        optionsList.appendChild(colorDiv);
+        addColorOption(optionsList);
     } else {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white mb-2';
-        input.placeholder = 'Option';
-        input.onchange = () => updateVariantField(fieldId);
-        optionsList.appendChild(input);
+        addSelectOption(optionsList);
     }
     
-    updateVariantField(fieldId);
+    updateVariantField();
 }
 
-function updateVariantField(fieldId = null) {
+function updateVariantField() {
     variantConfig = {};
     
     const fields = document.getElementById('variantFields').children;
     for (let fieldDiv of fields) {
-        const fieldName = fieldDiv.querySelector('input[type="text"]').value.trim();
+        const fieldName = fieldDiv.querySelector('[data-role="fieldname"]').value.trim();
         if (!fieldName) continue;
         
-        const inputs = Array.from(fieldDiv.querySelectorAll('input, select'));
-        const typeSelect = inputs.find(i => i.tagName === 'SELECT');
-        const type = typeSelect.value;
-        const label = inputs.find(i => i.placeholder === 'Display label')?.value || '';
-        const unit = inputs.find(i => i.placeholder === 'e.g., inches')?.value || '';
-        const required = inputs.find(i => i.type === 'checkbox')?.checked !== false;
+        const type = fieldDiv.querySelector('[data-role="type"]').value;
+        const label = fieldDiv.querySelector('[data-role="label"]').value;
+        const unit = fieldDiv.querySelector('[data-role="unit"]').value;
+        const required = fieldDiv.querySelector('[data-role="required"]').checked;
         
-        const fieldConfig = { type, label, unit, required };
+        const fieldConfig = { type };
+        if (label) fieldConfig.label = label;
+        if (unit) fieldConfig.unit = unit;
+        if (!required) fieldConfig.required = false;
+        
+        const optionsList = fieldDiv.querySelector('[data-role="options-list"]');
         
         if (type === 'select') {
-            const optionInputs = fieldDiv.querySelectorAll('.options-list input[type="text"]');
-            fieldConfig.options = Array.from(optionInputs).map(i => i.value).filter(v => v);
+            const inputs = optionsList.querySelectorAll('input[type="text"]');
+            const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+            if (options.length > 0) {
+                fieldConfig.options = options;
+            }
         } else if (type === 'color') {
-            const colorDivs = fieldDiv.querySelectorAll('.options-list > div');
-            fieldConfig.options = {};
-            colorDivs.forEach(div => {
+            const colorDivs = optionsList.children;
+            const options = {};
+            Array.from(colorDivs).forEach(div => {
                 const nameInput = div.querySelector('input[type="text"]');
                 const colorInput = div.querySelector('input[type="color"]');
-                if (nameInput?.value) {
-                    fieldConfig.options[nameInput.value] = colorInput.value;
+                if (nameInput?.value.trim()) {
+                    options[nameInput.value.trim()] = colorInput.value;
                 }
             });
-        } else if (type === 'number') {
-            // Number fields don't need options
-            delete fieldConfig.options;
-        }
-        
-        // Clean up empty values
-        Object.keys(fieldConfig).forEach(key => {
-            if (fieldConfig[key] === '' || (Array.isArray(fieldConfig[key]) && fieldConfig[key].length === 0)) {
-                delete fieldConfig[key];
+            if (Object.keys(options).length > 0) {
+                fieldConfig.options = options;
             }
-        });
+        }
         
         variantConfig[fieldName] = fieldConfig;
     }
