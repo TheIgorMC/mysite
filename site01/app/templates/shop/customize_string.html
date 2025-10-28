@@ -1149,22 +1149,24 @@ function drawStringPreview() {
     const length = spacing * strandCount; // Total vertical space per repetition
     
     // Calculate how many repetitions needed to fill canvas
-    // The pattern starts above the canvas and goes diagonally
     const xi = -30;
     const xf = w + 30;
-    const y1 = h;
-    const y0 = -h - 90;
     
-    // Calculate required repetitions to fill from top (y=0) to bottom (y=h)
-    // Add extra repetitions to ensure full coverage
-    const repetitionsNeeded = Math.ceil((h + Math.abs(y0)) / length) + 4; // +4 for safety margin
+    // Start pattern from slightly above canvas top to ensure coverage
+    // but not too far that we waste iterations
+    const startY = -length; // Start one pattern length above canvas
+    
+    // Calculate required repetitions to fill from startY to bottom of canvas
+    const totalHeightNeeded = h - startY; // Total height from start to canvas bottom
+    const repetitionsNeeded = Math.ceil(totalHeightNeeded / length) + 2; // +2 for safety
     
     // Draw the twisted string pattern
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < strandCount; i++) {
             // Coordinates for diagonal lines
-            const yi = y0 + i * spacing + j * length;
-            const yf = y1 + i * spacing + j * length;
+            // Start from startY and offset by strand position and repetition
+            const yi = startY + i * spacing + j * length;
+            const yf = h + i * spacing + j * length;
             
             // Draw strand
             ctx.strokeStyle = colors[i];
