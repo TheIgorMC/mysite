@@ -361,7 +361,7 @@
     "end_serving_color": "End Serving Color",
     "end_serving_length": "End Serving Length (inches)",
     "end_serving_hint": "Default: 2.5 inches per end",
-    "center_serving_section": "Center Serving (Nocking Point)",
+    "center_serving_section": "Center Serving",
     "center_serving_type": "Center Serving Type",
     "center_serving_standard": "Standard",
     "center_serving_custom": "Custom",

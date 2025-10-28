@@ -493,27 +493,39 @@ function populateSelect(selectId, materialsList) {
     select.innerHTML = '';
     select.appendChild(firstOption);
     
-    // Group materials by name (materiale property, not nome)
+    // Group materials - for serving, include thickness in grouping key
     const grouped = {};
+    const isServingSelect = selectId.includes('serving');
+    
     materialsList.forEach(m => {
-        if (!grouped[m.materiale]) grouped[m.materiale] = [];
-        grouped[m.materiale].push(m);
+        let key;
+        if (isServingSelect && m.spessore) {
+            // For serving materials, group by material + thickness
+            key = `${m.materiale}|${m.spessore}`;
+        } else {
+            // For string materials, group by material name only
+            key = m.materiale;
+        }
+        
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(m);
     });
     
     console.log('Grouped materials for', selectId, ':', grouped); // Debug
     
     // Add options
-    Object.keys(grouped).sort().forEach(name => {
-        const colors = grouped[name];
+    Object.keys(grouped).sort().forEach(key => {
+        const colors = grouped[key];
+        const material = colors[0];
         const option = document.createElement('option');
-        option.value = name;
         
-        // For serving materials, show thickness
-        const isServing = materialsList.some(m => m.materiale === name && m.tipo === 'serving');
-        if (isServing && colors[0].spessore) {
-            option.textContent = `${name} (${colors[0].spessore}) - ${colors.length} {{ t("customize.colors") }}`;
+        // Store the full key (material|thickness) or just material name
+        if (isServingSelect && material.spessore) {
+            option.value = key; // Store "Material|thickness"
+            option.textContent = `${material.materiale} (${material.spessore}) - ${colors.length} {{ t("customize.colors") }}`;
         } else {
-            option.textContent = `${name} (${colors.length} {{ t("customize.colors") }})`;
+            option.value = material.materiale;
+            option.textContent = `${material.materiale} (${colors.length} {{ t("customize.colors") }})`;
         }
         
         select.appendChild(option);
@@ -521,7 +533,7 @@ function populateSelect(selectId, materialsList) {
 }
 
 function loadMaterialColors(type) {
-    let materialSelect, materialName;
+    let materialSelect, materialName, thickness;
     
     if (type === 'string') {
         materialSelect = document.getElementById('string-material');
@@ -535,7 +547,15 @@ function loadMaterialColors(type) {
     }
     
     if (materialSelect && !materialName) {
-        materialName = materialSelect.value;
+        const value = materialSelect.value;
+        // Check if it's in "Material|thickness" format (for serving)
+        if (value.includes('|')) {
+            const parts = value.split('|');
+            materialName = parts[0];
+            thickness = parts[1];
+        } else {
+            materialName = value;
+        }
     }
     
     if (!materialSelect && !materialName) {
@@ -543,7 +563,7 @@ function loadMaterialColors(type) {
         return;
     }
     
-    console.log('Loading colors for', type, ':', materialName); // Debug
+    console.log('Loading colors for', type, ':', materialName, thickness ? `(${thickness})` : ''); // Debug
     
     if (!materialName) {
         // Hide color container if "same as" is selected for center
@@ -553,7 +573,13 @@ function loadMaterialColors(type) {
         return;
     }
     
-    const materialsList = materials.filter(m => m.materiale === materialName);
+    // Filter materials by name and thickness (if applicable)
+    let materialsList;
+    if (thickness) {
+        materialsList = materials.filter(m => m.materiale === materialName && m.spessore === thickness);
+    } else {
+        materialsList = materials.filter(m => m.materiale === materialName);
+    }
     console.log('Filtered materials:', materialsList); // Debug
     
     const containerMap = {
@@ -1060,23 +1086,89 @@ function drawStringPreview() {
     const centerServingColor = selectedConfig.centerServingColor ? getColorCode(selectedConfig.centerServingColor) : servingColor;
     const stringLength = selectedConfig.length || 68;
     
-    // TODO: Implement your custom string visualization here
-    // Available configuration:
-    // - strandCount: number of strands
-    // - stringColor: hex color code for main string
-    // - servingColor: hex color code for end servings
-    // - centerServingColor: hex color code for center serving
-    // - stringLength: total length in inches
-    // - selectedConfig.endServingLength: length of end servings
-    // - selectedConfig.centerServingLength: length of center serving
-    // - selectedConfig.centerServingPosition: 'middle', 'upper', 'lower', or 'custom'
-
+    // Build color array based on pattern and pinstripe
+    const colors = [];
     
-    // Placeholder text
-    ctx.fillStyle = isDark ? '#9CA3AF' : '#4B5563';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('String preview - custom implementation coming soon', width / 2, height / 2);
+    // Determine strand colors based on color pattern
+    if (selectedConfig.colorPattern === 'single') {
+        // Single color
+        for (let i = 0; i < strandCount; i++) {
+            if (selectedConfig.hasPinstripe && selectedConfig.stringColor2 && i === 0) {
+                colors.push(getColorCode(selectedConfig.stringColor2)); // Pinstripe at position 0
+            } else {
+                colors.push(stringColor);
+            }
+        }
+    } else if (selectedConfig.colorPattern === 'double') {
+        // Double color
+        const color2 = selectedConfig.stringColor2 ? getColorCode(selectedConfig.stringColor2) : stringColor;
+        for (let i = 0; i < strandCount; i++) {
+            if (selectedConfig.hasPinstripe && selectedConfig.stringColor3) {
+                // Pinstripes at positions 0 and halfway
+                if (i === 0 || i === Math.floor(strandCount / 2)) {
+                    colors.push(getColorCode(selectedConfig.stringColor3));
+                } else if (i < strandCount / 2) {
+                    colors.push(stringColor);
+                } else {
+                    colors.push(color2);
+                }
+            } else {
+                // No pinstripe - just split in half
+                if (i < strandCount / 2) {
+                    colors.push(stringColor);
+                } else {
+                    colors.push(color2);
+                }
+            }
+        }
+    } else if (selectedConfig.colorPattern === 'triple') {
+        // Triple color
+        const color2 = selectedConfig.stringColor2 ? getColorCode(selectedConfig.stringColor2) : stringColor;
+        const color3 = selectedConfig.stringColor3 ? getColorCode(selectedConfig.stringColor3) : stringColor;
+        for (let i = 0; i < strandCount; i++) {
+            if (i < strandCount / 3) {
+                colors.push(stringColor);
+            } else if (i < (strandCount / 3) * 2) {
+                colors.push(color2);
+            } else {
+                colors.push(color3);
+            }
+        }
+    } else {
+        // Fallback - all same color
+        for (let i = 0; i < strandCount; i++) {
+            colors.push(stringColor);
+        }
+    }
+    
+    // Drawing parameters (similar to C# implementation)
+    const w = width;
+    const h = height;
+    const y1 = h;
+    const y0 = -h - 90;
+    const offset = 16; // Spacing between strands
+    const length = offset * strandCount;
+    
+    // Draw the twisted string pattern (4 repetitions like in C#)
+    for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < strandCount; i++) {
+            // Coordinates for diagonal lines
+            const xi = -30;
+            const yi = y0 + i * offset + j * length;
+            const xf = w + 30;
+            const yf = y1 + i * offset + j * length;
+            
+            // Draw strand
+            ctx.strokeStyle = colors[i];
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(xi, yi);
+            ctx.lineTo(xf, yf);
+            ctx.stroke();
+        }
+    }
 }
 
 async function addToCart() {
