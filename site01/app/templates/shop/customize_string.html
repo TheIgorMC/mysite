@@ -1179,31 +1179,36 @@ function drawStringPreview() {
 function drawServingSection(ctx, baseColor, startY, endY, xi, xf, width) {
     const servingWidth = 6;
     const servingSpacing = 7; // 6px line + 1px gap
-    const darkColor = darkenColor(baseColor, 30); // 30% darker for spacing
     
-    // Calculate pattern length for one repetition
-    const numLines = 20; // Number of serving wraps to show
-    const length = servingSpacing * numLines;
+    // Calculate how many vertical lines we need to fill the width
+    const numLines = Math.ceil(width / servingSpacing) + 10; // +10 for diagonal overflow
     
-    // Calculate repetitions needed
-    const sectionHeight = endY - startY;
-    const startOffset = -length;
-    const repetitionsNeeded = Math.ceil((sectionHeight - startOffset) / length) + 2;
+    // Calculate pattern length for vertical repetition
+    const patternHeight = 20;
+    const repetitionsNeeded = Math.ceil((endY - startY) / patternHeight) + 2;
     
-    // Draw vertical serving lines
+    // Draw fully vertical serving lines
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < numLines; i++) {
-            const yi = startY + startOffset + i * servingSpacing + j * length;
-            const yf = endY + i * servingSpacing + j * length;
+            const x = i * servingSpacing - 30; // Start from left edge
             
-            // Alternate between base color and dark color for texture
-            ctx.strokeStyle = (i % 2 === 0) ? baseColor : darkColor;
+            // Draw vertical line
+            ctx.strokeStyle = baseColor;
             ctx.lineWidth = servingWidth;
-            ctx.lineCap = 'round';
+            ctx.lineCap = 'butt';
             
             ctx.beginPath();
-            ctx.moveTo(xi, yi);
-            ctx.lineTo(xf, yf);
+            ctx.moveTo(x, startY);
+            ctx.lineTo(x, endY);
+            ctx.stroke();
+            
+            // Draw black gap/filler
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            
+            ctx.beginPath();
+            ctx.moveTo(x + servingWidth / 2, startY);
+            ctx.lineTo(x + servingWidth / 2, endY);
             ctx.stroke();
         }
     }
@@ -1219,14 +1224,13 @@ function drawStringSection(ctx, colors, startY, endY, xi, xf, strandCount) {
     const startOffset = -length;
     const repetitionsNeeded = Math.ceil((sectionHeight - startOffset) / length) + 2;
     
-    // Draw the twisted string pattern with darker spacing
+    // Draw the twisted string pattern with black spacing
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < strandCount; i++) {
             const yi = startY + startOffset + i * spacing + j * length;
             const yf = endY + i * spacing + j * length;
             
             const baseColor = colors[i];
-            const darkColor = darkenColor(baseColor, 25); // 25% darker for gap effect
             
             // Draw main strand
             ctx.strokeStyle = baseColor;
@@ -1238,8 +1242,8 @@ function drawStringSection(ctx, colors, startY, endY, xi, xf, strandCount) {
             ctx.lineTo(xf, yf);
             ctx.stroke();
             
-            // Draw thin dark line for spacing effect
-            ctx.strokeStyle = darkColor;
+            // Draw thin black line for spacing effect
+            ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1;
             
             ctx.beginPath();
