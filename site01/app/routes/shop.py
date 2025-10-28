@@ -5,7 +5,13 @@ from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required
 from app.models import Product
 from app.utils import t
-from app.config.string_pricing import calculate_string_price, BASE_PRICE
+from app.config.string_pricing import (
+    calculate_string_price, 
+    BASE_PRICE,
+    COLOR_PATTERN_PRICES,
+    PINSTRIPE_PRICES,
+    DIFFERENT_CENTER_SERVING_COLOR
+)
 
 bp = Blueprint('shop', __name__, url_prefix='/shop')
 
@@ -70,7 +76,15 @@ def customize_string(product_id):
         from flask import abort
         abort(404)
     
-    return render_template('shop/customize_string.html', product=product, base_price=BASE_PRICE)
+    # Pass pricing configuration to template
+    pricing = {
+        'base_price': BASE_PRICE,
+        'color_pattern_prices': COLOR_PATTERN_PRICES,
+        'pinstripe_prices': PINSTRIPE_PRICES,
+        'different_center_serving_color': DIFFERENT_CENTER_SERVING_COLOR
+    }
+    
+    return render_template('shop/customize_string.html', product=product, pricing=pricing)
 
 
 @bp.route('/api/calculate-string-price', methods=['POST'])
