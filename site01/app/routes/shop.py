@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required
 from app.models import Product
 from app.utils import t
+from app.config.string_pricing import calculate_string_price, BASE_PRICE
 
 bp = Blueprint('shop', __name__, url_prefix='/shop')
 
@@ -69,4 +70,66 @@ def customize_string(product_id):
         from flask import abort
         abort(404)
     
-    return render_template('shop/customize_string.html', product=product)
+    return render_template('shop/customize_string.html', product=product, base_price=BASE_PRICE)
+
+
+@bp.route('/api/calculate-string-price', methods=['POST'])
+@login_required
+def calculate_price():
+    """
+    Calculate string price server-side to prevent client manipulation
+    Expects JSON with string configuration
+    """
+    try:
+        config = request.get_json()
+        
+        if not config:
+            return jsonify({'error': 'No configuration provided'}), 400
+        
+        # Calculate price using server-side pricing logic
+        price_data = calculate_string_price(config)
+        
+        return jsonify(price_data)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/add-to-cart', methods=['POST'])
+@login_required
+def add_to_cart_api():
+    """
+    Add custom string to cart with server-side price validation
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        config = data.get('config')
+        client_price = data.get('price')
+        
+        # SECURITY: Calculate actual price server-side
+        price_data = calculate_string_price(config)
+        actual_price = price_data['total']
+        
+        # Validate that client price matches server calculation
+        if client_price and abs(float(client_price) - actual_price) > 0.01:
+            return jsonify({
+                'error': 'Price mismatch detected. Please refresh and try again.',
+                'expected_price': actual_price
+            }), 400
+        
+        # TODO: Add to cart session/database
+        # For now, just validate and return success
+        
+        return jsonify({
+            'success': True,
+            'message': 'String configuration added to cart',
+            'price': actual_price,
+            'price_breakdown': price_data
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
