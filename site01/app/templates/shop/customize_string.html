@@ -1160,14 +1160,14 @@ function drawStringPreview() {
     // The last strand of repetition j ends at: y1 + (strandCount-1)*offset + j*length
     // We need this to be at least h (canvas height)
     // Calculate required repetitions to fill from top (y=0) to bottom (y=h)
-    const repetitionsNeeded = Math.ceil((h + Math.abs(y0)) / length) + 2; // +2 for safety margin
+    const repetitionsNeeded = Math.ceil((h + Math.abs(y0)) / length) + 3; // +3 for safety margin to fill top
     
     // Draw the twisted string pattern
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < strandCount; i++) {
             // Coordinates for diagonal lines
-            const yi = y0 + i * offset + j * length;
-            const yf = y1 + i * offset + j * length;
+            const yi = y0 + i * (offset + 1) + j * length;
+            const yf = y1 + i * (offset + 1) + j * length;
             
             // Draw strand
             ctx.strokeStyle = colors[i];
