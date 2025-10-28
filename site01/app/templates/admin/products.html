@@ -93,7 +93,7 @@
             </div>
 
             <!-- Add Field Button -->
-            <button onclick="addVariantField()" class="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-orange-500 hover:text-orange-500 transition">
+            <button type="button" onclick="addVariantField()" class="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-orange-500 hover:text-orange-500 transition">
                 <i class="fas fa-plus mr-2"></i>Add Variant Field
             </button>
 
@@ -275,12 +275,14 @@ function openVariantEditor(productId) {
                 ? JSON.parse(product.variant_config) 
                 : product.variant_config;
         } catch (e) {
+            console.error('Error parsing variant_config:', e);
             variantConfig = {};
         }
     } else {
         variantConfig = {};
     }
     
+    fieldCounter = 0;
     renderVariantFields();
     updateJsonPreview();
 }
@@ -291,9 +293,11 @@ function closeVariantEditor() {
     currentProductId = null;
     variantConfig = {};
     fieldCounter = 0;
+    document.getElementById('variantFields').innerHTML = '';
 }
 
 function addVariantField(fieldName = '', fieldData = null) {
+    console.log('addVariantField called:', fieldName, fieldData);
     const fieldId = `field_${fieldCounter++}`;
     const container = document.getElementById('variantFields');
     
@@ -451,11 +455,15 @@ function addOption(fieldId) {
 }
 
 function updateVariantField() {
+    console.log('updateVariantField called');
     variantConfig = {};
     
     const fields = document.getElementById('variantFields').children;
+    console.log('Number of fields:', fields.length);
+    
     for (let fieldDiv of fields) {
         const fieldName = fieldDiv.querySelector('[data-role="fieldname"]').value.trim();
+        console.log('Processing field:', fieldName);
         if (!fieldName) continue;
         
         const type = fieldDiv.querySelector('[data-role="type"]').value;
@@ -494,29 +502,42 @@ function updateVariantField() {
         variantConfig[fieldName] = fieldConfig;
     }
     
+    console.log('Final variantConfig:', variantConfig);
     updateJsonPreview();
 }
 
 function updateJsonPreview() {
     const preview = document.getElementById('jsonPreview');
-    preview.textContent = Object.keys(variantConfig).length > 0 
+    const jsonText = Object.keys(variantConfig).length > 0 
         ? JSON.stringify(variantConfig, null, 2)
         : '{}';
+    preview.textContent = jsonText;
+    console.log('JSON Preview updated:', jsonText);
 }
 
 async function saveVariantConfig() {
-    if (!currentProductId) return;
+    if (!currentProductId) {
+        console.error('No product ID!');
+        return;
+    }
+    
+    console.log('Saving variant config:', variantConfig);
+    
+    const configToSave = Object.keys(variantConfig).length > 0 ? JSON.stringify(variantConfig) : null;
+    console.log('Config JSON string:', configToSave);
     
     try {
         const response = await fetch(`/api/products/${currentProductId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                variant_config: Object.keys(variantConfig).length > 0 ? JSON.stringify(variantConfig) : null 
+                variant_config: configToSave 
             })
         });
 
         if (response.ok) {
+            const result = await response.json();
+            console.log('Save response:', result);
             showNotification('Variant configuration saved!', 'success');
             // Update local product data
             const product = products.find(p => p.id === currentProductId);
