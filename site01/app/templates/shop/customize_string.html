@@ -465,9 +465,9 @@ async function loadMaterials() {
         
         console.log('Materials loaded:', materials); // Debug
         
-        // Populate string materials (corda)
-        const stringMaterials = materials.filter(m => m.tipo === 'corda');
-        console.log('String materials:', stringMaterials); // Debug
+        // Populate string materials (corda) - exclude B55
+        const stringMaterials = materials.filter(m => m.tipo === 'corda' && !m.materiale.toLowerCase().includes('b55'));
+        console.log('String materials (B55 filtered):', stringMaterials); // Debug
         populateSelect('string-material', stringMaterials);
         
         // Populate serving materials
@@ -1106,12 +1106,12 @@ function drawStringPreview() {
     const centerServingColor = selectedConfig.centerServingColor ? getColorCode(selectedConfig.centerServingColor) : servingColor;
     const stringLength = selectedConfig.length || 68;
     
-    // Calculate section heights
-    const endServingHeight = height * 0.20; // First 20% for end serving
-    const centerServingHeight = height * 0.30; // Last 30% for center serving
-    const stringStartY = endServingHeight;
-    const stringEndY = height - centerServingHeight;
-    const centerServingStartY = stringEndY;
+    // Calculate section positions based on WIDTH (horizontal sections)
+    const endServingWidth = width * 0.20; // First 20% of width for end serving
+    const centerServingWidth = width * 0.30; // Last 30% of width for center serving
+    const stringStartX = endServingWidth;
+    const stringEndX = width - centerServingWidth;
+    const centerServingStartX = stringEndX;
     
     // Build color array for string fibers based on pattern and pinstripe
     const stringColors = [];
@@ -1166,69 +1166,68 @@ function drawStringPreview() {
     const xi = -30;
     const xf = width + 30;
     
-    // --- DRAW END SERVING (First 20%) ---
-    drawServingSection(ctx, servingColor, 0, endServingHeight, xi, xf, width);
+    // --- DRAW END SERVING (First 20% of width) ---
+    drawServingSection(ctx, servingColor, 0, endServingWidth, height);
     
-    // --- DRAW STRING FIBERS (Middle 50%) ---
-    drawStringSection(ctx, stringColors, stringStartY, stringEndY, xi, xf, strandCount);
+    // --- DRAW STRING FIBERS (Middle 50% of width) ---
+    drawStringSection(ctx, stringColors, stringStartX, stringEndX, xi, xf, strandCount, height);
     
-    // --- DRAW CENTER SERVING (Last 30%) ---
-    drawServingSection(ctx, centerServingColor, centerServingStartY, height, xi, xf, width);
+    // --- DRAW CENTER SERVING (Last 30% of width) ---
+    drawServingSection(ctx, centerServingColor, centerServingStartX, width, height);
 }
 
-function drawServingSection(ctx, baseColor, startY, endY, xi, xf, width) {
+function drawServingSection(ctx, baseColor, startX, endX, height) {
     const servingWidth = 6;
     const servingSpacing = 7; // 6px line + 1px gap
     
-    // Calculate how many vertical lines we need to fill the width
-    const numLines = Math.ceil(width / servingSpacing) + 10; // +10 for diagonal overflow
+    // Calculate how many vertical lines we need to fill this horizontal section
+    const sectionWidth = endX - startX;
+    const numLines = Math.ceil(sectionWidth / servingSpacing) + 2;
     
-    // Calculate pattern length for vertical repetition
-    const patternHeight = 20;
-    const repetitionsNeeded = Math.ceil((endY - startY) / patternHeight) + 2;
-    
-    // Draw fully vertical serving lines
-    for (let j = 0; j < repetitionsNeeded; j++) {
-        for (let i = 0; i < numLines; i++) {
-            const x = i * servingSpacing - 30; // Start from left edge
-            
-            // Draw vertical line
-            ctx.strokeStyle = baseColor;
-            ctx.lineWidth = servingWidth;
-            ctx.lineCap = 'butt';
-            
-            ctx.beginPath();
-            ctx.moveTo(x, startY);
-            ctx.lineTo(x, endY);
-            ctx.stroke();
-            
-            // Draw black gap/filler
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1;
-            
-            ctx.beginPath();
-            ctx.moveTo(x + servingWidth / 2, startY);
-            ctx.lineTo(x + servingWidth / 2, endY);
-            ctx.stroke();
-        }
+    // Draw fully vertical serving lines from top to bottom of canvas
+    for (let i = 0; i < numLines; i++) {
+        const x = startX + i * servingSpacing;
+        
+        // Draw vertical line in serving color (full height of canvas)
+        ctx.strokeStyle = baseColor;
+        ctx.lineWidth = servingWidth;
+        ctx.lineCap = 'butt';
+        
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+        
+        // Draw black gap/filler line at the edge of each serving wrap
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        
+        ctx.beginPath();
+        ctx.moveTo(x + servingWidth / 2, 0);
+        ctx.lineTo(x + servingWidth / 2, height);
+        ctx.stroke();
     }
 }
 
-function drawStringSection(ctx, colors, startY, endY, xi, xf, strandCount) {
+function drawStringSection(ctx, colors, startX, endX, xi, xf, strandCount, height) {
     const strandWidth = 10; // Thinner strands
     const spacing = 12; // 10px strand + 2px gap
     const length = spacing * strandCount;
     
-    // Calculate repetitions needed for this section
-    const sectionHeight = endY - startY;
+    // Calculate repetitions needed to fill the canvas height
     const startOffset = -length;
-    const repetitionsNeeded = Math.ceil((sectionHeight - startOffset) / length) + 2;
+    const repetitionsNeeded = Math.ceil((height - startOffset) / length) + 2;
     
-    // Draw the twisted string pattern with black spacing
+    // Draw the twisted string pattern with black spacing, clipped to the middle section
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(startX, 0, endX - startX, height);
+    ctx.clip();
+    
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < strandCount; i++) {
-            const yi = startY + startOffset + i * spacing + j * length;
-            const yf = endY + i * spacing + j * length;
+            const yi = startOffset + i * spacing + j * length;
+            const yf = height + i * spacing + j * length;
             
             const baseColor = colors[i];
             
@@ -1252,6 +1251,8 @@ function drawStringSection(ctx, colors, startY, endY, xi, xf, strandCount) {
             ctx.stroke();
         }
     }
+    
+    ctx.restore();
 }
 
 async function addToCart() {

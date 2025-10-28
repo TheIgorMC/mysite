@@ -51,7 +51,14 @@ docker compose up -d
 echo ""
 echo "🔄 Step 6: Running database migrations..."
 docker exec orion-project bash -c "cd /app/site01 && python -m pip install mysql-connector-python python-dotenv 2>/dev/null || true"
+
+# Run Python migrations
 docker exec orion-project bash -c "cd /app/site01 && for migration in migrations/*.py; do [ -f \"\$migration\" ] && python \"\$migration\" 2>/dev/null || true; done"
+
+# Run SQL migrations
+echo "   Running SQL migrations..."
+docker exec orion-project bash -c "cd /app/site01 && for migration in migrations/*.sql; do [ -f \"\$migration\" ] && sqlite3 instance/mysite.db < \"\$migration\" 2>/dev/null || true; done"
+
 echo "✓ Migrations completed"
 
 # Step 7: Wait for startup

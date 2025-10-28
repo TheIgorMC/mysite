@@ -102,6 +102,9 @@
                        class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition font-semibold flex items-center justify-center gap-2">
                         <i class="fas fa-sliders-h"></i>{{ t('shop.customize_string') }}
                     </a>
+                    <p class="text-sm text-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>{{ t('shop.customization_required') if session.get('language') == 'it' else 'Customization required for this product' }}
+                    </p>
                     {% endif %}
                     
                     {% if product.is_custom_print %}
@@ -109,9 +112,13 @@
                        class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition font-semibold flex items-center justify-center gap-2">
                         <i class="fas fa-cube"></i>{{ t('shop.customize_print') }}
                     </a>
+                    <p class="text-sm text-center text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>{{ t('shop.customization_required') if session.get('language') == 'it' else 'Customization required for this product' }}
+                    </p>
                     {% endif %}
                     
-                    <!-- Standard Add to Cart (always show if in stock) -->
+                    <!-- Standard Add to Cart (only if NOT customizable) -->
+                    {% if not product.is_custom_string and not product.is_custom_print %}
                     <button 
                         data-product-id="{{ product.id }}"
                         data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
@@ -122,6 +129,7 @@
                         class="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold flex items-center justify-center gap-2">
                         <i class="fas fa-shopping-cart"></i>{{ t('shop.add_to_cart') }}
                     </button>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

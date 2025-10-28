@@ -72,16 +72,25 @@
                             €{{ "%.2f"|format(product.price) }}
                         </span>
                         {% if product.in_stock %}
-                        <button 
-                            data-product-id="{{ product.id }}"
-                            data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
-                            data-product-price="{{ product.price }}"
-                            data-product-image="/static/uploads/shop/{{ product.main_image }}"
-                            data-product-desc="{{ (product.description_it if session.get('language') == 'it' else product.description_en)|truncate(100) }}"
-                            onclick="addToCartFromButton(this)"
-                            class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
+                            {% if product.is_custom_string or product.is_custom_print %}
+                                <!-- Customization required - show customize button -->
+                                <a href="{% if product.is_custom_string %}{{ url_for('shop.customize_string', product_id=product.id) }}{% else %}{{ url_for('shop.customize_print', product_id=product.id) }}{% endif %}"
+                                   class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">
+                                    <i class="fas fa-sliders-h"></i>
+                                </a>
+                            {% else %}
+                                <!-- Standard add to cart -->
+                                <button 
+                                    data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="/static/uploads/shop/{{ product.main_image }}"
+                                    data-product-desc="{{ (product.description_it if session.get('language') == 'it' else product.description_en)|truncate(100) }}"
+                                    onclick="addToCartFromButton(this)"
+                                    class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
+                                    <i class="fas fa-cart-plus"></i>
+                                </button>
+                            {% endif %}
                         {% else %}
                         <span class="text-red-600 dark:text-red-400 text-sm">{{ t('shop.out_of_stock') }}</span>
                         {% endif %}

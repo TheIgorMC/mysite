@@ -224,13 +224,46 @@ class Product(db.Model):
     is_custom_string = db.Column(db.Boolean, default=False)  # Enable string customizer
     is_custom_print = db.Column(db.Boolean, default=False)   # Enable 3D print customizer
     
+    # Variant configuration (JSON)
+    # Example: {"length": {"type": "select", "options": ["66", "68", "70"], "label_en": "Length", "label_it": "Lunghezza", "unit": "inches"}}
+    variant_config = db.Column(db.Text)  # JSON configuration for product variants
+    
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     
+    # Relationships
+    variants = db.relationship('ProductVariant', backref='product', lazy='dynamic', cascade='all, delete-orphan')
+    
     def __repr__(self):
         return f'<Product {self.name_en}>'
+
+class ProductVariant(db.Model):
+    """Product variants for different configurations (length, color, material, etc.)"""
+    __tablename__ = 'product_variants'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    
+    # Variant attributes (stored as JSON for flexibility)
+    # Example: {"length": "68", "color": "black"}
+    attributes = db.Column(db.Text, nullable=False)  # JSON object of variant attributes
+    
+    # Pricing
+    price_modifier = db.Column(db.Float, default=0.0)  # Price difference from base product (can be negative)
+    
+    # Availability
+    sku = db.Column(db.String(128))  # Optional SKU for inventory tracking
+    stock_quantity = db.Column(db.Integer)
+    in_stock = db.Column(db.Boolean, default=True)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ProductVariant {self.id} for Product {self.product_id}>'
 
 class GalleryItem(db.Model):
     """Gallery items for 3D printing and electronics projects"""
