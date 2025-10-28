@@ -1144,34 +1144,31 @@ function drawStringPreview() {
     // Drawing parameters (similar to C# implementation)
     const w = width;
     const h = height;
-    const offset = 12; // Spacing between strands
-    const length = offset * strandCount;
+    const strandWidth = 11; // Width of each strand (12 - 1px margin)
+    const spacing = 13; // Total spacing between strand centers (11px strand + 1px margin + 1px gap)
+    const length = spacing * strandCount; // Total vertical space per repetition
     
     // Calculate how many repetitions needed to fill canvas
     // The pattern starts above the canvas and goes diagonally
-    // We need to ensure the topmost line (xi, yi) covers from y=0
     const xi = -30;
     const xf = w + 30;
     const y1 = h;
     const y0 = -h - 90;
     
-    // Calculate the slope and how much vertical space each repetition takes
-    // Since lines go from (xi, yi) to (xf, yf), and xi < xf, lines start higher
-    // The last strand of repetition j ends at: y1 + (strandCount-1)*offset + j*length
-    // We need this to be at least h (canvas height)
     // Calculate required repetitions to fill from top (y=0) to bottom (y=h)
-    const repetitionsNeeded = Math.ceil((h + Math.abs(y0)) / length) + 3; // +3 for safety margin to fill top
+    // Add extra repetitions to ensure full coverage
+    const repetitionsNeeded = Math.ceil((h + Math.abs(y0)) / length) + 4; // +4 for safety margin
     
     // Draw the twisted string pattern
     for (let j = 0; j < repetitionsNeeded; j++) {
         for (let i = 0; i < strandCount; i++) {
             // Coordinates for diagonal lines
-            const yi = y0 + i * (offset + 1) + j * length;
-            const yf = y1 + i * (offset + 1) + j * length;
+            const yi = y0 + i * spacing + j * length;
+            const yf = y1 + i * spacing + j * length;
             
             // Draw strand
             ctx.strokeStyle = colors[i];
-            ctx.lineWidth = offset;
+            ctx.lineWidth = strandWidth;
             ctx.lineCap = 'round';
             
             ctx.beginPath();
