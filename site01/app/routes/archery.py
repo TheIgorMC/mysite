@@ -93,8 +93,13 @@ def get_athlete_results(athlete_id):
         include_average = request.args.get('include_average', 'false').lower() == 'true'
         
         client = OrionAPIClient()
-        # Call API with athletes as array (client ensures proper shape)
-        results = client.get_athlete_results(athlete_id, limit=500)
+        # Call API with ONLY valid parameters (no category!)
+        results = client.get_athlete_results(
+            athlete_id,
+            competition_type=competition_type,
+            start_date=start_date,
+            end_date=end_date
+        )
         # Defensive: if the API returned a non-list (string or dict), log and return a clear error
         if results is None:
             current_app.logger.error(f"API returned None for athlete results (athlete_id={athlete_id})")

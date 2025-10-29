@@ -71,10 +71,20 @@ function updateCartCount() {
     }
 }
 
-function addToCart(productId, productName, price, imageUrl = '', description = '') {
+function addToCart(productId, productName, price, imageUrl = '', description = '', variants = {}) {
     let cart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
     
-    const existingItem = cart.find(item => item.id === productId);
+    // Check if same product with same variants exists
+    const existingItem = cart.find(item => {
+        if (item.id !== productId) return false;
+        // Compare variants
+        const itemVariants = item.variants || {};
+        const variantKeys = Object.keys(variants);
+        if (variantKeys.length === 0 && Object.keys(itemVariants).length === 0) return true;
+        if (variantKeys.length !== Object.keys(itemVariants).length) return false;
+        return variantKeys.every(key => itemVariants[key] === variants[key]);
+    });
+    
     if (existingItem) {
         existingItem.quantity = (existingItem.quantity || 1) + 1;
     } else {
@@ -84,7 +94,8 @@ function addToCart(productId, productName, price, imageUrl = '', description = '
             price: price,
             quantity: 1,
             image: imageUrl,
-            description: description
+            description: description,
+            variants: variants
         });
     }
     
@@ -103,7 +114,18 @@ function addToCartFromButton(button) {
     const image = button.dataset.productImage;
     const description = button.dataset.productDesc || '';
     
-    addToCart(id, name, price, image, description);
+    // Collect variant selections
+    const variants = {};
+    const variantInputs = document.querySelectorAll('[name^="variant_"]');
+    variantInputs.forEach(input => {
+        const fieldName = input.name.replace('variant_', '');
+        const value = input.type === 'radio' ? (input.checked ? input.value : null) : input.value;
+        if (value) {
+            variants[fieldName] = value;
+        }
+    });
+    
+    addToCart(id, name, price, image, description, variants);
 }
 
 // Toast Notification System
