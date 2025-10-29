@@ -489,6 +489,7 @@ function updateVariantField() {
         if (type === 'select') {
             const inputs = optionsList.querySelectorAll('input[type="text"]');
             const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+            console.log('Select options found:', options.length);
             if (options.length > 0) {
                 fieldConfig.options = options;
             }
@@ -502,6 +503,7 @@ function updateVariantField() {
                     options[nameInput.value.trim()] = colorInput.value;
                 }
             });
+            console.log('Color options found:', Object.keys(options).length);
             if (Object.keys(options).length > 0) {
                 fieldConfig.options = options;
             }
