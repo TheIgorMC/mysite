@@ -187,7 +187,14 @@
 <script>
 // Render variant options
 document.addEventListener('DOMContentLoaded', () => {
-    const variantConfig = {{ product.variant_config|tojson if product.variant_config else '{}' }};
+    const variantConfigRaw = {{ product.variant_config|tojson if product.variant_config else '{}' }};
+    console.log('Raw variant config:', variantConfigRaw);
+    console.log('Type:', typeof variantConfigRaw);
+    
+    // Parse if it's a string
+    const variantConfig = typeof variantConfigRaw === 'string' ? JSON.parse(variantConfigRaw) : variantConfigRaw;
+    console.log('Parsed variant config:', variantConfig);
+    
     const variantContainer = document.getElementById('variant-options');
     
     if (variantContainer && Object.keys(variantConfig).length > 0) {

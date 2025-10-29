@@ -356,7 +356,12 @@ function addVariantField(fieldName = '', fieldData = null) {
                    placeholder="e.g., inches">
         </div>
     `;
-    configDiv.querySelectorAll('select, input').forEach(el => el.addEventListener('change', () => updateVariantField()));
+    const typeSelect = configDiv.querySelector('[data-role="type"]');
+    typeSelect.addEventListener('change', () => {
+        updateVariantField();
+        toggleOptionsVisibility(fieldDiv);
+    });
+    configDiv.querySelectorAll('input').forEach(el => el.addEventListener('change', () => updateVariantField()));
     fieldDiv.appendChild(configDiv);
     
     // Required checkbox
@@ -375,6 +380,7 @@ function addVariantField(fieldName = '', fieldData = null) {
     // Options container
     const optionsContainer = document.createElement('div');
     optionsContainer.className = 'options-container';
+    optionsContainer.dataset.optionsContainer = 'true';
     optionsContainer.innerHTML = `
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <span data-role="options-label">Options</span>
@@ -387,6 +393,9 @@ function addVariantField(fieldName = '', fieldData = null) {
     optionsContainer.querySelector('button').addEventListener('click', () => addOption(fieldId));
     fieldDiv.appendChild(optionsContainer);
     
+    // Initially hide/show options based on type
+    toggleOptionsVisibility(fieldDiv);
+    
     // Add existing options
     const optionsList = fieldDiv.querySelector('[data-role="options-list"]');
     if (type === 'select' && fieldData?.options) {
@@ -396,6 +405,18 @@ function addVariantField(fieldName = '', fieldData = null) {
     }
     
     container.appendChild(fieldDiv);
+}
+
+function toggleOptionsVisibility(fieldDiv) {
+    const type = fieldDiv.querySelector('[data-role="type"]').value;
+    const optionsContainer = fieldDiv.querySelector('[data-options-container]');
+    
+    // Show options for select and color types, hide for number type
+    if (type === 'number') {
+        optionsContainer.style.display = 'none';
+    } else {
+        optionsContainer.style.display = 'block';
+    }
 }
 
 function addSelectOption(optionsList, value = '') {
