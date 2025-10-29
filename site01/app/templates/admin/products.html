@@ -315,10 +315,15 @@ function addVariantField(fieldName = '', fieldData = null) {
     const headerDiv = document.createElement('div');
     headerDiv.className = 'flex items-start justify-between mb-3';
     headerDiv.innerHTML = `
-        <input type="text" value="${fieldName.replace(/"/g, '&quot;')}" data-role="fieldname" 
-               class="text-lg font-semibold px-2 py-1 border-b border-transparent hover:border-gray-400 dark:bg-gray-900 dark:text-white flex-1" 
-               placeholder="Field name (e.g., 'length', 'color')">
-        <button type="button" class="text-red-500 hover:text-red-700 ml-2">
+        <div class="flex-1">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Field Name <span class="text-red-500">*</span> (e.g., 'length', 'color', 'material')
+            </label>
+            <input type="text" value="${fieldName.replace(/"/g, '&quot;')}" data-role="fieldname" 
+                   class="w-full text-lg font-semibold px-3 py-2 border-2 border-orange-300 dark:border-orange-600 rounded-md dark:bg-gray-900 dark:text-white" 
+                   placeholder="Enter field name..." required>
+        </div>
+        <button type="button" class="text-red-500 hover:text-red-700 ml-2 mt-6">
             <i class="fas fa-trash"></i>
         </button>
     `;
@@ -464,7 +469,10 @@ function updateVariantField() {
     for (let fieldDiv of fields) {
         const fieldName = fieldDiv.querySelector('[data-role="fieldname"]').value.trim();
         console.log('Processing field:', fieldName);
-        if (!fieldName) continue;
+        if (!fieldName) {
+            console.log('Skipping field with empty name');
+            continue;
+        }
         
         const type = fieldDiv.querySelector('[data-role="type"]').value;
         const label = fieldDiv.querySelector('[data-role="label"]').value;
