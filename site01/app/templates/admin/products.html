@@ -485,11 +485,16 @@ function updateVariantField() {
         if (!required) fieldConfig.required = false;
         
         const optionsList = fieldDiv.querySelector('[data-role="options-list"]');
+        console.log('Options list element:', optionsList);
+        console.log('Field type:', type);
         
         if (type === 'select') {
             const inputs = optionsList.querySelectorAll('input[type="text"]');
-            const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
-            console.log('Select options found:', options.length);
+            console.log('Number of input elements:', inputs.length);
+            const allValues = Array.from(inputs).map(i => i.value);
+            console.log('All input values:', allValues);
+            const options = allValues.map(v => v.trim()).filter(v => v);
+            console.log('Filtered select options:', options);
             if (options.length > 0) {
                 fieldConfig.options = options;
             }
