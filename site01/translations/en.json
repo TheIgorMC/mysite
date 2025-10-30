@@ -227,6 +227,24 @@
     "locked_section_denied": "You do not have permission to access this section.",
     "locked_section_title": "Restricted Access"
   },
+  "locked": {
+    "title": "Locked Section",
+    "welcome": "Welcome to the Locked Section",
+    "subtitle": "Exclusive content for authorized users",
+    "authorized_user": "Authorized User",
+    "access_granted": "Access Granted",
+    "section_title": "Restricted Area",
+    "coming_soon": "This is a temporary page. Exclusive content and features will be available here soon.",
+    "feature_1_title": "Premium Content",
+    "feature_1_desc": "Access exclusive materials and resources",
+    "feature_2_title": "Special Features",
+    "feature_2_desc": "Advanced tools available only to authorized users",
+    "feature_3_title": "Priority Support",
+    "feature_3_desc": "Dedicated assistance and priority service",
+    "notice_title": "Confidential Area",
+    "notice_desc": "The content of this section is confidential and reserved. Please do not share access or information with unauthorized users.",
+    "back_home": "Back to Home"
+  },
   "footer": {
     "sections": "Sections",
     "newsletter": "Newsletter",

@@ -438,10 +438,10 @@ let selectedConfig = {
 
 // Get pricing from server (prevents manipulation)
 const PRICING = {
-    basePrice: {{ pricing.base_price | default(15.00) }},
-    colorPatternPrices: {{ pricing.color_pattern_prices | tojson | default('{"single": 0, "double": 1.5, "triple": 4}') }},
-    pinstripePrice: {{ pricing.pinstripe_prices | tojson | default('{"single": 1, "double": 1.5, "triple": 0}') }},
-    differentCenterServingColor: {{ pricing.different_center_serving_color | default(1.50) }}
+    basePrice: {{ pricing.base_price if pricing.base_price is not none else 15.00 }},
+    colorPatternPrices: {{ pricing.color_pattern_prices | tojson if pricing.color_pattern_prices else '{"single": 0, "double": 1.5, "triple": 4}' | safe }},
+    pinstripePrice: {{ pricing.pinstripe_prices | tojson if pricing.pinstripe_prices else '{"single": 1, "double": 1.5, "triple": 0}' | safe }},
+    differentCenterServingColor: {{ pricing.different_center_serving_color if pricing.different_center_serving_color is not none else 1.50 }}
 };
 
 console.log('Pricing loaded:', PRICING); // Debug pricing

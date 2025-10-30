@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('locked.title') }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 pt-24 pb-12">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Header with Lock Icon -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-purple-600 rounded-full mb-6 shadow-2xl">
+                <i class="fas fa-lock-open text-white text-4xl"></i>
+            </div>
+            <h1 class="text-5xl font-bold text-white mb-4">
+                {{ t('locked.welcome') }}
+            </h1>
+            <p class="text-xl text-purple-200">
+                {{ t('locked.subtitle') }}
+            </p>
+        </div>
+
+        <!-- Access Badge -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-8 border border-purple-500/30 shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4">
+                    <img src="{{ url_for('static', filename='media/' + current_user.avatar) }}" 
+                         alt="{{ current_user.username }}" 
+                         class="h-16 w-16 rounded-full object-cover border-4 border-purple-500 shadow-lg">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">{{ current_user.username }}</h2>
+                        <p class="text-purple-200">{{ t('locked.authorized_user') }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm font-semibold border border-green-500/30">
+                        <i class="fas fa-check-circle mr-2"></i>{{ t('locked.access_granted') }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placeholder Content -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+            <h2 class="text-3xl font-bold text-white mb-6">
+                <i class="fas fa-shield-alt text-purple-400 mr-3"></i>
+                {{ t('locked.section_title') }}
+            </h2>
+            
+            <div class="prose prose-invert max-w-none">
+                <p class="text-purple-100 text-lg mb-6">
+                    {{ t('locked.coming_soon') }}
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                    <!-- Feature 1 -->
+                    <div class="bg-purple-800/30 rounded-xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition">
+                        <div class="text-purple-300 text-3xl mb-4">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">{{ t('locked.feature_1_title') }}</h3>
+                        <p class="text-purple-200 text-sm">{{ t('locked.feature_1_desc') }}</p>
+                    </div>
+                    
+                    <!-- Feature 2 -->
+                    <div class="bg-purple-800/30 rounded-xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition">
+                        <div class="text-purple-300 text-3xl mb-4">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">{{ t('locked.feature_2_title') }}</h3>
+                        <p class="text-purple-200 text-sm">{{ t('locked.feature_2_desc') }}</p>
+                    </div>
+                    
+                    <!-- Feature 3 -->
+                    <div class="bg-purple-800/30 rounded-xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition">
+                        <div class="text-purple-300 text-3xl mb-4">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">{{ t('locked.feature_3_title') }}</h3>
+                        <p class="text-purple-200 text-sm">{{ t('locked.feature_3_desc') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Notice -->
+            <div class="mt-8 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 text-2xl mt-1"></i>
+                    <div>
+                        <h4 class="text-lg font-bold text-yellow-300 mb-2">{{ t('locked.notice_title') }}</h4>
+                        <p class="text-yellow-200 text-sm">{{ t('locked.notice_desc') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="text-center mt-8">
+            <a href="{{ url_for('main.index') }}" 
+               class="inline-flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition shadow-lg">
+                <i class="fas fa-arrow-left"></i>
+                <span>{{ t('locked.back_home') }}</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

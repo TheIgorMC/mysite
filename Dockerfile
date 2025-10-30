@@ -48,7 +48,7 @@ RUN find /app -type f -name "*.pyc" -delete 2>/dev/null || true
 ENV PYTHONPATH=/app:/app/site01
 
 # Create necessary directories
-RUN mkdir -p /app/site01/instance /app/site01/logs /app/data
+RUN mkdir -p /app/site01/instance /app/site01/logs /app/data /app/site01/app/static/uploads
 
 # Expose port
 EXPOSE 5000

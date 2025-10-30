@@ -359,3 +359,15 @@ def delete_product(product_id):
     flash('Product deleted', 'success')
     return redirect(url_for('main.admin') + '#shop')
 
+
+@bp.route('/locked')
+@login_required
+def locked_section():
+    """Locked section - returns 404 for unauthorized users to hide existence"""
+    from flask import abort
+    
+    # Return 404 (not 403) so unauthorized users think page doesn't exist
+    if not current_user.has_locked_section_access:
+        abort(404)
+    
+    return render_template('locked_section.html')

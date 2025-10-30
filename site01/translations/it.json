@@ -229,6 +229,24 @@
     "locked_section_denied": "Non hai i permessi per accedere a questa sezione.",
     "locked_section_title": "Accesso Riservato"
   },
+  "locked": {
+    "title": "Sezione Riservata",
+    "welcome": "Benvenuto nella Sezione Riservata",
+    "subtitle": "Contenuti esclusivi per utenti autorizzati",
+    "authorized_user": "Utente Autorizzato",
+    "access_granted": "Accesso Consentito",
+    "section_title": "Area Riservata",
+    "coming_soon": "Questa è una pagina temporanea. Contenuti e funzionalità esclusive saranno disponibili qui a breve.",
+    "feature_1_title": "Contenuti Premium",
+    "feature_1_desc": "Accedi a materiali e risorse esclusive",
+    "feature_2_title": "Funzionalità Speciali",
+    "feature_2_desc": "Strumenti avanzati disponibili solo per utenti autorizzati",
+    "feature_3_title": "Supporto Prioritario",
+    "feature_3_desc": "Assistenza dedicata e servizio prioritario",
+    "notice_title": "Area Confidenziale",
+    "notice_desc": "Il contenuto di questa sezione è confidenziale e riservato. Si prega di non condividere l'accesso o le informazioni con utenti non autorizzati.",
+    "back_home": "Torna alla Home"
+  },
   "footer": {
     "sections": "Sezioni",
     "newsletter": "Newsletter",

@@ -221,6 +221,12 @@
                                class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                 <i class="fas fa-cog mr-2"></i>{{ t('nav.settings') }}
                             </a>
+                            {% if current_user.has_locked_section_access %}
+                            <a href="{{ url_for('main.locked_section') }}" 
+                               class="block px-4 py-3 text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <i class="fas fa-lock mr-2"></i>{{ t('auth.locked_section_title') }}
+                            </a>
+                            {% endif %}
                             <a href="{{ url_for('auth.logout') }}" 
                                class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-red-600 dark:text-red-400">
                                 <i class="fas fa-sign-out-alt mr-2"></i>{{ t('nav.logout') }}
@@ -263,6 +269,12 @@
                    class="block py-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition font-semibold">
                     <i class="fas fa-store mr-2"></i>{{ t('nav.shop') }}
                 </a>
+                {% if current_user.is_authenticated and current_user.has_locked_section_access %}
+                <a href="{{ url_for('main.locked_section') }}" 
+                   class="block py-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition font-semibold">
+                    <i class="fas fa-lock mr-2"></i>{{ t('auth.locked_section_title') }}
+                </a>
+                {% endif %}
             </div>
         </nav>
     </header>
