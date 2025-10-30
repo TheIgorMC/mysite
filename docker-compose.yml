@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   orion-web:
     build:
@@ -49,8 +47,8 @@ services:
       - orion-data:/app/data
       - orion-logs:/app/site01/logs
       
-      # Optional: Mount uploads directory if you add file upload features
-      # - orion-uploads:/app/site01/static/uploads
+      # CRITICAL: Mount uploads directory to persist uploaded images!
+      - orion-uploads:/app/site01/app/static/uploads
       
     networks:
       - orion-network
@@ -71,6 +69,8 @@ volumes:
   orion-data:
     driver: local
   orion-logs:
+    driver: local
+  orion-uploads:
     driver: local
 
 networks:

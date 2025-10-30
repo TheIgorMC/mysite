@@ -1107,9 +1107,9 @@ function drawStringPreview() {
     const stringLength = selectedConfig.length || 68;
     
     // Calculate section positions based on WIDTH (horizontal sections)
-    const endServingWidth = width * 0.20; // First 20% of width for end serving
+    const endServingWidth = width * 0.18; // First 18% of width for end serving (reduced from 20%)
     const centerServingWidth = width * 0.30; // Last 30% of width for center serving
-    const stringStartX = endServingWidth;
+    const stringStartX = endServingWidth; // String starts right after serving ends
     const stringEndX = width - centerServingWidth;
     const centerServingStartX = stringEndX;
     
@@ -1162,11 +1162,11 @@ function drawStringPreview() {
         }
     }
     
-    // Drawing parameters
-    const xi = -30;
-    const xf = width + 30;
+    // Drawing parameters - extend beyond canvas to ensure full coverage
+    const xi = -60; // Extended from -30 to cover more area
+    const xf = width + 60; // Extended from +30 to cover more area
     
-    // --- DRAW END SERVING (First 20% of width) ---
+    // --- DRAW END SERVING (First 18% of width) ---
     drawServingSection(ctx, servingColor, 0, endServingWidth, height);
     
     // --- DRAW STRING FIBERS (Middle 50% of width) ---
