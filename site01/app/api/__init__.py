@@ -102,12 +102,28 @@ class OrionAPIClient:
         """Search for athletes by name"""
         return self._make_request('GET', '/api/atleti', params={'q': name})
     
-    def get_athlete_results(self, athlete_id, limit=500):
-        """Get results/registrations for an athlete using /api/iscrizioni endpoint
+    def get_athlete_results(self, athlete_id, competition_type=None, start_date=None, end_date=None, limit=500):
+        """Get results for an athlete using /api/athlete/{tessera}/results endpoint
         
-        Returns list of competition registrations/results for the athlete.
+        This endpoint returns actual competition results with scores and positions.
+        
+        Args:
+            athlete_id: Athlete tessera ID
+            competition_type: Optional filter by event type (passed as 'event_type' param)
+            start_date: Optional start date filter (not supported by API, filtered client-side)
+            end_date: Optional end date filter (not supported by API, filtered client-side)
+            limit: Maximum number of results
+            
+        Returns:
+            List of competition results with scores and positions
         """
-        return self._make_request('GET', '/api/iscrizioni', params={'tessera': athlete_id, 'limit': limit})
+        params = {'limit': limit}
+        if competition_type:
+            params['event_type'] = competition_type
+        # Note: start_date and end_date are not supported by this endpoint
+        # They should be filtered client-side after fetching results
+        
+        return self._make_request('GET', f'/api/athlete/{athlete_id}/results', params=params)
     
     def get_competition_types(self):
         """Get list of available competition types"""

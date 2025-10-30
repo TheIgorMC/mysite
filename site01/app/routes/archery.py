@@ -82,8 +82,9 @@ def search_athlete():
 def get_athlete_results(athlete_id):
     """Get athlete results"""
     try:
-        # Fetch filter parameters - these will be applied CLIENT-SIDE
-        # NOTE: /api/iscrizioni endpoint does NOT support filtering!
+        # Fetch filter parameters
+        # competition_type can be passed to API as 'event_type'
+        # start_date and end_date must be filtered CLIENT-SIDE
         competition_type = request.args.get('competition_type')
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
@@ -91,8 +92,13 @@ def get_athlete_results(athlete_id):
         include_average = request.args.get('include_average', 'false').lower() == 'true'
         
         client = OrionAPIClient()
-        # Call API - it only accepts 'tessera' and 'limit' parameters
-        results = client.get_athlete_results(athlete_id)
+        # Call API with competition_type (converted to event_type)
+        results = client.get_athlete_results(
+            athlete_id,
+            competition_type=competition_type,
+            start_date=start_date,  # Not supported by API, will be filtered client-side
+            end_date=end_date  # Not supported by API, will be filtered client-side
+        )
         # Defensive: if the API returned a non-list (string or dict), log and return a clear error
         if results is None:
             current_app.logger.error(f"API returned None for athlete results (athlete_id={athlete_id})")
@@ -177,8 +183,12 @@ def get_athlete_statistics(athlete_id):
             current_app.logger.warning(f"Could not load stats chart data: {e}")
             stats_data = None
 
-        # Get all results to compute statistics - uses /api/iscrizioni endpoint
-        all_results = client.get_athlete_results(athlete_id, limit=500)
+        # Get all results to compute statistics - uses /api/athlete/{tessera}/results endpoint
+        all_results = client.get_athlete_results(
+            athlete_id,
+            competition_type=None,  # Get all types for career stats
+            limit=500
+        )
 
         # DEBUG: Log what we actually got from the API
         current_app.logger.info(f"API returned {len(all_results) if isinstance(all_results, list) else 'non-list'} results")
