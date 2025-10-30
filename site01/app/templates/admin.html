@@ -151,7 +151,6 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-3 px-4 text-center">
-                                    {% if user.id != current_user.id %}
                                     <form method="POST" action="{{ url_for('main.toggle_locked_section', user_id=user.id) }}" class="inline">
                                         <button type="submit" 
                                                 title="Toggle Locked Section Access"
@@ -159,9 +158,6 @@
                                             <i class="fas fa-lock text-xl"></i>
                                         </button>
                                     </form>
-                                    {% else %}
-                                    <i class="fas fa-lock text-xl {% if user.has_locked_section_access %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-600{% endif %}"></i>
-                                    {% endif %}
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     {% if user.id != current_user.id %}
