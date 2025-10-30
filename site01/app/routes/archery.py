@@ -339,7 +339,10 @@ def get_athlete_statistics(athlete_id):
         return jsonify(response)
     
     except Exception as e:
+        import traceback
         current_app.logger.error(f"Error fetching athlete statistics: {str(e)}")
+        current_app.logger.error(f"Exception type: {type(e).__name__}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Failed to fetch athlete statistics', 'details': str(e)}), 500
 
 @bp.route('/api/competition_types')

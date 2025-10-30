@@ -167,11 +167,12 @@ def calculate_percentile_stats(results: List[Dict], last_n: int = 10) -> Dict:
     
     positions = [r.get('position') for r in recent if r.get('position')]
     
-    if not positions:
+    if not positions or len(positions) == 0:
         return {
             'avg_position': None,
             'avg_percentile': None,
-            'top_finishes': 0
+            'top_finishes': 0,
+            'competitions_analyzed': len(recent)
         }
     
     avg_position = sum(positions) / len(positions)
