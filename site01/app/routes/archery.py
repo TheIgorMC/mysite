@@ -214,17 +214,27 @@ def get_athlete_statistics(athlete_id):
             })
         
         # Transform results to standard format with normalized dates
-        transformed_results = [
-            {
-                'athlete': result.get('atleta'),
-                'competition_name': result.get('nome_gara'),
-                'competition_type': result.get('tipo_gara'),
-                'date': normalize_date(result.get('data_gara')),
-                'position': result.get('posizione'),
-                'score': result.get('punteggio')
-            }
-            for result in all_results
-        ]
+        # Try multiple possible field names since API spec may not match reality
+        transformed_results = []
+        for result in all_results:
+            # Try to extract fields with multiple possible names
+            score = result.get('punteggio_tot') or result.get('punteggio') or result.get('score')
+            position = result.get('posizione') or result.get('position')
+            competition_name = result.get('nome_gara') or result.get('competition_name')
+            competition_type = result.get('tipo_gara') or result.get('tipo') or result.get('event_type')
+            date = result.get('data_gara') or result.get('date') or result.get('data_inizio')
+            athlete_name = result.get('nome_atleta') or result.get('atleta') or result.get('nome_completo')
+            
+            transformed_results.append({
+                'athlete': athlete_name,
+                'competition_name': competition_name,
+                'competition_type': competition_type,
+                'date': normalize_date(date),
+                'position': position,
+                'score': score
+            })
+        
+        current_app.logger.info(f"Transformed {len(transformed_results)} results")
         
         # Calculate CAREER statistics (all data)
         career_stats = get_statistics_summary(transformed_results, last_n=10)
