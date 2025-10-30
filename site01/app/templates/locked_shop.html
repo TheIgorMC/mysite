@@ -1,0 +1,220 @@
+{% extends "locked_base.html" %}
+
+{% block title %}Exclusive Shop - Private Access{% endblock %}
+
+{% block content %}
+<div class="min-h-screen luxury-gradient">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        <!-- Page Header -->
+        <div class="mb-16">
+            <div class="flex items-center space-x-4 mb-6">
+                <a href="{{ url_for('main.locked_section') }}" 
+                   class="w-12 h-12 glass-effect rounded-xl flex items-center justify-center hover:bg-purple-900/30 transition group">
+                    <i class="fas fa-arrow-left text-purple-400 group-hover:-translate-x-1 transition-transform"></i>
+                </a>
+                <div>
+                    <h1 class="text-5xl font-bold">
+                        <span class="gold-shimmer">Exclusive Shop</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg mt-2">Premium products for authorized members only</p>
+                </div>
+            </div>
+            
+            <!-- Admin Badge -->
+            <div class="inline-flex items-center space-x-3 glass-effect rounded-xl px-6 py-3 border border-gold/30">
+                <i class="fas fa-shield-alt text-gold text-xl"></i>
+                <div>
+                    <p class="text-white font-semibold">Administrator Access</p>
+                    <p class="text-gray-400 text-sm">Full shop management privileges</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        {% if products %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for product in products %}
+            <div class="group glass-effect rounded-2xl overflow-hidden hover-lift border border-purple-500/20">
+                <!-- Product Image -->
+                <div class="relative h-72 bg-gray-800 overflow-hidden">
+                    {% if product.main_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                         alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
+                         class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <i class="fas fa-gem text-gray-600 text-6xl"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Premium Badge -->
+                    <div class="absolute top-4 right-4">
+                        <span class="px-3 py-1 bg-gold/90 text-white text-xs font-bold rounded-full shadow-lg">
+                            <i class="fas fa-star mr-1"></i>EXCLUSIVE
+                        </span>
+                    </div>
+                    
+                    <!-- Stock Status -->
+                    {% if product.stock_quantity <= 0 %}
+                    <div class="absolute bottom-4 left-4">
+                        <span class="px-3 py-1 bg-red-500/90 text-white text-xs font-bold rounded-full">
+                            OUT OF STOCK
+                        </span>
+                    </div>
+                    {% elif product.stock_quantity <= 5 %}
+                    <div class="absolute bottom-4 left-4">
+                        <span class="px-3 py-1 bg-yellow-500/90 text-white text-xs font-bold rounded-full">
+                            ONLY {{ product.stock_quantity }} LEFT
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Product Info -->
+                <div class="p-6">
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <span class="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs font-semibold rounded-full">
+                            {{ product.category }}
+                        </span>
+                    </div>
+                    
+                    <!-- Product Name -->
+                    <h3 class="text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">
+                        {{ product.name_it if session.get('language') == 'it' else product.name_en }}
+                    </h3>
+                    
+                    <!-- Description -->
+                    {% if product.description_it or product.description_en %}
+                    <p class="text-gray-400 text-sm mb-4 line-clamp-2">
+                        {{ product.description_it if session.get('language') == 'it' else product.description_en }}
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Price & Action -->
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-700">
+                        <div>
+                            <p class="text-gray-400 text-xs mb-1">Price</p>
+                            <p class="text-3xl font-bold gold-shimmer">€{{ "%.2f"|format(product.price) }}</p>
+                        </div>
+                        
+                        {% if product.stock_quantity > 0 %}
+                        <button onclick="addToCart({{ product.id }})" 
+                                class="px-6 py-3 bg-gradient-to-r from-gold to-gold-light text-white font-semibold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                            <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
+                        </button>
+                        {% else %}
+                        <button disabled 
+                                class="px-6 py-3 bg-gray-700 text-gray-400 font-semibold rounded-xl cursor-not-allowed">
+                            Unavailable
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-20">
+            <div class="glass-effect rounded-3xl p-16 max-w-2xl mx-auto">
+                <div class="w-24 h-24 bg-gradient-to-br from-gold to-gold-light rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-gem text-white text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4">Shop Opening Soon</h2>
+                <p class="text-gray-400 text-lg mb-6">
+                    Our exclusive product collection is being carefully curated. 
+                    Premium items and rare offerings will be available here shortly.
+                </p>
+                <div class="inline-flex items-center space-x-2 text-gold">
+                    <i class="fas fa-crown"></i>
+                    <span class="text-sm font-semibold">VIP MEMBERS WILL BE NOTIFIED FIRST</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Privacy Notice -->
+        <div class="mt-16 max-w-4xl mx-auto">
+            <div class="glass-effect rounded-2xl p-8 border border-purple-500/30">
+                <div class="flex items-start space-x-4">
+                    <i class="fas fa-lock text-purple-400 text-2xl mt-1"></i>
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-2">Confidential Products</h4>
+                        <p class="text-gray-400 leading-relaxed">
+                            All products in this exclusive shop are private and confidential. 
+                            Purchases and product information are strictly confidential and not shared publicly.
+                            For inquiries, please contact the administrator directly.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+
+{% block extra_js %}
+<script>
+// Shopping cart functionality
+function addToCart(productId) {
+    // This will integrate with your existing cart system
+    fetch('/shop/api/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: 1,
+            is_custom: false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success notification
+            showNotification('Product added to cart', 'success');
+            // You can update cart count if needed
+        } else {
+            showNotification('Failed to add product', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    // Simple notification (you can enhance this)
+    const notification = document.createElement('div');
+    notification.className = `fixed top-24 right-4 px-6 py-4 rounded-xl shadow-2xl ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white font-semibold z-50 transform transition-all duration-300`;
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}
+{% endblock %}

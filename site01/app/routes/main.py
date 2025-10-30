@@ -361,13 +361,41 @@ def delete_product(product_id):
 
 
 @bp.route('/locked')
-@login_required
 def locked_section():
     """Locked section - returns 404 for unauthorized users to hide existence"""
     from flask import abort
     
-    # Return 404 (not 403) so unauthorized users think page doesn't exist
-    if not current_user.has_locked_section_access:
+    # Return 404 immediately if not logged in or no access (no redirect to login)
+    if not current_user.is_authenticated or not current_user.has_locked_section_access:
         abort(404)
     
     return render_template('locked_section.html')
+
+
+@bp.route('/locked/gallery')
+def locked_gallery():
+    """Private gallery for locked section users only"""
+    from flask import abort
+    
+    if not current_user.is_authenticated or not current_user.has_locked_section_access:
+        abort(404)
+    
+    # Get locked section gallery items (you can add a flag to GalleryItem model later)
+    gallery_items = GalleryItem.query.filter_by(is_active=True).all()
+    
+    return render_template('locked_gallery.html', gallery_items=gallery_items)
+
+
+@bp.route('/locked/shop')
+def locked_shop():
+    """Private shop for locked section - admin + locked access required"""
+    from flask import abort
+    
+    # Requires BOTH admin AND locked section access
+    if not current_user.is_authenticated or not current_user.is_admin or not current_user.has_locked_section_access:
+        abort(404)
+    
+    # Get locked section products (you can add a flag to Product model later)
+    products = Product.query.filter_by(is_active=True).all()
+    
+    return render_template('locked_shop.html', products=products)

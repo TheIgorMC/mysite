@@ -1,9 +1,150 @@
-{% extends "base.html" %}
+{% extends "locked_base.html" %}
 
-{% block title %}{{ t('locked.title') }}{% endblock %}
+{% block title %}Exclusive Area - Home{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 pt-24 pb-12">
+<div class="min-h-screen luxury-gradient">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-20">
+            <div class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-gold to-gold-light rounded-full mb-8 shadow-2xl border-4 border-purple-900/50">
+                <i class="fas fa-crown text-white text-5xl"></i>
+            </div>
+            <h1 class="text-6xl md:text-7xl font-bold mb-6">
+                <span class="gold-shimmer">Welcome Back</span>
+            </h1>
+            <p class="text-2xl text-purple-200 mb-4">
+                {{ current_user.username }}
+            </p>
+            <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+                You've entered an exclusive space reserved for our most valued members. 
+                Explore premium content, private collections, and exceptional offerings.
+            </p>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+            
+            <!-- Private Gallery Card -->
+            <a href="{{ url_for('main.locked_gallery') }}" 
+               class="group glass-effect rounded-3xl p-8 hover-lift">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-images text-white text-3xl"></i>
+                    </div>
+                    <i class="fas fa-arrow-right text-2xl text-purple-400 group-hover:translate-x-2 transition-transform duration-300"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-3">Private Gallery</h2>
+                <p class="text-gray-400 text-lg mb-4">
+                    Explore our exclusive collection of premium items, rare pieces, and private showcases.
+                </p>
+                <div class="flex items-center space-x-2 text-gold">
+                    <span class="text-sm font-semibold">VIEW COLLECTION</span>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </div>
+            </a>
+
+            <!-- Private Shop Card (Admin Only) -->
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('main.locked_shop') }}" 
+               class="group glass-effect rounded-3xl p-8 hover-lift border-2 border-gold/30">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-gold to-gold-light rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-gem text-white text-3xl"></i>
+                    </div>
+                    <span class="px-3 py-1 bg-gold/20 text-gold text-xs font-bold rounded-full border border-gold/30">
+                        ADMIN ONLY
+                    </span>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-3">
+                    <span class="gold-shimmer">Exclusive Shop</span>
+                </h2>
+                <p class="text-gray-400 text-lg mb-4">
+                    Access our most exclusive products and premium offerings. Reserved for administrators with special clearance.
+                </p>
+                <div class="flex items-center space-x-2 text-gold">
+                    <span class="text-sm font-semibold">ENTER SHOP</span>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </div>
+            </a>
+            {% else %}
+            <div class="glass-effect rounded-3xl p-8 opacity-50">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="w-16 h-16 bg-gray-700 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-lock text-gray-500 text-3xl"></i>
+                    </div>
+                    <span class="px-3 py-1 bg-gray-700 text-gray-400 text-xs font-bold rounded-full">
+                        LOCKED
+                    </span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-500 mb-3">Exclusive Shop</h2>
+                <p class="text-gray-600 text-lg mb-4">
+                    This area requires administrator privileges. Contact site management for access.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Member Badge -->
+        <div class="max-w-4xl mx-auto">
+            <div class="glass-effect rounded-3xl p-10 border border-purple-500/30">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
+                    <div class="flex items-center space-x-6">
+                        <img src="{{ url_for('static', filename='media/' + current_user.avatar) }}" 
+                             alt="{{ current_user.username }}" 
+                             class="w-24 h-24 rounded-full border-4 border-gold shadow-2xl object-cover">
+                        <div>
+                            <h3 class="text-3xl font-bold text-white mb-2">{{ current_user.username }}</h3>
+                            <p class="text-purple-300 text-lg">VIP Member</p>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full border border-green-500/30">
+                                    <i class="fas fa-check-circle mr-1"></i>VERIFIED
+                                </span>
+                                {% if current_user.is_admin %}
+                                <span class="px-3 py-1 bg-gold/20 text-gold text-xs font-semibold rounded-full border border-gold/30">
+                                    <i class="fas fa-shield-alt mr-1"></i>ADMIN
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <p class="text-gray-400 text-sm mb-2">Access Level</p>
+                        <div class="flex space-x-1">
+                            <i class="fas fa-star text-gold text-xl"></i>
+                            <i class="fas fa-star text-gold text-xl"></i>
+                            <i class="fas fa-star text-gold text-xl"></i>
+                            <i class="fas fa-star text-gold text-xl"></i>
+                            <i class="fas fa-star text-gold text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy Notice -->
+        <div class="max-w-4xl mx-auto mt-12">
+            <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-2xl p-8">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-shield-alt text-yellow-400 text-3xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-yellow-300 mb-3">Confidential Area</h4>
+                        <p class="text-yellow-200/80 leading-relaxed">
+                            This exclusive area contains private and confidential content. 
+                            All materials, products, and information within this section are strictly confidential. 
+                            Please respect the privacy of this space and do not share access credentials or content with unauthorized individuals.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
     <div class="max-w-4xl mx-auto px-4">
         <!-- Header with Lock Icon -->
         <div class="text-center mb-12">

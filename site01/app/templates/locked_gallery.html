@@ -1,0 +1,112 @@
+{% extends "locked_base.html" %}
+
+{% block title %}Private Gallery - Exclusive Area{% endblock %}
+
+{% block content %}
+<div class="min-h-screen luxury-gradient">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        <!-- Page Header -->
+        <div class="mb-16">
+            <div class="flex items-center space-x-4 mb-6">
+                <a href="{{ url_for('main.locked_section') }}" 
+                   class="w-12 h-12 glass-effect rounded-xl flex items-center justify-center hover:bg-purple-900/30 transition group">
+                    <i class="fas fa-arrow-left text-purple-400 group-hover:-translate-x-1 transition-transform"></i>
+                </a>
+                <div>
+                    <h1 class="text-5xl font-bold">
+                        <span class="gold-shimmer">Private Gallery</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg mt-2">Exclusive collection for VIP members</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Grid -->
+        {% if gallery_items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for item in gallery_items %}
+            <div class="group glass-effect rounded-2xl overflow-hidden hover-lift">
+                <!-- Image -->
+                <div class="relative h-64 bg-gray-800 overflow-hidden">
+                    {% if item.main_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + item.main_image) }}" 
+                         alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
+                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <i class="fas fa-image text-gray-600 text-6xl"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Overlay on Hover -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                        <div class="text-white">
+                            <p class="text-sm uppercase tracking-wider text-gold mb-1">{{ item.category }}</p>
+                            <h3 class="text-xl font-bold">{{ item.title_it if session.get('language') == 'it' else item.title_en }}</h3>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs font-semibold rounded-full">
+                            {{ item.category }}
+                        </span>
+                        {% if item.tags %}
+                        <div class="flex items-center space-x-1">
+                            <i class="fas fa-tags text-gray-500 text-xs"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-white mb-2">
+                        {{ item.title_it if session.get('language') == 'it' else item.title_en }}
+                    </h3>
+                    
+                    {% if item.description_it or item.description_en %}
+                    <p class="text-gray-400 text-sm line-clamp-3">
+                        {{ item.description_it if session.get('language') == 'it' else item.description_en }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if item.external_url %}
+                    <a href="{{ item.external_url }}" 
+                       target="_blank"
+                       class="inline-flex items-center space-x-2 mt-4 text-gold hover:text-gold-light transition group">
+                        <span class="text-sm font-semibold">View Details</span>
+                        <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-20">
+            <div class="glass-effect rounded-3xl p-16 max-w-2xl mx-auto">
+                <div class="w-24 h-24 bg-purple-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-images text-purple-400 text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4">Gallery Coming Soon</h2>
+                <p class="text-gray-400 text-lg">
+                    Our exclusive collection is being curated. Check back soon for premium content and rare pieces.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}
