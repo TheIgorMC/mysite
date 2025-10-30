@@ -133,8 +133,9 @@ class OrionAPIClient:
     
     def get_statistics(self, athlete_id):
         """Get athlete statistics"""
-        # API expects 'athletes' as an array parameter
-        return self._make_request('GET', '/api/stats', params={'athletes': [athlete_id]})
+        # API expects 'athletes' parameter with the card number
+        # Correct format: https://api.orion-project.it/api/stats?athletes=93229
+        return self._make_request('GET', '/api/stats', params={'athletes': str(athlete_id)})
     
     def get_competitions(self, future=False, limit=100):
         """Get list of competitions (gare)"""
