@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     # Authorization flags
     is_admin = db.Column(db.Boolean, default=False)
     is_club_member = db.Column(db.Boolean, default=False)  # For ASD Compagnia Arcieri Carraresi
+    has_locked_section_access = db.Column(db.Boolean, default=False, index=True)  # For highly restricted sections
     club_name = db.Column(db.String(128))
     
     # Preferences

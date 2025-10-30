@@ -116,7 +116,8 @@ def register_cli_commands(app):
     @click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True, help='Admin password')
     @click.option('--first-name', default='', help='First name')
     @click.option('--last-name', default='', help='Last name')
-    def create_admin(username, email, password, first_name, last_name):
+    @click.option('--locked-section', is_flag=True, help='Grant access to locked section')
+    def create_admin(username, email, password, first_name, last_name, locked_section):
         """Create an admin user"""
         from app.models import User
         
@@ -138,6 +139,7 @@ def register_cli_commands(app):
             last_name=last_name or None,
             is_admin=True,
             is_club_member=False,
+            has_locked_section_access=locked_section,
             preferred_language='it'
         )
         admin.set_password(password)
@@ -148,6 +150,8 @@ def register_cli_commands(app):
             click.echo(f'✅ Admin user "{username}" created successfully!')
             click.echo(f'   Email: {email}')
             click.echo(f'   Admin: Yes')
+            if locked_section:
+                click.echo(f'   🔒 Locked Section Access: Yes')
         except Exception as e:
             db.session.rollback()
             click.echo(f'❌ Error creating admin: {e}')
@@ -166,7 +170,8 @@ def register_cli_commands(app):
         for user in users:
             admin_badge = '👑 ADMIN' if user.is_admin else ''
             club_badge = '🏹 CLUB' if user.is_club_member else ''
-            click.echo(f'{user.id:3d}. {user.username:20s} ({user.email:30s}) {admin_badge} {club_badge}')
+            lock_badge = '🔒 LOCKED' if user.has_locked_section_access else ''
+            click.echo(f'{user.id:3d}. {user.username:20s} ({user.email:30s}) {admin_badge} {club_badge} {lock_badge}')
         click.echo('')
     
     @app.cli.command()

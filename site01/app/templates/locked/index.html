@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}🔒 {{ t('auth.locked_section_title') }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-6xl">
+        <!-- Back Button -->
+        <div class="mb-8">
+            <a href="{{ url_for('main.index') }}" 
+               class="inline-flex items-center text-primary hover:text-primary-dark transition">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Home
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full mb-6">
+                <i class="fas fa-lock text-4xl text-red-600 dark:text-red-400"></i>
+            </div>
+            <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+                {{ t('auth.locked_section_title') }}
+            </h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Welcome to the restricted access area, <strong>{{ current_user.username }}</strong>.
+            </p>
+        </div>
+
+        <!-- Access Confirmation -->
+        <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-6 rounded-lg mb-8">
+            <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 text-2xl mr-4 mt-1"></i>
+                <div>
+                    <h3 class="font-bold text-green-900 dark:text-green-300 mb-2">
+                        Access Granted
+                    </h3>
+                    <p class="text-green-800 dark:text-green-400">
+                        You have been authorized to access this highly restricted section.
+                        All activities may be monitored and logged.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Dashboard Card -->
+            <a href="{{ url_for('locked.dashboard') }}" 
+               class="block bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-tachometer-alt text-2xl text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Dashboard
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    View metrics and analytics
+                </p>
+            </a>
+
+            <!-- Settings Card -->
+            <a href="{{ url_for('locked.settings') }}" 
+               class="block bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cog text-2xl text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Settings
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Configure restricted options
+                </p>
+            </a>
+
+            <!-- API Access Card -->
+            <div class="block bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-code text-2xl text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
+                        API
+                    </span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    API Access
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Protected data endpoints
+                </p>
+                <button onclick="testAPI()" 
+                        class="mt-4 text-sm text-primary hover:text-primary-dark">
+                    Test API →
+                </button>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-6 rounded-lg">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mr-4 mt-1"></i>
+                <div>
+                    <h3 class="font-bold text-yellow-900 dark:text-yellow-300 mb-2">
+                        Security Notice
+                    </h3>
+                    <p class="text-yellow-800 dark:text-yellow-400">
+                        This is a highly restricted area. Unauthorized access attempts are logged and may result in account suspension.
+                        Do not share your access credentials with anyone.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+async function testAPI() {
+    try {
+        const response = await fetch('{{ url_for("locked.api_data") }}');
+        const data = await response.json();
+        showNotification('API test successful: ' + data.message, 'success');
+        console.log('API Response:', data);
+    } catch (error) {
+        showNotification('API test failed: ' + error.message, 'error');
+        console.error('API Error:', error);
+    }
+}
+</script>
+{% endblock %}

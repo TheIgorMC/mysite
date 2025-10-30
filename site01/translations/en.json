@@ -220,7 +220,12 @@
     "new_password": "New Password",
     "confirm_new_password": "Confirm New Password",
     "club_member": "Club Member",
-    "admin_panel": "Admin Panel"
+    "admin_panel": "Admin Panel",
+    "locked_section_access": "Locked Section Access",
+    "locked_section_granted": "Locked section access granted for {username}",
+    "locked_section_revoked": "Locked section access revoked for {username}",
+    "locked_section_denied": "You do not have permission to access this section.",
+    "locked_section_title": "Restricted Access"
   },
   "footer": {
     "sections": "Sections",

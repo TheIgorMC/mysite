@@ -109,6 +109,9 @@
                                 <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Name</th>
                                 <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Club Member</th>
                                 <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Admin</th>
+                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300" title="Locked Section Access">
+                                    <i class="fas fa-lock"></i>
+                                </th>
                                 <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Actions</th>
                             </tr>
                         </thead>
@@ -145,6 +148,19 @@
                                     </form>
                                     {% else %}
                                     <i class="fas fa-shield-alt text-xl text-primary"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    {% if user.id != current_user.id %}
+                                    <form method="POST" action="{{ url_for('main.toggle_locked_section', user_id=user.id) }}" class="inline">
+                                        <button type="submit" 
+                                                title="Toggle Locked Section Access"
+                                                class="{% if user.has_locked_section_access %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-600{% endif %} hover:opacity-75 transition-opacity">
+                                            <i class="fas fa-lock text-xl"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <i class="fas fa-lock text-xl {% if user.has_locked_section_access %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-600{% endif %}"></i>
                                     {% endif %}
                                 </td>
                                 <td class="py-3 px-4 text-center">

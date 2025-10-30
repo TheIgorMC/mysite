@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - {{ t('auth.locked_section_title') }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <!-- Back Button -->
+        <div class="mb-8">
+            <a href="{{ url_for('locked.index') }}" 
+               class="inline-flex items-center text-primary hover:text-primary-dark transition">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Locked Section
+            </a>
+        </div>
+
+        <!-- Header -->
+        <h1 class="text-4xl font-bold mb-8 text-gray-900 dark:text-white">
+            <i class="fas fa-cog text-primary mr-3"></i>
+            Locked Section Settings
+        </h1>
+
+        <!-- Settings Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                Configuration
+            </h2>
+
+            <form class="space-y-6">
+                <!-- Setting 1 -->
+                <div>
+                    <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                        Option 1
+                    </label>
+                    <input type="text" 
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                           placeholder="Enter value">
+                </div>
+
+                <!-- Setting 2 -->
+                <div>
+                    <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                        Option 2
+                    </label>
+                    <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option>Choice 1</option>
+                        <option>Choice 2</option>
+                        <option>Choice 3</option>
+                    </select>
+                </div>
+
+                <!-- Setting 3 -->
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           id="setting3" 
+                           class="w-4 h-4 text-primary border-gray-300 rounded">
+                    <label for="setting3" class="ml-2 text-gray-700 dark:text-gray-300">
+                        Enable advanced features
+                    </label>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex gap-4">
+                    <button type="submit" 
+                            class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Settings
+                    </button>
+                    <button type="button" 
+                            class="px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -105,6 +105,22 @@ def toggle_admin(user_id):
     flash(f'Admin status updated for {user.username}', 'success')
     return redirect(url_for('main.admin'))
 
+@bp.route('/admin/toggle_locked_section/<int:user_id>', methods=['POST'])
+@login_required
+def toggle_locked_section(user_id):
+    """Toggle locked section access - HIGHLY RESTRICTED"""
+    if not current_user.is_admin:
+        flash('Access denied.', 'error')
+        return redirect(url_for('main.index'))
+    
+    user = User.query.get_or_404(user_id)
+    user.has_locked_section_access = not user.has_locked_section_access
+    db.session.commit()
+    
+    status = 'granted' if user.has_locked_section_access else 'revoked'
+    flash(f'Locked section access {status} for {user.username}', 'success')
+    return redirect(url_for('main.admin'))
+
 @bp.route('/admin/delete_user/<int:user_id>', methods=['POST'])
 @login_required
 def delete_user(user_id):
