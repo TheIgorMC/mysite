@@ -103,12 +103,16 @@ def get_athlete_results(athlete_id):
         if results is None:
             current_app.logger.error(f"API returned None for athlete results (athlete_id={athlete_id})")
             return jsonify({'error': 'No data from API'}), 502
+        
+        # Handle both legacy (direct list) and new (wrapper with summary) API formats
         if not isinstance(results, list):
-            current_app.logger.error(f"Unexpected API payload for athlete results (athlete_id={athlete_id}): {results}")
+            current_app.logger.info(f"API returned wrapped format for results: {type(results)}")
             # If it's a dict with a key 'results', try to extract it
             if isinstance(results, dict) and 'results' in results and isinstance(results['results'], list):
+                current_app.logger.info(f"Extracting results array ({len(results['results'])} items) from wrapper")
                 results = results['results']
             else:
+                current_app.logger.error(f"Unexpected API payload for athlete results (athlete_id={athlete_id}): {results}")
                 return jsonify({'error': 'Unexpected API response format', 'details': str(type(results))}), 502
         
         if not results:
