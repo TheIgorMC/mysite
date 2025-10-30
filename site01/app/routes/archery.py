@@ -82,24 +82,17 @@ def search_athlete():
 def get_athlete_results(athlete_id):
     """Get athlete results"""
     try:
-        # API parameters - NOTE: API only supports 'limit', not event_type/dates
-        # We'll fetch all results and filter locally
+        # Fetch filter parameters - these will be applied CLIENT-SIDE
+        # NOTE: /api/iscrizioni endpoint does NOT support filtering!
         competition_type = request.args.get('competition_type')
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-        
-        # LOCAL filter parameters - NOT sent to API
         category = request.args.get('category')  # Filter locally using CSV
         include_average = request.args.get('include_average', 'false').lower() == 'true'
         
         client = OrionAPIClient()
-        # Call API with ONLY valid parameters (no category!)
-        results = client.get_athlete_results(
-            athlete_id,
-            competition_type=competition_type,
-            start_date=start_date,
-            end_date=end_date
-        )
+        # Call API - it only accepts 'tessera' and 'limit' parameters
+        results = client.get_athlete_results(athlete_id)
         # Defensive: if the API returned a non-list (string or dict), log and return a clear error
         if results is None:
             current_app.logger.error(f"API returned None for athlete results (athlete_id={athlete_id})")
@@ -164,21 +157,27 @@ def get_athlete_statistics(athlete_id):
     """
     try:
         # Get filter parameters (same as results endpoint)
-        competition_type = request.args.get('competition_type')
+        competition_type = request.args.get('competition_type')  # Will be 'event_type' for API
         category = request.args.get('category')
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date = request.args.get('start_date')  # Will be 'from_date' for API
+        end_date = request.args.get('end_date')  # Will be 'to_date' for API
         
         client = OrionAPIClient()
 
         # Get stats data (chart format from API) - uses /api/stats endpoint
+        # Convert our parameter names to API parameter names
         try:
-            stats_data = client.get_statistics(athlete_id)
+            stats_data = client.get_statistics(
+                athlete_id,
+                event_type=competition_type,
+                from_date=start_date,
+                to_date=end_date
+            )
         except Exception as e:
             current_app.logger.warning(f"Could not load stats chart data: {e}")
             stats_data = None
 
-        # Get all results to compute statistics - uses /api/athlete/{tessera}/results
+        # Get all results to compute statistics - uses /api/iscrizioni endpoint
         all_results = client.get_athlete_results(athlete_id, limit=500)
 
         # Defensive checks for all_results

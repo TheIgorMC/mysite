@@ -131,11 +131,34 @@ class OrionAPIClient:
         # Note: subscription endpoint doesn't exist in API spec - keeping for backward compatibility
         return self._make_request('POST', f'/api/competitions/{competition_id}/subscribe', data=user_data)
     
-    def get_statistics(self, athlete_id):
-        """Get athlete statistics"""
-        # API expects 'athletes' parameter with the card number
-        # Correct format: https://api.orion-project.it/api/stats?athletes=93229
-        return self._make_request('GET', '/api/stats', params={'athletes': str(athlete_id)})
+    def get_statistics(self, athlete_ids, event_type=None, from_date=None, to_date=None, period_months=None):
+        """Get athlete statistics chart data from /api/stats endpoint
+        
+        Args:
+            athlete_ids: Single athlete ID or list of athlete IDs
+            event_type: Optional event type filter (e.g., "Indoor", "18 m")
+            from_date: Optional start date filter (YYYY-MM-DD)
+            to_date: Optional end date filter (YYYY-MM-DD)
+            period_months: Optional period in months
+            
+        Returns:
+            Chart data with labels and datasets
+        """
+        # Ensure athlete_ids is a list
+        if not isinstance(athlete_ids, list):
+            athlete_ids = [athlete_ids]
+        
+        params = {'athletes': athlete_ids}
+        if event_type:
+            params['event_type'] = event_type
+        if from_date:
+            params['from_date'] = from_date
+        if to_date:
+            params['to_date'] = to_date
+        if period_months:
+            params['period_months'] = period_months
+            
+        return self._make_request('GET', '/api/stats', params=params)
     
     def get_competitions(self, future=False, limit=100):
         """Get list of competitions (gare)"""
