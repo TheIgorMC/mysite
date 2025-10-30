@@ -194,12 +194,6 @@ def get_athlete_statistics(athlete_id):
             limit=500
         )
 
-        # DEBUG: Log what we actually got from the API
-        current_app.logger.info(f"API returned {len(all_results) if isinstance(all_results, list) else 'non-list'} results")
-        if all_results and len(all_results) > 0:
-            current_app.logger.info(f"First result keys: {list(all_results[0].keys())}")
-            current_app.logger.info(f"First result sample: {all_results[0]}")
-
         # Defensive checks for all_results
         if all_results is None:
             current_app.logger.error(f"API returned None for all_results (athlete_id={athlete_id})")
@@ -214,6 +208,12 @@ def get_athlete_statistics(athlete_id):
             else:
                 current_app.logger.error(f"Unexpected API payload for all_results (athlete_id={athlete_id}): {all_results}")
                 return jsonify({'error': 'Unexpected API response format for results', 'details': str(type(all_results))}), 502
+
+        # DEBUG: Log what we actually got from the API (after extracting from wrapper if needed)
+        current_app.logger.info(f"Processing {len(all_results)} results")
+        if all_results and len(all_results) > 0:
+            current_app.logger.info(f"First result keys: {list(all_results[0].keys())}")
+            current_app.logger.info(f"First result sample: {all_results[0]}")
 
         if not all_results:
             return jsonify({
