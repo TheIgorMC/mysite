@@ -238,9 +238,18 @@ def get_athlete_statistics(athlete_id):
         
         # Find overall best score
         if transformed_results:
-            best_result = max(transformed_results, key=lambda x: x.get('score', 0))
-            career_statistics['best_score'] = best_result.get('score')
-            career_statistics['best_score_competition'] = best_result.get('competition_name')
+            # Filter out results with None or 0 scores before finding max
+            valid_scores = [r for r in transformed_results if r.get('score') is not None and r.get('score') > 0]
+            if valid_scores:
+                best_result = max(valid_scores, key=lambda x: x.get('score', 0))
+                career_statistics['best_score'] = best_result.get('score')
+                career_statistics['best_score_competition'] = best_result.get('competition_name')
+            else:
+                career_statistics['best_score'] = None
+                career_statistics['best_score_competition'] = None
+        else:
+            career_statistics['best_score'] = None
+            career_statistics['best_score_competition'] = None
         
         # Calculate FILTERED statistics if filters are applied
         filtered_statistics = None
@@ -282,9 +291,14 @@ def get_athlete_statistics(athlete_id):
                 }
                 
                 # Find best score in filtered results
-                best_filtered = max(filtered_results, key=lambda x: x.get('score', 0))
-                filtered_statistics['best_score'] = best_filtered.get('score')
-                filtered_statistics['best_score_competition'] = best_filtered.get('competition_name')
+                valid_filtered_scores = [r for r in filtered_results if r.get('score') is not None and r.get('score') > 0]
+                if valid_filtered_scores:
+                    best_filtered = max(valid_filtered_scores, key=lambda x: x.get('score', 0))
+                    filtered_statistics['best_score'] = best_filtered.get('score')
+                    filtered_statistics['best_score_competition'] = best_filtered.get('competition_name')
+                else:
+                    filtered_statistics['best_score'] = None
+                    filtered_statistics['best_score_competition'] = None
         
         response = {
             'career': career_statistics,
