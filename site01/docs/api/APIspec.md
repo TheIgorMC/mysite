@@ -534,6 +534,62 @@ CREATE INDEX idx_mat_tipo ON ARC_materiali (tipo);
 
 ---
 
+🧾 Athlete Results
+GET /api/athlete/{tessera}/results
+
+Return detailed competition results for an athlete, with optional filters and a quick summary (best score, averages).
+
+Path params
+
+tessera (string, required): Athlete ID
+
+Query params
+
+Param	Type	Description
+event_type	string	Filter by competition type (e.g. Indoor, Targa)
+from_date	date (YYYY-MM-DD)	Include results from this date
+to_date	date (YYYY-MM-DD)	Include results up to this date
+limit	int	Max results (default 500)
+
+Response
+
+{
+  "summary": {
+    "count": 3,
+    "best_score": 562,
+    "avg_score": 548.33,
+    "avg_position": 4.67
+  },
+  "results": [
+    {
+      "tessera": "012345",
+      "atleta": "Zorzi Alberto",
+      "codice_societa_atleta": "06/006",
+      "nome_societa_atleta": "Arcieri Treviso",
+      "nome_gara": "Campionato Indoor",
+      "tipo_gara": "Indoor",
+      "data_gara": "2025-02-14",
+      "codice_gara": "25A001",
+      "luogo_gara": "Treviso",
+      "codice_societa_organizzatrice": "06/010",
+      "nome_societa_organizzatrice": "Arcieri Marca",
+      "posizione": 3,
+      "punteggio": 558
+    }
+  ]
+}
+
+
+Notes
+
+avg_position is computed only over results with a defined posizione.
+
+best_score/avg_score use punteggio (r.punteggio_tot in DB).
+
+Results are ordered by most recent (data_inizio DESC).
+
+---
+
 ## 🧠 Notes for Frontend Developers
 
 * JSON format throughout

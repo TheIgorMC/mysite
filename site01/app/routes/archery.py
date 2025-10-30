@@ -200,11 +200,15 @@ def get_athlete_statistics(athlete_id):
         if all_results is None:
             current_app.logger.error(f"API returned None for all_results (athlete_id={athlete_id})")
             return jsonify({'career': None, 'filtered': None, 'chart_data': stats_data, 'athlete_id': athlete_id}), 502
+        
+        # Handle both legacy (direct list) and new (wrapper with summary) API formats
         if not isinstance(all_results, list):
-            current_app.logger.error(f"Unexpected API payload for all_results (athlete_id={athlete_id}): {all_results}")
+            current_app.logger.info(f"API returned wrapped format: {type(all_results)}")
             if isinstance(all_results, dict) and 'results' in all_results and isinstance(all_results['results'], list):
+                current_app.logger.info(f"Extracting results array ({len(all_results['results'])} items) from wrapper")
                 all_results = all_results['results']
             else:
+                current_app.logger.error(f"Unexpected API payload for all_results (athlete_id={athlete_id}): {all_results}")
                 return jsonify({'error': 'Unexpected API response format for results', 'details': str(type(all_results))}), 502
 
         if not all_results:
@@ -224,24 +228,16 @@ def get_athlete_statistics(athlete_id):
             })
         
         # Transform results to standard format with normalized dates
-        # Try multiple possible field names since API spec may not match reality
+        # API returns results with these field names
         transformed_results = []
         for result in all_results:
-            # Try to extract fields with multiple possible names
-            score = result.get('punteggio_tot') or result.get('punteggio') or result.get('score')
-            position = result.get('posizione') or result.get('position')
-            competition_name = result.get('nome_gara') or result.get('competition_name')
-            competition_type = result.get('tipo_gara') or result.get('tipo') or result.get('event_type')
-            date = result.get('data_gara') or result.get('date') or result.get('data_inizio')
-            athlete_name = result.get('nome_atleta') or result.get('atleta') or result.get('nome_completo')
-            
             transformed_results.append({
-                'athlete': athlete_name,
-                'competition_name': competition_name,
-                'competition_type': competition_type,
-                'date': normalize_date(date),
-                'position': position,
-                'score': score
+                'athlete': result.get('atleta'),
+                'competition_name': result.get('nome_gara'),
+                'competition_type': result.get('tipo_gara'),
+                'date': normalize_date(result.get('data_gara')),
+                'position': result.get('posizione'),
+                'score': result.get('punteggio')
             })
         
         current_app.logger.info(f"Transformed {len(transformed_results)} results")
