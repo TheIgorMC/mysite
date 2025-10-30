@@ -17,6 +17,19 @@
             <p class="text-gray-600 dark:text-gray-400 mt-2">{{ product.name_en }}</p>
         </div>
 
+        <!-- Product Image Preview -->
+        {% if product.main_image %}
+        <div class="mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-md mx-auto">
+                <div class="relative h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                         alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
+                         class="absolute inset-0 w-full h-full object-contain p-2">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- String Preview -->
             <div class="lg:col-span-3 mb-8">
@@ -425,16 +438,19 @@ let selectedConfig = {
 
 // Get pricing from server (prevents manipulation)
 const PRICING = {
-    basePrice: {{ pricing.base_price }},
-    colorPatternPrices: {{ pricing.color_pattern_prices | tojson }},
-    pinstripePrice: {{ pricing.pinstripe_prices | tojson }},
-    differentCenterServingColor: {{ pricing.different_center_serving_color }}
+    basePrice: {{ pricing.base_price | default(15.00) }},
+    colorPatternPrices: {{ pricing.color_pattern_prices | tojson | default('{"single": 0, "double": 1.5, "triple": 4}') }},
+    pinstripePrice: {{ pricing.pinstripe_prices | tojson | default('{"single": 1, "double": 1.5, "triple": 0}') }},
+    differentCenterServingColor: {{ pricing.different_center_serving_color | default(1.50) }}
 };
+
+console.log('Pricing loaded:', PRICING); // Debug pricing
 
 // Load materials on page load
 document.addEventListener('DOMContentLoaded', async () => {
     await loadMaterials();
     updatePricingLabels(); // Add pricing info to labels
+    updatePrice(); // Initialize price display
     updateSummary();
 });
 
