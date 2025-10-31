@@ -340,3 +340,234 @@ class OrionAPIClient:
     def delete_material(self, material_id):
         """Delete a material entry"""
         return self._make_request('DELETE', f'/api/materiali/{material_id}')
+    
+    # ==================== ELECTRONICS ====================
+    
+    def get_components(self, q=None, category=None, in_stock=None, limit=100, offset=0):
+        """
+        Get electronic components with optional filters
+        
+        Args:
+            q: Search in name/description/mpn
+            category: Filter by category
+            in_stock: Filter by stock status (true/false)
+            limit: Number of results (default 100)
+            offset: Offset for pagination (default 0)
+        """
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        if q:
+            params['q'] = q
+        if category:
+            params['category'] = category
+        if in_stock is not None:
+            params['in_stock'] = in_stock
+        
+        return self._make_request('GET', '/api/elec/components', params=params)
+    
+    def search_components(self, q):
+        """Search components by name, description, or MPN"""
+        return self._make_request('GET', '/api/elec/components/search', params={'q': q})
+    
+    def create_component(self, name, category, description=None, mpn=None, datasheet_url=None, 
+                        stock_qty=0, min_stock=0, unit_price=0.0, supplier=None, notes=None):
+        """Create a new electronic component"""
+        data = {
+            'name': name,
+            'category': category,
+            'description': description,
+            'mpn': mpn,
+            'datasheet_url': datasheet_url,
+            'stock_qty': int(stock_qty),
+            'min_stock': int(min_stock),
+            'unit_price': float(unit_price),
+            'supplier': supplier,
+            'notes': notes
+        }
+        return self._make_request('POST', '/api/elec/components', data=data)
+    
+    def update_component(self, component_id, **fields):
+        """Update component fields (partial update)"""
+        return self._make_request('PATCH', f'/api/elec/components/{component_id}', data=fields)
+    
+    def delete_component(self, component_id):
+        """Delete a component"""
+        return self._make_request('DELETE', f'/api/elec/components/{component_id}')
+    
+    def get_boards(self, q=None, limit=100, offset=0):
+        """
+        Get PCB boards with optional search
+        
+        Args:
+            q: Search in board name/description
+            limit: Number of results (default 100)
+            offset: Offset for pagination (default 0)
+        """
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        if q:
+            params['q'] = q
+        
+        return self._make_request('GET', '/api/elec/boards', params=params)
+    
+    def create_board(self, name, version, description=None, schematic_file_id=None, 
+                    layout_file_id=None, gerber_file_id=None):
+        """Create a new PCB board"""
+        data = {
+            'name': name,
+            'version': version,
+            'description': description,
+            'schematic_file_id': schematic_file_id,
+            'layout_file_id': layout_file_id,
+            'gerber_file_id': gerber_file_id
+        }
+        return self._make_request('POST', '/api/elec/boards', data=data)
+    
+    def update_board(self, board_id, **fields):
+        """Update board fields (partial update)"""
+        return self._make_request('PATCH', f'/api/elec/boards/{board_id}', data=fields)
+    
+    def delete_board(self, board_id):
+        """Delete a board"""
+        return self._make_request('DELETE', f'/api/elec/boards/{board_id}')
+    
+    def get_board_bom(self, board_id):
+        """Get BOM for a specific board"""
+        return self._make_request('GET', f'/api/elec/boards/{board_id}/bom')
+    
+    def upload_board_bom(self, board_id, bom_items):
+        """
+        Upload/replace BOM for a board
+        
+        Args:
+            board_id: Board ID
+            bom_items: List of dicts with keys: component_id, quantity, designators
+        """
+        return self._make_request('POST', f'/api/elec/boards/{board_id}/bom/upload', data=bom_items)
+    
+    def get_production_jobs(self, status=None, board_id=None, limit=100, offset=0):
+        """
+        Get production jobs with optional filters
+        
+        Args:
+            status: Filter by status (pending, in_progress, completed, cancelled)
+            board_id: Filter by board ID
+            limit: Number of results (default 100)
+            offset: Offset for pagination (default 0)
+        """
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        if status:
+            params['status'] = status
+        if board_id:
+            params['board_id'] = board_id
+        
+        return self._make_request('GET', '/api/elec/jobs', params=params)
+    
+    def create_production_job(self, name, description=None, target_quantity=1, priority='normal'):
+        """
+        Create a new production job
+        
+        Args:
+            name: Job name
+            description: Job description
+            target_quantity: Number of units to produce
+            priority: Priority level (low, normal, high, urgent)
+        """
+        data = {
+            'name': name,
+            'description': description,
+            'target_quantity': int(target_quantity),
+            'priority': priority
+        }
+        return self._make_request('POST', '/api/elec/jobs', data=data)
+    
+    def get_production_job(self, job_id):
+        """Get details of a specific production job"""
+        return self._make_request('GET', f'/api/elec/jobs/{job_id}')
+    
+    def update_production_job(self, job_id, **fields):
+        """Update production job fields (partial update)"""
+        return self._make_request('PATCH', f'/api/elec/jobs/{job_id}', data=fields)
+    
+    def delete_production_job(self, job_id):
+        """Delete a production job"""
+        return self._make_request('DELETE', f'/api/elec/jobs/{job_id}')
+    
+    def add_board_to_job(self, job_id, board_id, quantity):
+        """
+        Add a board to a production job
+        
+        Args:
+            job_id: Production job ID
+            board_id: Board ID to add
+            quantity: Number of this board to produce
+        """
+        data = {
+            'board_id': board_id,
+            'quantity': int(quantity)
+        }
+        return self._make_request('POST', f'/api/elec/jobs/{job_id}/boards', data=data)
+    
+    def check_job_stock(self, job_id):
+        """Check stock availability for all boards in a production job"""
+        return self._make_request('GET', f'/api/elec/jobs/{job_id}/check_stock')
+    
+    def reserve_job_stock(self, job_id):
+        """Reserve stock for a production job (atomically decrements stock)"""
+        return self._make_request('POST', f'/api/elec/jobs/{job_id}/reserve_stock')
+    
+    def get_job_missing_bom(self, job_id):
+        """Get boards in job that don't have BOM defined"""
+        return self._make_request('GET', f'/api/elec/jobs/{job_id}/missing_bom')
+    
+    def get_files(self, category=None, board_id=None, limit=100, offset=0):
+        """
+        Get files with optional filters
+        
+        Args:
+            category: Filter by category (schematic, layout, gerber, datasheet, other)
+            board_id: Filter by associated board ID
+            limit: Number of results (default 100)
+            offset: Offset for pagination (default 0)
+        """
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        if category:
+            params['category'] = category
+        if board_id:
+            params['board_id'] = board_id
+        
+        return self._make_request('GET', '/api/elec/files', params=params)
+    
+    def register_file(self, filename, category, storage_path, board_id=None, description=None):
+        """
+        Register a file in the database
+        
+        Args:
+            filename: Original filename
+            category: File category (schematic, layout, gerber, datasheet, other)
+            storage_path: Path where file is stored
+            board_id: Optional associated board ID
+            description: Optional description
+        """
+        data = {
+            'filename': filename,
+            'category': category,
+            'storage_path': storage_path,
+            'board_id': board_id,
+            'description': description
+        }
+        return self._make_request('POST', '/api/elec/files/register', data=data)
+    
+    def delete_file(self, file_id):
+        """Delete a file record (does not delete actual file from storage)"""
+        return self._make_request('DELETE', f'/api/elec/files/{file_id}')
