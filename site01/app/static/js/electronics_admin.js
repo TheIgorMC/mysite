@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('[Electronics] Storage URL:', window.ELECTRONICS_STORAGE_URL);
     console.log('[Electronics] API Base:', window.ELECTRONICS_API_BASE);
     
+    // Load autocomplete data
+    loadAutocompleteData();
+    
     // Add Enter key support for component search
     const componentSearchInput = document.getElementById('component-search');
     if (componentSearchInput) {
@@ -48,6 +51,44 @@ document.addEventListener('DOMContentLoaded', function() {
         switchTab('components');
     }
 });
+
+// Load Autocomplete Data
+async function loadAutocompleteData() {
+    console.log('[Electronics] Loading autocomplete data...');
+    
+    try {
+        // Fetch component types
+        const typesResponse = await fetch(`${ELECTRONICS_API_BASE}/components/types`);
+        if (typesResponse.ok) {
+            const types = await typesResponse.json();
+            console.log('[Electronics] Loaded component types:', types.length);
+            
+            // Populate all component-types-list datalists (main form + quick-add)
+            document.querySelectorAll('#component-types-list').forEach(datalist => {
+                datalist.innerHTML = types.map(type => `<option value="${type}">`).join('');
+            });
+        } else {
+            console.error('[Electronics] Failed to load component types:', typesResponse.status);
+        }
+        
+        // Fetch component packages
+        const packagesResponse = await fetch(`${ELECTRONICS_API_BASE}/components/packages`);
+        if (packagesResponse.ok) {
+            const packages = await packagesResponse.json();
+            console.log('[Electronics] Loaded component packages:', packages.length);
+            
+            // Populate all component-packages-list datalists (main form + quick-add)
+            document.querySelectorAll('#component-packages-list').forEach(datalist => {
+                datalist.innerHTML = packages.map(pkg => `<option value="${pkg}">`).join('');
+            });
+        } else {
+            console.error('[Electronics] Failed to load component packages:', packagesResponse.status);
+        }
+        
+    } catch (error) {
+        console.error('[Electronics] Error loading autocomplete data:', error);
+    }
+}
 
 // Tab Switching
 function switchTab(tabName) {

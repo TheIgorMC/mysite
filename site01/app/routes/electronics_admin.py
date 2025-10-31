@@ -423,6 +423,52 @@ def api_proxy_search_components():
     result = api_request('/api/elec/components/search', params=request.args.to_dict())
     return jsonify(result) if result else (jsonify({'error': 'Search failed'}), 500)
 
+@api_bp.route('/components/types', methods=['GET'])
+@login_required
+def get_component_types():
+    """Get unique component types from database"""
+    try:
+        api_client = OrionAPIClient()
+        components = api_client.get_components(limit=10000)
+        
+        if not isinstance(components, list):
+            return jsonify([])
+        
+        # Extract unique types/categories
+        types = set()
+        for comp in components:
+            comp_type = comp.get('product_type') or comp.get('category')
+            if comp_type:
+                types.add(comp_type)
+        
+        return jsonify(sorted(list(types)))
+    except Exception as e:
+        current_app.logger.error(f"[Component Types] Error: {e}")
+        return jsonify([])
+
+@api_bp.route('/components/packages', methods=['GET'])
+@login_required
+def get_component_packages():
+    """Get unique component packages/footprints from database"""
+    try:
+        api_client = OrionAPIClient()
+        components = api_client.get_components(limit=10000)
+        
+        if not isinstance(components, list):
+            return jsonify([])
+        
+        # Extract unique packages
+        packages = set()
+        for comp in components:
+            pkg = comp.get('package')
+            if pkg:
+                packages.add(pkg)
+        
+        return jsonify(sorted(list(packages)))
+    except Exception as e:
+        current_app.logger.error(f"[Component Packages] Error: {e}")
+        return jsonify([])
+
 @api_bp.route('/components', methods=['POST'])
 @login_required
 def api_proxy_create_component():
