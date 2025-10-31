@@ -158,13 +158,14 @@ async function searchComponents() {
     
     try {
         let url = `${ELECTRONICS_API_BASE}/components/search?`;
-        if (search) url += `search=${encodeURIComponent(search)}&`;
+        if (search) url += `q=${encodeURIComponent(search)}&`;
         if (type) url += `product_type=${encodeURIComponent(type)}&`;
         if (pkg) url += `package=${encodeURIComponent(pkg)}`;
         
         const response = await fetch(url);
         const data = await response.json();
-        allComponents = data.components || [];
+        // API returns array directly
+        allComponents = Array.isArray(data) ? data : [];
         renderComponentsTable(allComponents);
     } catch (error) {
         console.error('Error searching components:', error);
