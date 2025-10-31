@@ -86,6 +86,9 @@ function switchTab(tabName) {
         case 'jobs':
             loadJobs();
             break;
+        case 'orders':
+            // Order importer tab - no initial load needed
+            break;
         case 'files':
             loadFiles();
             break;
@@ -652,8 +655,21 @@ async function loadJobs() {
         
         while (true) {
             const response = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=${limit}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
             const data = await response.json();
-            const count = Array.isArray(data) ? data.length : 0;
+            
+            // Ensure it's an array
+            if (!Array.isArray(data)) {
+                console.error('[Jobs] Expected array, got:', typeof data);
+                allJobs = [];
+                break;
+            }
+            
+            const count = data.length;
             
             // API returns array directly
             if (count < limit) {
@@ -1152,16 +1168,58 @@ async function confirmDeleteFile() {
 
 async function loadStockOverview() {
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/components`);
-        const data = await response.json();
-        allComponents = data.components || [];
+        // Smart pagination to get all components
+        let limit = 100;
+        let allData = [];
         
-        // Calculate stats
+        while (true) {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/components?limit=${limit}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // API returns array directly
+            if (!Array.isArray(data)) {
+                console.error('[Stock] Expected array, got:', typeof data);
+                break;
+            }
+            
+            if (data.length < limit) {
+                allData = data;
+                break;
+            }
+            
+            limit += 100;
+            if (limit > 10000) {
+                allData = data;
+                break;
+            }
+        }
+        
+        allComponents = allData;
+        
+        // Calculate stats using correct field names
         const total = allComponents.length;
-        const available = allComponents.filter(c => c.qty_left > 10).length;
-        const low = allComponents.filter(c => c.qty_left > 0 && c.qty_left <= 10).length;
-        const out = allComponents.filter(c => c.qty_left === 0).length;
-        const totalValue = allComponents.reduce((sum, c) => sum + (c.qty_left * (c.price || 0)), 0);
+        const available = allComponents.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty > 10;
+        }).length;
+        const low = allComponents.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty > 0 && qty <= 10;
+        }).length;
+        const out = allComponents.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty === 0;
+        }).length;
+        const totalValue = allComponents.reduce((sum, c) => {
+            const qty = c.qty_left !== undefined ? c.qty_left : (c.stock_qty || 0);
+            const price = c.price !== undefined ? c.price : (c.unit_price || 0);
+            return sum + (qty * price);
+        }, 0);
         
         document.getElementById('stock-total-components').textContent = total;
         document.getElementById('stock-available-components').textContent = available;
@@ -1183,27 +1241,54 @@ function filterStockOverview() {
     
     let filtered = [...allComponents];
     
-    // Apply filters
+    // Apply filters with correct field names
     if (typeFilter) {
-        filtered = filtered.filter(c => c.product_type === typeFilter);
+        filtered = filtered.filter(c => (c.product_type || c.category) === typeFilter);
     }
     if (statusFilter === 'available') {
-        filtered = filtered.filter(c => c.qty_left > 10);
+        filtered = filtered.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty > 10;
+        });
     } else if (statusFilter === 'low') {
-        filtered = filtered.filter(c => c.qty_left > 0 && c.qty_left <= 10);
+        filtered = filtered.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty > 0 && qty <= 10;
+        });
     } else if (statusFilter === 'out') {
-        filtered = filtered.filter(c => c.qty_left === 0);
+        filtered = filtered.filter(c => {
+            const qty = c.qty_left !== undefined ? c.qty_left : c.stock_qty;
+            return qty === 0;
+        });
     }
     
-    // Apply sorting
+    // Apply sorting with correct field names
     if (sortFilter === 'qty_asc') {
-        filtered.sort((a, b) => a.qty_left - b.qty_left);
+        filtered.sort((a, b) => {
+            const qtyA = a.qty_left !== undefined ? a.qty_left : a.stock_qty;
+            const qtyB = b.qty_left !== undefined ? b.qty_left : b.stock_qty;
+            return qtyA - qtyB;
+        });
     } else if (sortFilter === 'qty_desc') {
-        filtered.sort((a, b) => b.qty_left - a.qty_left);
+        filtered.sort((a, b) => {
+            const qtyA = a.qty_left !== undefined ? a.qty_left : a.stock_qty;
+            const qtyB = b.qty_left !== undefined ? b.qty_left : b.stock_qty;
+            return qtyB - qtyA;
+        });
     } else if (sortFilter === 'value_desc') {
-        filtered.sort((a, b) => (b.qty_left * (b.price || 0)) - (a.qty_left * (a.price || 0)));
+        filtered.sort((a, b) => {
+            const qtyA = a.qty_left !== undefined ? a.qty_left : a.stock_qty;
+            const priceA = a.price !== undefined ? a.price : a.unit_price || 0;
+            const qtyB = b.qty_left !== undefined ? b.qty_left : b.stock_qty;
+            const priceB = b.price !== undefined ? b.price : b.unit_price || 0;
+            return (qtyB * priceB) - (qtyA * priceA);
+        });
     } else if (sortFilter === 'type') {
-        filtered.sort((a, b) => a.product_type.localeCompare(b.product_type));
+        filtered.sort((a, b) => {
+            const typeA = a.product_type || a.category || '';
+            const typeB = b.product_type || b.category || '';
+            return typeA.localeCompare(typeB);
+        });
     }
     
     renderStockTable(filtered);
@@ -1217,18 +1302,24 @@ function renderStockTable(components) {
         return;
     }
     
-    tbody.innerHTML = components.map(comp => `
+    tbody.innerHTML = components.map(comp => {
+        const qty = comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty;
+        const price = comp.price !== undefined ? comp.price : comp.unit_price || 0;
+        const totalValue = qty * price;
+        
+        return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.seller || '-'}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs">${comp.seller_code || '-'}</td>
-            <td class="px-4 py-3 text-sm">${getStockBadge(comp.qty_left)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">€${(comp.price || 0).toFixed(4)}</td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">€${(comp.qty_left * (comp.price || 0)).toFixed(2)}</td>
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.manufacturer_code || comp.mpn || comp.value || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.seller || comp.supplier || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs">${comp.seller_code || comp.supplier_code || '-'}</td>
+            <td class="px-4 py-3 text-sm">${getStockBadge(qty)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">€${price.toFixed(4)}</td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">€${totalValue.toFixed(2)}</td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 async function exportStockReport() {
@@ -1236,7 +1327,10 @@ async function exportStockReport() {
         // Create CSV
         const csv = ['Type,Value,Package,Supplier,Part#,Stock,Price,Total Value\n'];
         allComponents.forEach(comp => {
-            csv.push(`${comp.product_type},${comp.value},${comp.package},${comp.seller || ''},${comp.seller_code || ''},${comp.qty_left},${comp.price || 0},${(comp.qty_left * (comp.price || 0)).toFixed(2)}\n`);
+            const qty = comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty;
+            const price = comp.price !== undefined ? comp.price : comp.unit_price || 0;
+            const totalValue = (qty * price).toFixed(2);
+            csv.push(`${comp.product_type || comp.category || ''},${comp.manufacturer_code || comp.mpn || comp.value || ''},${comp.package || ''},${comp.seller || comp.supplier || ''},${comp.seller_code || comp.supplier_code || ''},${qty},${price},${totalValue}\n`);
         });
         
         const blob = new Blob(csv, {type: 'text/csv'});
@@ -1254,6 +1348,264 @@ async function exportStockReport() {
     }
 }
 
+
+// ===== ORDER IMPORTER =====
+
+let currentOrderData = null;
+
+async function processOrderFile() {
+    const fileInput = document.getElementById('order-file-input');
+    const supplierSelect = document.getElementById('order-supplier-select');
+    const dateInput = document.getElementById('order-date-input');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Please select a file to import', 'error');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const filename = file.name;
+    
+    // Show processing status
+    document.getElementById('order-processing-status').classList.remove('hidden');
+    document.getElementById('order-results').classList.add('hidden');
+    document.getElementById('order-status-text').textContent = 'Processing order file...';
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Try to parse supplier and date from filename
+    let supplier = supplierSelect.value;
+    let orderDate = dateInput.value;
+    
+    if (!supplier || !orderDate) {
+        // Parse from filename: SUPPLIER_DDMMYY
+        const match = filename.match(/^(LCSC|MOUSER|lcsc|mouser)_(\d{6})/i);
+        if (match) {
+            supplier = match[1].toUpperCase();
+            const dateStr = match[2]; // DDMMYY
+            const day = dateStr.substring(0, 2);
+            const month = dateStr.substring(2, 4);
+            const year = '20' + dateStr.substring(4, 6);
+            orderDate = `${year}-${month}-${day}`;
+        }
+    }
+    
+    if (!supplier) {
+        showToast('Could not detect supplier. Please select manually.', 'error');
+        document.getElementById('order-processing-status').classList.add('hidden');
+        return;
+    }
+    
+    if (!orderDate) {
+        showToast('Could not detect order date. Please enter manually.', 'error');
+        document.getElementById('order-processing-status').classList.add('hidden');
+        return;
+    }
+    
+    formData.append('supplier', supplier);
+    formData.append('order_date', orderDate);
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/orders/parse`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to process order file');
+        }
+        
+        const result = await response.json();
+        currentOrderData = result;
+        
+        displayOrderResults(result);
+        
+    } catch (error) {
+        console.error('[Order Import] Error:', error);
+        showToast('Failed to process order file: ' + error.message, 'error');
+    } finally {
+        document.getElementById('order-processing-status').classList.add('hidden');
+    }
+}
+
+function displayOrderResults(data) {
+    // Show results section
+    document.getElementById('order-results').classList.remove('hidden');
+    
+    // Display summary
+    document.getElementById('result-supplier').textContent = data.supplier;
+    document.getElementById('result-date').textContent = new Date(data.order_date).toLocaleDateString();
+    document.getElementById('result-total').textContent = data.matched.length + data.unmatched.length;
+    
+    // Display matched components
+    document.getElementById('matched-count').textContent = data.matched.length;
+    const matchedBody = document.getElementById('matched-components-body');
+    matchedBody.innerHTML = data.matched.map(item => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${item.seller_code || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.manufacturer || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.manufacturer_code || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.package || '-'}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100 font-medium">${item.quantity}</td>
+            <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">€${item.unit_price.toFixed(4)}</td>
+            <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">€${item.total_price.toFixed(2)}</td>
+        </tr>
+    `).join('');
+    
+    // Display unmatched components
+    if (data.unmatched.length > 0) {
+        document.getElementById('unmatched-section').classList.remove('hidden');
+        document.getElementById('unmatched-count').textContent = data.unmatched.length;
+        const unmatchedBody = document.getElementById('unmatched-components-body');
+        unmatchedBody.innerHTML = data.unmatched.map((item, index) => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${item.seller_code || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.manufacturer || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.manufacturer_code || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.package || '-'}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">${item.quantity}</td>
+                <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">€${item.unit_price.toFixed(4)}</td>
+                <td class="px-4 py-3 text-sm text-center">
+                    <button onclick="openQuickAddModal(${index})" 
+                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition">
+                        <i class="fas fa-plus mr-1"></i>Add
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } else {
+        document.getElementById('unmatched-section').classList.add('hidden');
+    }
+}
+
+function openQuickAddModal(unmatchedIndex) {
+    const item = currentOrderData.unmatched[unmatchedIndex];
+    
+    document.getElementById('quick-add-order-item-index').value = unmatchedIndex;
+    document.getElementById('quick-add-supplier-code').value = item.seller_code || '';
+    document.getElementById('quick-add-supplier').value = currentOrderData.supplier;
+    document.getElementById('quick-add-manufacturer').value = item.manufacturer || '';
+    document.getElementById('quick-add-manufacturer-code').value = item.manufacturer_code || '';
+    document.getElementById('quick-add-package').value = item.package || '';
+    document.getElementById('quick-add-price').value = item.unit_price || 0;
+    document.getElementById('quick-add-quantity').value = item.quantity || 0;
+    document.getElementById('quick-add-description').value = item.description || '';
+    
+    // Clear optional fields
+    document.getElementById('quick-add-type').value = '';
+    document.getElementById('quick-add-value').value = '';
+    
+    document.getElementById('quick-add-component-modal').classList.remove('hidden');
+}
+
+function closeQuickAddModal() {
+    document.getElementById('quick-add-component-modal').classList.add('hidden');
+}
+
+async function saveQuickAddComponent() {
+    const unmatchedIndex = parseInt(document.getElementById('quick-add-order-item-index').value);
+    const orderItem = currentOrderData.unmatched[unmatchedIndex];
+    
+    const componentData = {
+        name: document.getElementById('quick-add-manufacturer-code').value,
+        category: document.getElementById('quick-add-type').value,
+        mpn: document.getElementById('quick-add-manufacturer-code').value,
+        manufacturer: document.getElementById('quick-add-manufacturer').value,
+        package: document.getElementById('quick-add-package').value,
+        supplier: document.getElementById('quick-add-supplier').value,
+        supplier_code: document.getElementById('quick-add-supplier-code').value,
+        unit_price: parseFloat(document.getElementById('quick-add-price').value),
+        stock_qty: parseInt(document.getElementById('quick-add-quantity').value),
+        description: document.getElementById('quick-add-description').value
+    };
+    
+    // Validate required fields
+    if (!componentData.category || !componentData.package || !componentData.mpn) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(componentData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to add component');
+        }
+        
+        const newComponent = await response.json();
+        
+        // Move from unmatched to matched
+        orderItem.component_id = newComponent.id;
+        currentOrderData.matched.push(orderItem);
+        currentOrderData.unmatched.splice(unmatchedIndex, 1);
+        
+        // Refresh display
+        displayOrderResults(currentOrderData);
+        
+        closeQuickAddModal();
+        showToast('Component added successfully', 'success');
+        
+    } catch (error) {
+        console.error('[Quick Add] Error:', error);
+        showToast('Failed to add component: ' + error.message, 'error');
+    }
+}
+
+async function confirmImportOrder() {
+    if (!currentOrderData || currentOrderData.matched.length === 0) {
+        showToast('No matched components to import', 'error');
+        return;
+    }
+    
+    if (currentOrderData.unmatched.length > 0) {
+        if (!confirm(`There are ${currentOrderData.unmatched.length} unmatched components. Import anyway?`)) {
+            return;
+        }
+    }
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/orders/import`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(currentOrderData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to import order');
+        }
+        
+        showToast('Order imported successfully!', 'success');
+        cancelOrderImport();
+        
+        // Refresh components and stock
+        if (currentTab === 'components') {
+            loadComponents();
+        } else if (currentTab === 'stock') {
+            loadStockOverview();
+        }
+        
+    } catch (error) {
+        console.error('[Order Import] Error:', error);
+        showToast('Failed to import order: ' + error.message, 'error');
+    }
+}
+
+function cancelOrderImport() {
+    document.getElementById('order-file-input').value = '';
+    document.getElementById('order-supplier-select').value = '';
+    document.getElementById('order-date-input').value = '';
+    document.getElementById('order-results').classList.add('hidden');
+    document.getElementById('order-processing-status').classList.add('hidden');
+    currentOrderData = null;
+}
+
 // ===== UTILITIES =====
 
 function showToast(message, type = 'info') {
@@ -1267,3 +1619,4 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+

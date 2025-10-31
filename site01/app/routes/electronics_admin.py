@@ -5,7 +5,10 @@ Admin-only portal for electronics inventory, boards, BOMs, production jobs, and 
 from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
 from flask_login import login_required, current_user
 import requests
+import csv
+import io
 from functools import wraps
+from app.api import OrionAPIClient
 
 bp = Blueprint('electronics_admin', __name__, url_prefix='/admin/electronics')
 
@@ -480,7 +483,7 @@ def api_proxy_upload_bom(board_id):
 @login_required
 def api_proxy_get_jobs():
     """Proxy: Get jobs list"""
-    result = api_request('/api/elec/jobs')
+    result = api_request('/api/elec/jobs', params=request.args.to_dict())
     return jsonify(result) if result else (jsonify({'error': 'Failed to fetch jobs'}), 500)
 
 @api_bp.route('/jobs', methods=['POST'])
@@ -545,3 +548,181 @@ def api_proxy_delete_file(file_id):
     """Proxy: Delete file"""
     result = api_request(f'/api/elec/files/{file_id}', method='DELETE')
     return jsonify(result) if result else (jsonify({'error': 'Failed to delete file'}), 500)
+
+# ==================== ORDER IMPORTER ====================
+
+@api_bp.route('/orders/parse', methods=['POST'])
+@login_required
+def parse_order_file():
+    """Parse order file (LCSC CSV or Mouser XLS) and match components"""
+    from werkzeug.utils import secure_filename
+    import csv
+    import io
+    from datetime import datetime
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    supplier = request.form.get('supplier', '').upper()
+    order_date = request.form.get('order_date')
+    
+    if not file or not supplier or not order_date:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    try:
+        # Read file content
+        file_content = file.read()
+        
+        # Parse based on supplier
+        if supplier == 'LCSC':
+            items = parse_lcsc_csv(file_content)
+        elif supplier == 'MOUSER':
+            items = parse_mouser_xls(file_content)
+        else:
+            return jsonify({'error': 'Unsupported supplier'}), 400
+        
+        # Match components with database
+        matched = []
+        unmatched = []
+        
+        api_client = OrionAPIClient()
+        components_result = api_client.get_components(limit=10000)
+        all_components = components_result if isinstance(components_result, list) else []
+        
+        for item in items:
+            # Try to match by seller_code or manufacturer_code
+            matched_comp = None
+            
+            # Match by seller code first
+            if item.get('seller_code'):
+                matched_comp = next((c for c in all_components 
+                                   if c.get('seller_code', '').lower() == item['seller_code'].lower()), None)
+            
+            # If not found, try manufacturer code
+            if not matched_comp and item.get('manufacturer_code'):
+                matched_comp = next((c for c in all_components 
+                                   if c.get('manufacturer_code', '').lower() == item['manufacturer_code'].lower()), None)
+            
+            if matched_comp:
+                matched.append({
+                    'component_id': matched_comp['id'],
+                    'seller_code': item.get('seller_code'),
+                    'manufacturer': item.get('manufacturer'),
+                    'manufacturer_code': item.get('manufacturer_code'),
+                    'package': item.get('package'),
+                    'quantity': item['quantity'],
+                    'unit_price': item['unit_price'],
+                    'total_price': item['quantity'] * item['unit_price']
+                })
+            else:
+                unmatched.append({
+                    'seller_code': item.get('seller_code'),
+                    'manufacturer': item.get('manufacturer'),
+                    'manufacturer_code': item.get('manufacturer_code'),
+                    'package': item.get('package'),
+                    'description': item.get('description', ''),
+                    'quantity': item['quantity'],
+                    'unit_price': item['unit_price'],
+                    'total_price': item['quantity'] * item['unit_price']
+                })
+        
+        return jsonify({
+            'supplier': supplier,
+            'order_date': order_date,
+            'matched': matched,
+            'unmatched': unmatched
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"[Order Parse] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/orders/import', methods=['POST'])
+@login_required
+def import_order():
+    """Import order and update component stock quantities"""
+    data = request.get_json()
+    
+    if not data or 'matched' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+    
+    try:
+        api_client = OrionAPIClient()
+        
+        # Update stock for each matched component
+        for item in data['matched']:
+            component_id = item['component_id']
+            quantity = item['quantity']
+            unit_price = item['unit_price']
+            
+            # Update component stock and price
+            api_client.update_component(component_id, 
+                                       stock_qty=quantity,  # This should add to existing stock
+                                       unit_price=unit_price)
+        
+        return jsonify({'success': True, 'updated': len(data['matched'])})
+        
+    except Exception as e:
+        current_app.logger.error(f"[Order Import] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def parse_lcsc_csv(file_content):
+    """Parse LCSC CSV format"""
+    items = []
+    content = file_content.decode('utf-8')
+    reader = csv.DictReader(io.StringIO(content))
+    
+    for row in reader:
+        items.append({
+            'seller_code': row.get('LCSC Part Number', '').strip(),
+            'manufacturer_code': row.get('Manufacture Part Number', '').strip(),
+            'manufacturer': row.get('Manufacturer', '').strip(),
+            'package': row.get('Package', '').strip(),
+            'description': row.get('Description', '').strip(),
+            'quantity': int(row.get('Quantity', 0)),
+            'unit_price': float(row.get('Unit Price(€)', '0').replace(',', ''))
+        })
+    
+    return items
+
+
+def parse_mouser_xls(file_content):
+    """Parse Mouser XLS format"""
+    import openpyxl
+    import io
+    
+    items = []
+    workbook = openpyxl.load_workbook(io.BytesIO(file_content))
+    sheet = workbook.active
+    
+    # Find header row (usually row 1 or 2)
+    headers = []
+    for row in sheet.iter_rows(min_row=1, max_row=5):
+        if any('Mouser' in str(cell.value) for cell in row if cell.value):
+            headers = [cell.value for cell in row]
+            break
+    
+    if not headers:
+        raise ValueError("Could not find Mouser header row")
+    
+    # Parse data rows
+    for row in sheet.iter_rows(min_row=sheet.min_row + 1):
+        row_data = {headers[i]: cell.value for i, cell in enumerate(row) if i < len(headers)}
+        
+        # Skip empty rows
+        if not row_data.get('Mouser Part No.'):
+            continue
+        
+        items.append({
+            'seller_code': str(row_data.get('Mouser Part No.', '')).strip(),
+            'manufacturer_code': str(row_data.get('Manufacturer Part No.', '')).strip(),
+            'manufacturer': str(row_data.get('Manufacturer', '')).strip(),
+            'package': '',  # Mouser doesn't always include package in packing list
+            'description': str(row_data.get('Description', '')).strip(),
+            'quantity': int(row_data.get('Quantity', 0) or 0),
+            'unit_price': float(row_data.get('Unit Price', 0) or 0)
+        })
+    
+    return items

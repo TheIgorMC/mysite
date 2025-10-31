@@ -46,6 +46,12 @@
                             class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
                         <i class="fas fa-industry mr-2"></i>Production Jobs
                     </button>
+                    <button onclick="switchTab('orders')" 
+                            id="tab-orders"
+                            data-tab="orders"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-shopping-cart mr-2"></i>Order Importer
+                    </button>
                     <button onclick="switchTab('files')" 
                             id="tab-files"
                             data-tab="files"
@@ -77,6 +83,11 @@
                 <!-- Jobs Tab -->
                 <div id="panel-jobs" class="tab-panel hidden">
                     {% include 'admin/electronics/jobs_tab.html' %}
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="panel-orders" class="tab-panel hidden">
+                    {% include 'admin/electronics/orders_tab.html' %}
                 </div>
 
                 <!-- Files Tab -->

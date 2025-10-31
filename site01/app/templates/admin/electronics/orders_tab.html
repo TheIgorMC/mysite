@@ -1,0 +1,244 @@
+<!-- Order Importer Tab -->
+<div class="space-y-6">
+    
+    <!-- Upload Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fas fa-upload mr-2 text-blue-600"></i>Import Order
+        </h3>
+        
+        <div class="space-y-4">
+            <!-- File Upload -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Order File (CSV/XLS)
+                </label>
+                <input type="file" id="order-file-input" accept=".csv,.xls,.xlsx"
+                       class="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Supports LCSC (CSV) and Mouser (XLS/XLSX) formats. Filename format: SUPPLIER_DDMMYY (e.g., LCSC_060325.csv)
+                </p>
+            </div>
+
+            <!-- Manual Override Section -->
+            <div id="manual-override" class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Supplier (if not auto-detected)
+                    </label>
+                    <select id="order-supplier-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <option value="">Auto-detect from filename</option>
+                        <option value="LCSC">LCSC</option>
+                        <option value="MOUSER">Mouser</option>
+                        <option value="OTHER">Other/Generic</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Order Date (if not auto-detected)
+                    </label>
+                    <input type="date" id="order-date-input" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Filename format: DDMMYY (e.g., 100325 = 10 March 2025)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Process Button -->
+            <button onclick="processOrderFile()" 
+                    class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                <i class="fas fa-cog mr-2"></i>Process Order File
+            </button>
+        </div>
+    </div>
+
+    <!-- Processing Status -->
+    <div id="order-processing-status" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div class="flex items-center">
+            <i class="fas fa-spinner fa-spin text-blue-600 dark:text-blue-400 mr-3"></i>
+            <span class="text-sm text-blue-800 dark:text-blue-300" id="order-status-text">Processing order file...</span>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="order-results" class="hidden space-y-4">
+        
+        <!-- Order Summary -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">
+                <i class="fas fa-check-circle mr-2"></i>Order Processed Successfully
+            </h4>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-green-700 dark:text-green-300">Supplier:</span>
+                    <span class="font-semibold text-green-900 dark:text-green-100 ml-2" id="result-supplier"></span>
+                </div>
+                <div>
+                    <span class="text-green-700 dark:text-green-300">Date:</span>
+                    <span class="font-semibold text-green-900 dark:text-green-100 ml-2" id="result-date"></span>
+                </div>
+                <div>
+                    <span class="text-green-700 dark:text-green-300">Total Items:</span>
+                    <span class="font-semibold text-green-900 dark:text-green-100 ml-2" id="result-total"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matched Components -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white">
+                    <i class="fas fa-check text-green-600 mr-2"></i>Matched Components (<span id="matched-count">0</span>)
+                </h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Supplier Code</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Manufacturer</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MFG Code</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Package</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Quantity</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matched-components-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Unmatched Components -->
+        <div id="unmatched-section" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-yellow-50 dark:bg-yellow-900/20">
+                <h4 class="font-semibold text-yellow-900 dark:text-yellow-100">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>Unmatched Components (<span id="unmatched-count">0</span>)
+                </h4>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    These components were not found in the database. Review and add them manually.
+                </p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Supplier Code</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Manufacturer</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MFG Code</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Package</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Quantity</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit Price</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unmatched-components-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+            <button onclick="confirmImportOrder()" 
+                    class="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+                <i class="fas fa-check mr-2"></i>Import Matched Components
+            </button>
+            <button onclick="cancelOrderImport()" 
+                    class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition">
+                <i class="fas fa-times mr-2"></i>Cancel
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Add Component Modal (for unmatched items) -->
+<div id="quick-add-component-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Add Component to Database</h3>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="quick-add-order-item-index">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier Code</label>
+                    <input type="text" id="quick-add-supplier-code" readonly
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>
+                    <input type="text" id="quick-add-supplier" readonly
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer *</label>
+                    <input type="text" id="quick-add-manufacturer" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer Code *</label>
+                    <input type="text" id="quick-add-manufacturer-code" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type/Category *</label>
+                    <input type="text" id="quick-add-type" placeholder="e.g., RESISTOR" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Value</label>
+                    <input type="text" id="quick-add-value" placeholder="e.g., 10k"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Package *</label>
+                    <input type="text" id="quick-add-package" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price (€)</label>
+                    <input type="number" step="0.0001" id="quick-add-price" readonly
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
+                    <input type="number" id="quick-add-quantity" readonly
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea id="quick-add-description" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+            </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-4">
+            <button onclick="saveQuickAddComponent()" 
+                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                <i class="fas fa-save mr-2"></i>Add Component
+            </button>
+            <button onclick="closeQuickAddModal()" 
+                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
