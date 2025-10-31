@@ -91,15 +91,13 @@ function switchTab(tabName) {
 async function loadComponents() {
     console.log('[Components] Loading...');
     try {
-        // Smart pagination - fetch until we get less than requested
-        let allData = [];
-        let offset = 0;
-        let batchSize = 100;
-        let hasMore = true;
+        // Smart pagination - increase limit until we get less than requested
+        let limit = 100;
+        let lastCount = 0;
         
-        while (hasMore) {
-            const url = `${ELECTRONICS_API_BASE}/components?limit=${batchSize}&offset=${offset}`;
-            console.log(`[Components] Fetching batch from: ${url}`);
+        while (true) {
+            const url = `${ELECTRONICS_API_BASE}/components?limit=${limit}`;
+            console.log(`[Components] Fetching from: ${url}`);
             
             const response = await fetch(url);
             console.log('[Components] Response status:', response.status);
@@ -110,23 +108,28 @@ async function loadComponents() {
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
-            const batch = await response.json();
-            console.log(`[Components] Received batch of ${Array.isArray(batch) ? batch.length : 0} items`);
+            const data = await response.json();
+            const count = Array.isArray(data) ? data.length : 0;
+            console.log(`[Components] Received ${count} items (limit was ${limit})`);
             
-            // API returns array directly, not wrapped in object
-            if (Array.isArray(batch) && batch.length > 0) {
-                allData = allData.concat(batch);
-                offset += batch.length;
-                
-                // If we got fewer items than requested, we've reached the end
-                hasMore = batch.length === batchSize;
-            } else {
-                hasMore = false;
+            // API returns array directly
+            if (count < limit) {
+                // Got fewer than requested, this is all the data
+                console.log('[Components] Total components loaded:', count);
+                allComponents = data;
+                break;
+            }
+            
+            // Got exactly what we asked for, there might be more
+            limit += 100;
+            
+            // Safety: don't loop forever
+            if (limit > 10000) {
+                console.warn('[Components] Safety limit reached at 10000');
+                allComponents = data;
+                break;
             }
         }
-        
-        console.log('[Components] Total components loaded:', allData.length);
-        allComponents = allData;
         
         renderComponentsTable(allComponents);
     } catch (error) {
@@ -327,27 +330,29 @@ async function deleteComponent(id) {
 
 async function loadBoards() {
     try {
-        // Smart pagination
-        let allData = [];
-        let offset = 0;
-        let batchSize = 100;
-        let hasMore = true;
+        // Smart pagination - increase limit until we get less than requested
+        let limit = 100;
         
-        while (hasMore) {
-            const response = await fetch(`${ELECTRONICS_API_BASE}/boards?limit=${batchSize}&offset=${offset}`);
-            const batch = await response.json();
+        while (true) {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/boards?limit=${limit}`);
+            const data = await response.json();
+            const count = Array.isArray(data) ? data.length : 0;
             
             // API returns array directly
-            if (Array.isArray(batch) && batch.length > 0) {
-                allData = allData.concat(batch);
-                offset += batch.length;
-                hasMore = batch.length === batchSize;
-            } else {
-                hasMore = false;
+            if (count < limit) {
+                // Got all data
+                allBoards = data;
+                break;
+            }
+            
+            // Might be more data
+            limit += 100;
+            if (limit > 10000) {
+                allBoards = data;
+                break;
             }
         }
         
-        allBoards = allData;
         renderBoardsGrid(allBoards);
     } catch (error) {
         console.error('Error loading boards:', error);
@@ -587,27 +592,29 @@ async function exportBOM() {
 
 async function loadJobs() {
     try {
-        // Smart pagination
-        let allData = [];
-        let offset = 0;
-        let batchSize = 100;
-        let hasMore = true;
+        // Smart pagination - increase limit until we get less than requested
+        let limit = 100;
         
-        while (hasMore) {
-            const response = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=${batchSize}&offset=${offset}`);
-            const batch = await response.json();
+        while (true) {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=${limit}`);
+            const data = await response.json();
+            const count = Array.isArray(data) ? data.length : 0;
             
             // API returns array directly
-            if (Array.isArray(batch) && batch.length > 0) {
-                allData = allData.concat(batch);
-                offset += batch.length;
-                hasMore = batch.length === batchSize;
-            } else {
-                hasMore = false;
+            if (count < limit) {
+                // Got all data
+                allJobs = data;
+                break;
+            }
+            
+            // Might be more data
+            limit += 100;
+            if (limit > 10000) {
+                allJobs = data;
+                break;
             }
         }
         
-        allJobs = allData;
         renderJobsGrid(allJobs);
     } catch (error) {
         console.error('Error loading jobs:', error);
@@ -856,14 +863,11 @@ async function loadFiles() {
         const boardFilter = document.getElementById('files-board-filter')?.value || '';
         const categoryFilter = document.getElementById('files-type-filter')?.value || '';
         
-        // Smart pagination
-        let allData = [];
-        let offset = 0;
-        let batchSize = 100;
-        let hasMore = true;
+        // Smart pagination - increase limit until we get less than requested
+        let limit = 100;
         
-        while (hasMore) {
-            let url = `${ELECTRONICS_API_BASE}/files?limit=${batchSize}&offset=${offset}`;
+        while (true) {
+            let url = `${ELECTRONICS_API_BASE}/files?limit=${limit}`;
             if (boardFilter) url += `&board_id=${boardFilter}`;
             if (categoryFilter) url += `&category=${categoryFilter}`;
             
@@ -885,19 +889,24 @@ async function loadFiles() {
                 return;
             }
             
-            const batch = await response.json();
+            const data = await response.json();
+            const count = Array.isArray(data) ? data.length : 0;
             
             // API returns array directly
-            if (Array.isArray(batch) && batch.length > 0) {
-                allData = allData.concat(batch);
-                offset += batch.length;
-                hasMore = batch.length === batchSize;
-            } else {
-                hasMore = false;
+            if (count < limit) {
+                // Got all data
+                allFiles = data;
+                break;
+            }
+            
+            // Might be more data
+            limit += 100;
+            if (limit > 10000) {
+                allFiles = data;
+                break;
             }
         }
         
-        allFiles = allData;
         renderFilesGrid(allFiles);
         
         // Populate board filter if empty
