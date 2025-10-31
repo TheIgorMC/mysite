@@ -363,19 +363,22 @@ List available components.
 
 ---
 
-💬 Interesse (Expressions of Interest)
-GET /api/interesse
+## 💬 Interesse (Expressions of Interest)
+
+### `GET /api/interesse`
 
 Retrieve interest expressions.
 
-Params:
+**Params:**
 
-Param	Type	Description
-tessera_atleta	string	Filter by athlete ID
-codice_gara	string	Filter by competition code (admin)
+| Param            | Type   | Description                        |
+| ---------------- | ------ | ---------------------------------- |
+| `tessera_atleta` | string | Filter by athlete ID               |
+| `codice_gara`    | string | Filter by competition code (admin) |
 
-Response:
+**Response:**
 
+```json
 [
   {
     "id": 4,
@@ -390,13 +393,17 @@ Response:
     "stato": "attivo"
   }
 ]
+```
 
-POST /api/interesse
+---
+
+### `POST /api/interesse`
 
 Create a new interest expression.
 
-Body:
+**Body:**
 
+```json
 {
   "codice_gara": "25A001",
   "tessera_atleta": "012345",
@@ -406,21 +413,31 @@ Body:
   "note": "Preferenza per il turno mattina",
   "stato": "attivo"
 }
+```
 
+**Response:**
 
-Response:
-
+```json
 {"id": 4, "status": "created"}
+```
 
-DELETE /api/interesse/{id}
+---
+
+### `DELETE /api/interesse/{id}`
 
 Delete an interest expression (by ID).
 
-Response:
+**Response:**
 
+```json
 {"id": 4, "status": "deleted"}
+```
 
-🧱 Data Flow Update
+---
+
+## 🧱 Data Flow Update
+
+```text
 Frontend → FastAPI → MySQL (orion_db)
 
 Modules:
@@ -430,129 +447,32 @@ Modules:
   ├── /api/iscrizioni → full CRUD + export
   ├── /api/stats, /api/ranking → analytics
   └── /api/elec/... → electronics management
+```
 
 ---
 
-📦 Materiali (Stringmaking Stock)
-GET /api/materiali
+### 🧾 Athlete Results
 
-List materials with filters.
-
-Query params
-
-Param	Type	Description
-q	string	Search in materiale/colore/spessore
-tipo	string	Filter by type (string, serving, center, …)
-low_stock_lt	number	Show only items with rimasto below threshold
-limit	int	Default 100
-offset	int	Default 0
-
-Response
-
-[
-  {
-    "id": 3,
-    "materiale": "BCY 652",
-    "colore": "Flo Green",
-    "spessore": "0.021",
-    "rimasto": 132.50,
-    "costo": 0.18,
-    "tipo": "string",
-    "created_at": "2025-10-01T10:22:00",
-    "updated_at": "2025-10-27T09:12:34"
-  }
-]
-
-POST /api/materiali
-
-Create a new material entry.
-
-Body
-
-{
-  "materiale": "BCY X99",
-  "colore": "Black",
-  "spessore": "0.026",
-  "rimasto": 250.00,
-  "costo": 0.22,
-  "tipo": "string"
-}
-
-
-Response
-
-{"id": 7, "status": "created"}
-
-PATCH /api/materiali/{id}
-
-Update any field (partial update).
-
-Body (example)
-
-{
-  "rimasto": 210.00,
-  "costo": 0.21
-}
-
-
-Response
-
-{"id": 7, "status": "updated"}
-
-POST /api/materiali/{id}/consume
-
-Consume a quantity from stock (atomic, non-negative).
-
-Body
-
-{
-  "quantita": 12.50
-}
-
-
-Response
-
-{"id": 7, "rimasto": "197.50", "status": "consumed"}
-
-
-Errors:
-
-409: stock insufficient (rimasto too low)
-
-DELETE /api/materiali/{id}
-
-Delete a material entry.
-
-Response
-
-{"id": 7, "status": "deleted"}
-
-🔬 Suggested indexes (performance)
-CREATE INDEX idx_mat_variant ON ARC_materiali (materiale, colore, spessore, tipo);
-CREATE INDEX idx_mat_low ON ARC_materiali (rimasto);
-CREATE INDEX idx_mat_tipo ON ARC_materiali (tipo);
-
----
-
-🧾 Athlete Results
-GET /api/athlete/{tessera}/results
+#### `GET /api/athlete/{tessera}/results`
 
 Return detailed competition results for an athlete, with optional filters and a quick summary (best score, averages).
 
-Path params
+**Path params**
 
-tessera (string, required): Athlete ID
+* `tessera` (string, required): Athlete ID
 
-Query params
+**Query params**
 
-Param	Type	Description
-event_type	string	Filter by competition type (e.g. Indoor, Targa)
-from_date	date (YYYY-MM-DD)	Include results from this date
-to_date	date (YYYY-MM-DD)	Include results up to this date
-limit	int	Max results (default 500)
+| Param        | Type                | Description                                         |
+| ------------ | ------------------- | --------------------------------------------------- |
+| `event_type` | string              | Filter by competition type (e.g. `Indoor`, `Targa`) |
+| `from_date`  | date (`YYYY-MM-DD`) | Include results from this date                      |
+| `to_date`    | date (`YYYY-MM-DD`) | Include results up to this date                     |
+| `limit`      | int                 | Max results (default **500**)                       |
 
-Response
+**Response**
 
+```json
 {
   "summary": {
     "count": 3,
@@ -578,15 +498,150 @@ Response
     }
   ]
 }
+```
 
+**Notes**
 
-Notes
+* `avg_position` is computed only over results with a defined `posizione`.
+* `best_score`/`avg_score` use `punteggio` (`r.punteggio_tot` in DB).
+* Results are ordered by most recent (`data_inizio DESC`).
+* **best_score logic:**
 
-avg_position is computed only over results with a defined posizione.
+  * For events whose **name** contains `25+18` or `doppio` (case-insensitive), the **highest score** is computed over the **individual partials** (`part1`, `part2`, `part3`) when available; otherwise it falls back to the total.
+  * For all other events, `best_score` uses `punteggio_tot` (total).
+* **Averages unchanged:** `avg_score` still averages `punteggio_tot`; `avg_position` averages final positions.
 
-best_score/avg_score use punteggio (r.punteggio_tot in DB).
+---
 
-Results are ordered by most recent (data_inizio DESC).
+## 🔧 Electronics Components Management
+
+**GET `/api/elec/components`** – list components
+Params: `q`, `product_type`, `package`, `limit`, `offset`
+
+**POST `/api/elec/components`** – create component
+Body:
+
+```json
+{
+  "seller": "LCSC",
+  "seller_code": "C25804",
+  "manufacturer": "Yageo",
+  "manufacturer_code": "RC0402FR-0710KL",
+  "smd_footprint": "RESC1005",
+  "package": "0402",
+  "product_type": "Resistor",
+  "value": "10k",
+  "price": 0.0025,
+  "qty_left": 5000
+}
+```
+
+**PATCH `/api/elec/components/{id}`** – update fields (e.g. `qty_left`)
+**DELETE `/api/elec/components/{id}`** – delete
+
+**GET `/api/elec/components/search?q=R0402`** – smart search
+
+* `R0402` → product_type like `Resistor%`, package `0402`
+* Else: fuzzy on manufacturer, value, package, product_type…
+
+---
+
+## 🪛 Boards Management
+
+**GET `/api/elec/boards`** – list
+**POST `/api/elec/boards`** – create
+**PATCH `/api/elec/boards/{id}`** – update
+**DELETE `/api/elec/boards/{id}`** – delete
+
+**POST `/api/elec/boards/{id}/upload_bom`** – upload BOM CSV
+
+* CSV must contain columns: `component_id,qty`
+* Upserts into `ELEC_board_components`
+
+---
+
+## 📦 Board–Component Relations (BOM)
+
+**GET `/api/elec/boards/{id}/bom`** – return BOM (with component info)
+**POST `/api/elec/boards/{id}/bom`** – add/update items
+Body:
+
+```json
+[
+  {"component_id":"abc123...", "qty": 10},
+  {"component_id":"def456...", "qty": 2}
+]
+```
+
+**DELETE `/api/elec/boards/{id}/bom/{comp_id}`** – remove component from BOM
+
+---
+
+## 🏭 Production Jobs
+
+**GET `/api/elec/jobs`** – list jobs
+**POST `/api/elec/jobs`** – create job
+Body:
+
+```json
+{
+  "board_id": "board123...",
+  "quantity": 10,
+  "pnp_job": 1,
+  "status": "created",
+  "due_date": "2025-11-15"
+}
+```
+
+**GET `/api/elec/jobs/{id}`** – job details (includes BOM)
+**PATCH `/api/elec/jobs/{id}`** – update status/qty/due_date
+**GET `/api/elec/jobs/{id}/check_stock`** – availability vs. BOM×quantity
+**POST `/api/elec/jobs/{id}/reserve_stock`** – atomically decrement `qty_left`
+*409 if any component is insufficient.*
+
+**GET `/api/elec/jobs/{id}/missing_bom`** – list missing components
+
+---
+
+## ⬇️ Export
+
+**GET `/api/elec/bom/export?format=csv&job_id={id}`**
+OR `?board_id={id}&qty=XX`
+→ Streams a CSV of the required components and quantities.
+
+---
+
+## 📁 File Storage Management
+
+**GET `/api/elec/boards/{id}/files`** – list files for a board
+**POST `/api/elec/boards/{id}/files`** – register/upload metadata
+Body:
+
+```json
+{
+  "file_type": "gerber",
+  "filename": "controller_v1.2_gerbers.zip",
+  "file_path": "https://files.example.com/elec/boards/123/gerbers.zip",
+  "file_size": 524288,
+  "mime_type": "application/zip",
+  "uploaded_by": "admin",
+  "version_tag": "v1.2",
+  "notes": "JLC job #2025-001"
+}
+```
+
+**DELETE `/api/elec/boards/{id}/files/{file_id}`** – delete file metadata
+**GET `/api/elec/files/{id}/download`** – HTTP 302 redirect to `file_path`
+**GET `/api/elec/files/types`** – supported `file_type` list
+
+---
+
+## 🧠 Notes
+
+* IDs for ELEC entities are generated as 32-hex strings if not provided.
+* Stock reservation uses **transaction + row locks** to be safe under concurrency.
+* BOM CSV kept intentionally minimal (`component_id, qty`); expand later if you want fuzzy mapping by `manufacturer_code + package + value`.
+* For large exports, consider paging or streaming on the frontend.
 
 ---
 

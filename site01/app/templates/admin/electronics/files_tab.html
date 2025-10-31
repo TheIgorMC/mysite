@@ -1,0 +1,188 @@
+<!-- Files Tab Content -->
+<div class="space-y-6">
+    
+    <!-- File Types Filter -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-filter mr-1"></i>Filter by Board
+                </label>
+                <select id="files-board-filter" onchange="loadFiles()"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <option value="">All Boards</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    File Type
+                </label>
+                <select id="files-type-filter" onchange="loadFiles()"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <option value="">All Types</option>
+                    <option value="bom">BOM</option>
+                    <option value="pnp">Pick & Place</option>
+                    <option value="gerber">Gerber</option>
+                    <option value="schematic">Schematic</option>
+                    <option value="pcb_layout">PCB Layout</option>
+                    <option value="ibom">Interactive BOM</option>
+                    <option value="datasheet">Datasheet</option>
+                    <option value="documentation">Documentation</option>
+                    <option value="firmware">Firmware</option>
+                    <option value="cad">CAD Files</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button onclick="showRegisterFileModal()" 
+                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                <i class="fas fa-plus mr-2"></i>Register File
+            </button>
+        </div>
+    </div>
+
+    <!-- Files Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="files-grid">
+        <!-- Populated by JavaScript -->
+        <div class="col-span-full text-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
+            <p class="text-gray-500 dark:text-gray-400">Loading files...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Register File Modal -->
+<div id="register-file-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-file-plus text-green-600 mr-2"></i>Register File
+                </h3>
+                <button onclick="closeRegisterFileModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Files are stored externally at <strong>elec.orion-project.it</strong>. Enter the file path relative to the storage root.
+                </p>
+            </div>
+            
+            <form id="register-file-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Board *
+                    </label>
+                    <select name="board_id" id="register-file-board" required
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <option value="">Select a board...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        File Type *
+                    </label>
+                    <select name="file_type" required
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <option value="bom">BOM (CSV/Excel)</option>
+                        <option value="pnp">Pick & Place</option>
+                        <option value="gerber">Gerber Files</option>
+                        <option value="schematic">Schematic</option>
+                        <option value="pcb_layout">PCB Layout</option>
+                        <option value="ibom">Interactive BOM (HTML)</option>
+                        <option value="datasheet">Datasheet</option>
+                        <option value="documentation">Documentation</option>
+                        <option value="firmware">Firmware</option>
+                        <option value="cad">CAD Files</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        File Path *
+                    </label>
+                    <input type="text" name="file_path" required placeholder="e.g., boards/usb-psu/v1.0/BOM.csv"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Path relative to storage root (no leading slash)
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Display Name
+                    </label>
+                    <input type="text" name="display_name" placeholder="Optional display name"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Description
+                    </label>
+                    <textarea name="description" rows="2" placeholder="Optional description"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeRegisterFileModal()"
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>Register File
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- iBOM Viewer Modal -->
+<div id="ibom-viewer-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50">
+    <div class="w-full h-full flex flex-col p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-2xl font-bold text-white" id="ibom-viewer-title">
+                <i class="fas fa-microchip mr-2"></i>Interactive BOM Viewer
+            </h3>
+            <button onclick="closeIBOMViewer()" class="text-white hover:text-gray-300">
+                <i class="fas fa-times text-3xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 bg-white rounded-lg overflow-hidden">
+            <iframe id="ibom-viewer-frame" class="w-full h-full" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- File Details Modal -->
+<div id="file-details-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-file text-blue-600 mr-2"></i>File Details
+                </h3>
+                <button onclick="closeFileDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="file-details-content" class="space-y-4">
+                <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="mt-6 flex items-center justify-between">
+                <button id="file-view-btn" onclick="viewFile()" 
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    <i class="fas fa-eye mr-2"></i>View File
+                </button>
+                <button id="file-delete-btn" onclick="confirmDeleteFile()" 
+                        class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                    <i class="fas fa-trash mr-2"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

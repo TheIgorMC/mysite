@@ -1,0 +1,287 @@
+<!-- Components Tab Content -->
+<div class="space-y-6">
+    
+    <!-- Search and Filters -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-search mr-1"></i>Smart Search
+                </label>
+                <input type="text" 
+                       id="component-search" 
+                       placeholder="Search by part, value, package (e.g., R0402, 10k, SY8308)"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Type
+                </label>
+                <select id="component-type-filter" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <option value="">All Types</option>
+                    <option value="Resistor">Resistor</option>
+                    <option value="Capacitor">Capacitor</option>
+                    <option value="Inductor">Inductor</option>
+                    <option value="IC">IC</option>
+                    <option value="LED">LED</option>
+                    <option value="Diode">Diode</option>
+                    <option value="Transistor">Transistor</option>
+                    <option value="Connector">Connector</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Package
+                </label>
+                <select id="component-package-filter" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <option value="">All Packages</option>
+                    <option value="0402">0402</option>
+                    <option value="0603">0603</option>
+                    <option value="0805">0805</option>
+                    <option value="1206">1206</option>
+                    <option value="SOT-23">SOT-23</option>
+                    <option value="QFN">QFN</option>
+                    <option value="SOIC">SOIC</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between">
+            <button onclick="searchComponents()" 
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <i class="fas fa-search mr-2"></i>Search
+            </button>
+            <button onclick="showAddComponentModal()" 
+                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                <i class="fas fa-plus mr-2"></i>Add Component
+            </button>
+        </div>
+    </div>
+
+    <!-- Components Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Type
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Value
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Package
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Manufacturer
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Supplier
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Stock
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Price
+                        </th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="components-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Populated by JavaScript -->
+                    <tr>
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p>Loading components...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div id="components-pagination" class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Add Component Modal -->
+<div id="add-component-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-plus-circle text-green-600 mr-2"></i>Add Component
+                </h3>
+                <button onclick="closeAddComponentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="add-component-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Product Type *
+                        </label>
+                        <select name="product_type" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="Resistor">Resistor</option>
+                            <option value="Capacitor">Capacitor</option>
+                            <option value="Inductor">Inductor</option>
+                            <option value="IC">IC</option>
+                            <option value="LED">LED</option>
+                            <option value="Diode">Diode</option>
+                            <option value="Transistor">Transistor</option>
+                            <option value="Connector">Connector</option>
+                            <option value="Crystal">Crystal</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Value *
+                        </label>
+                        <input type="text" name="value" required placeholder="e.g., 10k, 100nF"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Package *
+                        </label>
+                        <input type="text" name="package" required placeholder="e.g., 0402, SOT-23"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            SMD Footprint
+                        </label>
+                        <input type="text" name="smd_footprint" placeholder="e.g., RESC1005"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Manufacturer
+                        </label>
+                        <input type="text" name="manufacturer" placeholder="e.g., Yageo, Samsung"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Manufacturer Code
+                        </label>
+                        <input type="text" name="manufacturer_code" placeholder="e.g., RC0402FR-0710KL"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Supplier
+                        </label>
+                        <input type="text" name="seller" placeholder="e.g., LCSC, Digikey"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Supplier Code
+                        </label>
+                        <input type="text" name="seller_code" placeholder="e.g., C25804"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Quantity in Stock *
+                        </label>
+                        <input type="number" name="qty_left" required min="0" value="0"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Price per Unit (€)
+                        </label>
+                        <input type="number" name="price" step="0.0001" min="0" value="0"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeAddComponentModal()"
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>Add Component
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Component Modal -->
+<div id="edit-component-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-edit text-blue-600 mr-2"></i>Edit Stock
+                </h3>
+                <button onclick="closeEditComponentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="edit-component-form" class="space-y-4">
+                <input type="hidden" id="edit-component-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Component
+                    </label>
+                    <p id="edit-component-name" class="text-gray-900 dark:text-gray-100 font-medium"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Quantity in Stock
+                    </label>
+                    <input type="number" id="edit-component-qty" min="0" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Price per Unit (€)
+                    </label>
+                    <input type="number" id="edit-component-price" step="0.0001" min="0"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeEditComponentModal()"
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

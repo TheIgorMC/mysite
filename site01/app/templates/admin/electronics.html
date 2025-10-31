@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Electronics Management - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-microchip mr-3 text-blue-600"></i>Electronics Management
+                    </h1>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400">
+                        Manage components, boards, BOMs, production jobs, and files
+                    </p>
+                </div>
+                <a href="{{ url_for('main.admin') }}" 
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Admin
+                </a>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700">
+                <nav class="flex -mb-px overflow-x-auto" role="tablist">
+                    <button onclick="switchTab('components')" 
+                            id="tab-components"
+                            class="tab-button active whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-box mr-2"></i>Components
+                    </button>
+                    <button onclick="switchTab('boards')" 
+                            id="tab-boards"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-microchip mr-2"></i>Boards & BOMs
+                    </button>
+                    <button onclick="switchTab('jobs')" 
+                            id="tab-jobs"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-industry mr-2"></i>Production Jobs
+                    </button>
+                    <button onclick="switchTab('files')" 
+                            id="tab-files"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>File Manager
+                    </button>
+                    <button onclick="switchTab('stock')" 
+                            id="tab-stock"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>Stock Overview
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content Panels -->
+            <div class="p-6">
+                
+                <!-- Components Tab -->
+                <div id="panel-components" class="tab-panel">
+                    {% include 'admin/electronics/components_tab.html' %}
+                </div>
+
+                <!-- Boards Tab -->
+                <div id="panel-boards" class="tab-panel hidden">
+                    {% include 'admin/electronics/boards_tab.html' %}
+                </div>
+
+                <!-- Jobs Tab -->
+                <div id="panel-jobs" class="tab-panel hidden">
+                    {% include 'admin/electronics/jobs_tab.html' %}
+                </div>
+
+                <!-- Files Tab -->
+                <div id="panel-files" class="tab-panel hidden">
+                    {% include 'admin/electronics/files_tab.html' %}
+                </div>
+
+                <!-- Stock Tab -->
+                <div id="panel-stock" class="tab-panel hidden">
+                    {% include 'admin/electronics/stock_tab.html' %}
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Pass storage URL to JavaScript -->
+<script>
+    window.ELECTRONICS_STORAGE_URL = "{{ storage_url }}";
+    window.ADMIN_ELECTRONICS_BASE = "{{ url_for('electronics_admin.index') }}";
+</script>
+
+<style>
+.tab-button {
+    color: #6B7280;
+    border-color: transparent;
+}
+
+.tab-button:hover {
+    color: #3B82F6;
+    border-color: #E5E7EB;
+}
+
+.tab-button.active {
+    color: #2563EB;
+    border-color: #2563EB;
+}
+
+.dark .tab-button {
+    color: #9CA3AF;
+}
+
+.dark .tab-button:hover {
+    color: #60A5FA;
+    border-color: #374151;
+}
+
+.dark .tab-button.active {
+    color: #3B82F6;
+    border-color: #3B82F6;
+}
+</style>
+
+<script src="{{ url_for('static', filename='js/electronics_admin.js') }}"></script>
+{% endblock %}

@@ -41,6 +41,9 @@ class Config:
     GITHUB_URL = "https://github.com/TheIgorMC"
     FITARCO_URL = "https://www.fitarco-italia.org/arcieri/situazione.php?Codice=93229"
     KOFI_URL = "https://ko-fi.com/theigormc"
+    
+    # Electronics file storage (external nginx server)
+    ELECTRONICS_STORAGE_URL = os.environ.get('ELECTRONICS_STORAGE_URL') or 'https://elec.orion-project.it'
 
 class DevelopmentConfig(Config):
     """Development configuration"""
