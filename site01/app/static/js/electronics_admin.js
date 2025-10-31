@@ -13,19 +13,19 @@ let allFiles = [];
 if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
     console.error('[Electronics] ELECTRONICS_STORAGE_URL is not defined!');
 }
-if (typeof ADMIN_ELECTRONICS_BASE === 'undefined') {
-    console.error('[Electronics] ADMIN_ELECTRONICS_BASE is not defined!');
+if (typeof ELECTRONICS_API_BASE === 'undefined') {
+    console.error('[Electronics] ELECTRONICS_API_BASE is not defined!');
 }
 
 console.log('[Electronics] Script loaded');
 console.log('[Electronics] Storage URL:', typeof ELECTRONICS_STORAGE_URL !== 'undefined' ? ELECTRONICS_STORAGE_URL : 'UNDEFINED');
-console.log('[Electronics] Base URL:', typeof ADMIN_ELECTRONICS_BASE !== 'undefined' ? ADMIN_ELECTRONICS_BASE : 'UNDEFINED');
+console.log('[Electronics] API Base:', typeof ELECTRONICS_API_BASE !== 'undefined' ? ELECTRONICS_API_BASE : 'UNDEFINED');
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Electronics] Page loaded');
     console.log('[Electronics] Storage URL:', window.ELECTRONICS_STORAGE_URL);
-    console.log('[Electronics] Base URL:', window.ADMIN_ELECTRONICS_BASE);
+    console.log('[Electronics] API Base:', window.ELECTRONICS_API_BASE);
     
     // Load initial data based on active tab
     const activeTab = document.querySelector('.tab-button.active');
@@ -91,7 +91,7 @@ function switchTab(tabName) {
 async function loadComponents() {
     console.log('[Components] Loading...');
     try {
-        const url = `${ADMIN_ELECTRONICS_BASE}/api/components`;
+        const url = `${ELECTRONICS_API_BASE}/components`;
         console.log('[Components] Fetching from:', url);
         
         const response = await fetch(url);
@@ -135,7 +135,7 @@ async function searchComponents() {
     const pkg = document.getElementById('component-package-filter').value;
     
     try {
-        let url = `${ADMIN_ELECTRONICS_BASE}/api/components/search?`;
+        let url = `${ELECTRONICS_API_BASE}/components/search?`;
         if (search) url += `search=${encodeURIComponent(search)}&`;
         if (type) url += `product_type=${encodeURIComponent(type)}&`;
         if (pkg) url += `package=${encodeURIComponent(pkg)}`;
@@ -221,7 +221,7 @@ document.getElementById('add-component-form')?.addEventListener('submit', async 
     const data = Object.fromEntries(formData);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/components`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -265,7 +265,7 @@ document.getElementById('edit-component-form')?.addEventListener('submit', async
     const price = parseFloat(document.getElementById('edit-component-price').value);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/components/${id}`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components/${id}`, {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({qty_left: qty, price: price})
@@ -288,7 +288,7 @@ async function deleteComponent(id) {
     if (!confirm('Are you sure you want to delete this component?')) return;
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/components/${id}`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components/${id}`, {
             method: 'DELETE'
         });
         
@@ -308,7 +308,7 @@ async function deleteComponent(id) {
 
 async function loadBoards() {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/boards`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards`);
         const data = await response.json();
         allBoards = data.boards || [];
         renderBoardsGrid(allBoards);
@@ -366,7 +366,7 @@ document.getElementById('add-board-form')?.addEventListener('submit', async func
     const data = Object.fromEntries(formData);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/boards`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -432,7 +432,7 @@ function switchBoardTab(tabName) {
 
 async function loadBoardBOM(boardId) {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/boards/${boardId}/bom`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`);
         const data = await response.json();
         
         const tbody = document.getElementById('board-bom-table');
@@ -458,7 +458,7 @@ async function loadBoardBOM(boardId) {
 
 async function loadBoardFiles(boardId) {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/files?board_id=${boardId}`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/files?board_id=${boardId}`);
         const data = await response.json();
         
         const container = document.getElementById('board-files-list');
@@ -518,7 +518,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
     const csvData = document.getElementById('bom-csv-data').value;
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/boards/${boardId}/bom/upload`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom/upload`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({bom_data: csvData})
@@ -539,7 +539,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
 
 async function exportBOM() {
     try {
-        window.open(`${ADMIN_ELECTRONICS_BASE}/api/boards/${currentBoardId}/bom/export`, '_blank');
+        window.open(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom/export`, '_blank');
     } catch (error) {
         console.error('Error exporting BOM:', error);
         showToast('Failed to export BOM', 'error');
@@ -550,7 +550,7 @@ async function exportBOM() {
 
 async function loadJobs() {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs`);
         const data = await response.json();
         allJobs = data.jobs || [];
         renderJobsGrid(allJobs);
@@ -615,7 +615,7 @@ document.getElementById('create-job-form')?.addEventListener('submit', async fun
     const data = Object.fromEntries(formData);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -660,7 +660,7 @@ function closeJobDetailsModal() {
 
 async function loadJobBoards(jobId) {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs/${jobId}`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${jobId}`);
         const data = await response.json();
         
         const container = document.getElementById('job-boards-list');
@@ -712,7 +712,7 @@ document.getElementById('add-board-to-job-form')?.addEventListener('submit', asy
     const quantity = parseInt(document.getElementById('board-quantity').value);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs/${jobId}/boards`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${jobId}/boards`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({board_id: boardId, quantity})
@@ -733,7 +733,7 @@ document.getElementById('add-board-to-job-form')?.addEventListener('submit', asy
 
 async function checkJobStock() {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs/${currentJobId}/check_stock`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/check_stock`);
         const data = await response.json();
         
         document.getElementById('stock-check-results').classList.remove('hidden');
@@ -769,7 +769,7 @@ async function reserveStock() {
     if (!confirm('Reserve stock for this job? This will deduct from available inventory.')) return;
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/jobs/${currentJobId}/reserve_stock`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/reserve_stock`, {
             method: 'POST'
         });
         
@@ -787,7 +787,7 @@ async function reserveStock() {
 
 async function generateMissingBOM() {
     try {
-        window.open(`${ADMIN_ELECTRONICS_BASE}/api/jobs/${currentJobId}/missing_bom`, '_blank');
+        window.open(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/missing_bom`, '_blank');
     } catch (error) {
         console.error('Error generating missing BOM:', error);
         showToast('Failed to generate shopping list', 'error');
@@ -801,7 +801,7 @@ async function loadFiles() {
         const boardFilter = document.getElementById('files-board-filter')?.value || '';
         const typeFilter = document.getElementById('files-type-filter')?.value || '';
         
-        let url = `${ADMIN_ELECTRONICS_BASE}/api/files?`;
+        let url = `${ELECTRONICS_API_BASE}/files?`;
         if (boardFilter) url += `board_id=${boardFilter}&`;
         if (typeFilter) url += `file_type=${typeFilter}`;
         
@@ -882,7 +882,7 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
     const data = Object.fromEntries(formData);
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/files/register`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/files/register`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -977,7 +977,7 @@ async function confirmDeleteFile() {
     if (!confirm('Are you sure you want to delete this file registration?')) return;
     
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/files/${currentFileId}`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/files/${currentFileId}`, {
             method: 'DELETE'
         });
         
@@ -998,7 +998,7 @@ async function confirmDeleteFile() {
 
 async function loadStockOverview() {
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/components`);
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components`);
         const data = await response.json();
         allComponents = data.components || [];
         

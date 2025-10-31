@@ -98,8 +98,8 @@
 <!-- Pass storage URL to JavaScript -->
 <script>
     window.ELECTRONICS_STORAGE_URL = "{{ storage_url }}";
-    // Use relative path to avoid mixed content issues
-    window.ADMIN_ELECTRONICS_BASE = "/admin/electronics";
+    // Call API directly like other admin pages
+    window.ELECTRONICS_API_BASE = "/api/elec";
 </script>
 
 <style>
