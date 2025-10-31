@@ -445,7 +445,7 @@ def api_proxy_delete_component(component_id):
 @login_required
 def api_proxy_get_boards():
     """Proxy: Get boards list"""
-    result = api_request('/api/elec/boards')
+    result = api_request('/api/elec/boards', params=request.args.to_dict())
     return jsonify(result) if result else (jsonify({'error': 'Failed to fetch boards'}), 500)
 
 @api_bp.route('/boards', methods=['POST'])

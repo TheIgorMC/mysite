@@ -27,6 +27,17 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('[Electronics] Storage URL:', window.ELECTRONICS_STORAGE_URL);
     console.log('[Electronics] API Base:', window.ELECTRONICS_API_BASE);
     
+    // Add Enter key support for component search
+    const componentSearchInput = document.getElementById('component-search');
+    if (componentSearchInput) {
+        componentSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchComponents();
+            }
+        });
+    }
+    
     // Load initial data based on active tab
     const activeTab = document.querySelector('.tab-button.active');
     if (activeTab) {
@@ -187,34 +198,52 @@ function renderComponentsTable(components) {
         return;
     }
     
-    tbody.innerHTML = components.map(comp => `
+    tbody.innerHTML = components.map(comp => {
+        // Debug first component
+        if (comp.id === components[0].id) {
+            console.log('[Component Render] Sample component fields:', {
+                id: comp.id,
+                seller: comp.seller,
+                seller_code: comp.seller_code,
+                supplier: comp.supplier,
+                supplier_code: comp.supplier_code,
+                allFields: Object.keys(comp)
+            });
+        }
+        
+        return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.manufacturer_code || comp.mpn || comp.value || '-'}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                ${comp.seller || comp.supplier || '-'}<br>
-                <span class="text-xs text-gray-500">${comp.seller_code || comp.supplier_code || ''}</span>
+            <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
+            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate" title="${comp.manufacturer_code || comp.mpn || comp.value || '-'}">${comp.manufacturer_code || comp.mpn || comp.value || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
+                <div class="max-w-xs">
+                    <div class="font-medium">${comp.seller || comp.supplier || '-'}</div>
+                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code || comp.supplier_code || ''}">${comp.seller_code || comp.supplier_code || '-'}</div>
+                </div>
             </td>
-            <td class="px-4 py-3 text-sm">
+            <td class="px-3 py-3 text-sm">
                 ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty)}
             </td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                 €${(comp.price !== undefined ? comp.price : comp.unit_price || 0).toFixed(4)}
             </td>
-            <td class="px-4 py-3 text-sm text-right">
+            <td class="px-3 py-3 text-sm text-right whitespace-nowrap">
                 <button onclick="editComponent(${comp.id})" 
-                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                        title="Edit component">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button onclick="deleteComponent(${comp.id})" 
-                        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        title="Delete component">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function getStockBadge(qty) {
@@ -264,13 +293,18 @@ document.getElementById('add-component-form')?.addEventListener('submit', async 
 });
 
 function editComponent(id) {
-    const comp = allComponents.find(c => c.id === id);
+    const comp = allComponents.find(c => c.id == id);
     if (!comp) return;
     
+    // Use correct field names from API
+    const displayName = `${comp.product_type || comp.category || 'Component'} ${comp.manufacturer_code || comp.mpn || comp.value || ''} (${comp.package || 'N/A'})`;
+    const currentQty = comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0);
+    const currentPrice = comp.price !== undefined ? comp.price : (comp.unit_price || 0);
+    
     document.getElementById('edit-component-id').value = id;
-    document.getElementById('edit-component-name').textContent = `${comp.product_type} ${comp.value} (${comp.package})`;
-    document.getElementById('edit-component-qty').value = comp.qty_left;
-    document.getElementById('edit-component-price').value = comp.price || 0;
+    document.getElementById('edit-component-name').textContent = displayName;
+    document.getElementById('edit-component-qty').value = currentQty;
+    document.getElementById('edit-component-price').value = currentPrice;
     
     document.getElementById('edit-component-modal').classList.remove('hidden');
     document.getElementById('edit-component-modal').classList.add('flex');
@@ -291,7 +325,12 @@ document.getElementById('edit-component-form')?.addEventListener('submit', async
         const response = await fetch(`${ELECTRONICS_API_BASE}/components/${id}`, {
             method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({qty_left: qty, price: price})
+            body: JSON.stringify({
+                qty_left: qty, 
+                stock_qty: qty,
+                price: price,
+                unit_price: price
+            })
         });
         
         if (response.ok) {
@@ -299,6 +338,8 @@ document.getElementById('edit-component-form')?.addEventListener('submit', async
             closeEditComponentModal();
             loadComponents();
         } else {
+            const errorText = await response.text();
+            console.error('[Edit Component] Error:', errorText);
             throw new Error('Failed to update component');
         }
     } catch (error) {
@@ -336,8 +377,21 @@ async function loadBoards() {
         
         while (true) {
             const response = await fetch(`${ELECTRONICS_API_BASE}/boards?limit=${limit}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
             const data = await response.json();
-            const count = Array.isArray(data) ? data.length : 0;
+            
+            // Ensure it's an array
+            if (!Array.isArray(data)) {
+                console.error('[Boards] Expected array, got:', typeof data);
+                allBoards = [];
+                break;
+            }
+            
+            const count = data.length;
             
             // API returns array directly
             if (count < limit) {
