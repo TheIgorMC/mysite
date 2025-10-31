@@ -9,6 +9,9 @@ from functools import wraps
 
 bp = Blueprint('electronics_admin', __name__, url_prefix='/admin/electronics')
 
+# Also register API proxy routes under /electronics/api/ (like /archery/api/)
+api_bp = Blueprint('electronics_api', __name__, url_prefix='/electronics/api')
+
 def admin_required(f):
     """Decorator to ensure user is admin"""
     @wraps(f)
@@ -397,3 +400,148 @@ def export_bom():
     except requests.exceptions.RequestException as e:
         current_app.logger.error(f"BOM export failed: {e}")
         return jsonify({'error': 'Failed to export BOM'}), 500
+
+# ============================================================================
+# PUBLIC API PROXY ROUTES (like /archery/api/)
+# These routes proxy to the external API and are used by the frontend JavaScript
+# ============================================================================
+
+@api_bp.route('/components', methods=['GET'])
+@login_required
+def api_proxy_get_components():
+    """Proxy: Get components list"""
+    result = api_request('/api/elec/components', params=request.args.to_dict())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch components'}), 500)
+
+@api_bp.route('/components/search', methods=['GET'])
+@login_required
+def api_proxy_search_components():
+    """Proxy: Smart component search"""
+    result = api_request('/api/elec/components/search', params=request.args.to_dict())
+    return jsonify(result) if result else (jsonify({'error': 'Search failed'}), 500)
+
+@api_bp.route('/components', methods=['POST'])
+@login_required
+def api_proxy_create_component():
+    """Proxy: Create component"""
+    result = api_request('/api/elec/components', method='POST', data=request.get_json())
+    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create component'}), 500)
+
+@api_bp.route('/components/<component_id>', methods=['PATCH'])
+@login_required
+def api_proxy_update_component(component_id):
+    """Proxy: Update component"""
+    result = api_request(f'/api/elec/components/{component_id}', method='PATCH', data=request.get_json())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to update component'}), 500)
+
+@api_bp.route('/components/<component_id>', methods=['DELETE'])
+@login_required
+def api_proxy_delete_component(component_id):
+    """Proxy: Delete component"""
+    result = api_request(f'/api/elec/components/{component_id}', method='DELETE')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to delete component'}), 500)
+
+@api_bp.route('/boards', methods=['GET'])
+@login_required
+def api_proxy_get_boards():
+    """Proxy: Get boards list"""
+    result = api_request('/api/elec/boards')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch boards'}), 500)
+
+@api_bp.route('/boards', methods=['POST'])
+@login_required
+def api_proxy_create_board():
+    """Proxy: Create board"""
+    result = api_request('/api/elec/boards', method='POST', data=request.get_json())
+    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create board'}), 500)
+
+@api_bp.route('/boards/<board_id>', methods=['GET'])
+@login_required
+def api_proxy_get_board(board_id):
+    """Proxy: Get board details"""
+    result = api_request(f'/api/elec/boards/{board_id}')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch board'}), 500)
+
+@api_bp.route('/boards/<board_id>/bom', methods=['GET'])
+@login_required
+def api_proxy_get_board_bom(board_id):
+    """Proxy: Get board BOM"""
+    result = api_request(f'/api/elec/boards/{board_id}/bom')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch BOM'}), 500)
+
+@api_bp.route('/boards/<board_id>/bom/upload', methods=['POST'])
+@login_required
+def api_proxy_upload_bom(board_id):
+    """Proxy: Upload BOM CSV"""
+    result = api_request(f'/api/elec/boards/{board_id}/bom/upload', method='POST', data=request.get_json())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to upload BOM'}), 500)
+
+@api_bp.route('/jobs', methods=['GET'])
+@login_required
+def api_proxy_get_jobs():
+    """Proxy: Get jobs list"""
+    result = api_request('/api/elec/jobs')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch jobs'}), 500)
+
+@api_bp.route('/jobs', methods=['POST'])
+@login_required
+def api_proxy_create_job():
+    """Proxy: Create job"""
+    result = api_request('/api/elec/jobs', method='POST', data=request.get_json())
+    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create job'}), 500)
+
+@api_bp.route('/jobs/<job_id>', methods=['GET'])
+@login_required
+def api_proxy_get_job(job_id):
+    """Proxy: Get job details"""
+    result = api_request(f'/api/elec/jobs/{job_id}')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch job'}), 500)
+
+@api_bp.route('/jobs/<job_id>/boards', methods=['POST'])
+@login_required
+def api_proxy_add_board_to_job(job_id):
+    """Proxy: Add board to job"""
+    result = api_request(f'/api/elec/jobs/{job_id}/boards', method='POST', data=request.get_json())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to add board'}), 500)
+
+@api_bp.route('/jobs/<job_id>/check_stock', methods=['GET'])
+@login_required
+def api_proxy_check_job_stock(job_id):
+    """Proxy: Check stock for job"""
+    result = api_request(f'/api/elec/jobs/{job_id}/check_stock')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to check stock'}), 500)
+
+@api_bp.route('/jobs/<job_id>/reserve_stock', methods=['POST'])
+@login_required
+def api_proxy_reserve_stock(job_id):
+    """Proxy: Reserve stock for job"""
+    result = api_request(f'/api/elec/jobs/{job_id}/reserve_stock', method='POST')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to reserve stock'}), 500)
+
+@api_bp.route('/jobs/<job_id>/missing_bom', methods=['GET'])
+@login_required
+def api_proxy_missing_bom(job_id):
+    """Proxy: Get missing components BOM"""
+    result = api_request(f'/api/elec/jobs/{job_id}/missing_bom')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to generate BOM'}), 500)
+
+@api_bp.route('/files', methods=['GET'])
+@login_required
+def api_proxy_get_files():
+    """Proxy: Get files list"""
+    result = api_request('/api/elec/files', params=request.args.to_dict())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch files'}), 500)
+
+@api_bp.route('/files/register', methods=['POST'])
+@login_required
+def api_proxy_register_file():
+    """Proxy: Register file"""
+    result = api_request('/api/elec/files', method='POST', data=request.get_json())
+    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to register file'}), 500)
+
+@api_bp.route('/files/<file_id>', methods=['DELETE'])
+@login_required
+def api_proxy_delete_file(file_id):
+    """Proxy: Delete file"""
+    result = api_request(f'/api/elec/files/{file_id}', method='DELETE')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to delete file'}), 500)

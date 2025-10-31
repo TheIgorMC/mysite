@@ -60,6 +60,7 @@ def create_app(config_name='default'):
     app.register_blueprint(api_routes.bp)
     app.register_blueprint(api.bp)  # Website-level API (authorized athletes, etc.)
     app.register_blueprint(electronics_admin.bp)  # Electronics admin portal
+    app.register_blueprint(electronics_admin.api_bp)  # Electronics API proxy (like /archery/api/)
     
     # Register template utilities
     from app.template_utils import register_template_utilities
