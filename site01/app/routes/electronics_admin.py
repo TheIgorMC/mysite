@@ -36,6 +36,12 @@ def api_request(endpoint, method='GET', data=None, params=None):
     api_base = current_app.config['API_BASE_URL']
     url = f"{api_base}{endpoint}"
     
+    current_app.logger.info(f"[Electronics API] {method} {url}")
+    if params:
+        current_app.logger.info(f"[Electronics API] Params: {params}")
+    if data:
+        current_app.logger.info(f"[Electronics API] Data: {data}")
+    
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -47,6 +53,9 @@ def api_request(endpoint, method='GET', data=None, params=None):
     if cf_id and cf_secret:
         headers['CF-Access-Client-Id'] = cf_id
         headers['CF-Access-Client-Secret'] = cf_secret
+        current_app.logger.info(f"[Electronics API] Using CF Access authentication")
+    else:
+        current_app.logger.warning(f"[Electronics API] No CF Access credentials configured")
     
     try:
         if method == 'GET':
@@ -58,12 +67,20 @@ def api_request(endpoint, method='GET', data=None, params=None):
         elif method == 'DELETE':
             response = requests.delete(url, headers=headers, timeout=10)
         else:
+            current_app.logger.error(f"[Electronics API] Invalid method: {method}")
             return None
         
+        current_app.logger.info(f"[Electronics API] Response status: {response.status_code}")
+        
+        if response.status_code >= 400:
+            current_app.logger.error(f"[Electronics API] Error response: {response.text}")
+        
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        current_app.logger.info(f"[Electronics API] Success: {len(str(result))} bytes")
+        return result
     except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"API request failed: {e}")
+        current_app.logger.error(f"[Electronics API] Request failed: {str(e)}")
         return None
 
 @bp.route('/')
@@ -81,6 +98,8 @@ def index():
 @admin_required
 def get_components():
     """Get components list with optional filters"""
+    current_app.logger.info("[Electronics] get_components called")
+    
     params = {
         'q': request.args.get('q', ''),
         'product_type': request.args.get('product_type', ''),
@@ -91,9 +110,14 @@ def get_components():
     # Remove empty params
     params = {k: v for k, v in params.items() if v}
     
+    current_app.logger.info(f"[Electronics] Calling API with params: {params}")
     result = api_request('/api/elec/components', params=params)
+    
     if result is not None:
+        current_app.logger.info(f"[Electronics] Returning {len(result.get('components', []))} components")
         return jsonify(result)
+    
+    current_app.logger.error("[Electronics] API request failed, returning error")
     return jsonify({'error': 'Failed to fetch components'}), 500
 
 @bp.route('/api/components/search', methods=['GET'])

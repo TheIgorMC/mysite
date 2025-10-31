@@ -9,17 +9,38 @@ let allBoards = [];
 let allJobs = [];
 let allFiles = [];
 
+// Check for required variables
+if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
+    console.error('[Electronics] ELECTRONICS_STORAGE_URL is not defined!');
+}
+if (typeof ADMIN_ELECTRONICS_BASE === 'undefined') {
+    console.error('[Electronics] ADMIN_ELECTRONICS_BASE is not defined!');
+}
+
+console.log('[Electronics] Script loaded');
+console.log('[Electronics] Storage URL:', typeof ELECTRONICS_STORAGE_URL !== 'undefined' ? ELECTRONICS_STORAGE_URL : 'UNDEFINED');
+console.log('[Electronics] Base URL:', typeof ADMIN_ELECTRONICS_BASE !== 'undefined' ? ADMIN_ELECTRONICS_BASE : 'UNDEFINED');
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Electronics] Page loaded');
+    console.log('[Electronics] Storage URL:', window.ELECTRONICS_STORAGE_URL);
+    console.log('[Electronics] Base URL:', window.ADMIN_ELECTRONICS_BASE);
+    
     // Load initial data based on active tab
     const activeTab = document.querySelector('.tab-button.active');
     if (activeTab) {
+        console.log('[Electronics] Active tab:', activeTab.dataset.tab);
         switchTab(activeTab.dataset.tab);
+    } else {
+        console.log('[Electronics] No active tab found, defaulting to components');
+        switchTab('components');
     }
 });
 
 // Tab Switching
 function switchTab(tabName) {
+    console.log('[Electronics] Switching to tab:', tabName);
     currentTab = tabName;
     
     // Update tab buttons
@@ -35,10 +56,15 @@ function switchTab(tabName) {
     
     // Update tab panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
-        panel.classList.toggle('hidden', panel.dataset.tab !== tabName);
+        const shouldShow = panel.id === `panel-${tabName}`;
+        panel.classList.toggle('hidden', !shouldShow);
+        if (shouldShow) {
+            console.log('[Electronics] Showing panel:', panel.id);
+        }
     });
     
     // Load data for the active tab
+    console.log('[Electronics] Loading data for:', tabName);
     switch(tabName) {
         case 'components':
             loadComponents();
@@ -55,20 +81,51 @@ function switchTab(tabName) {
         case 'stock':
             loadStockOverview();
             break;
+        default:
+            console.error('[Electronics] Unknown tab:', tabName);
     }
 }
 
 // ===== COMPONENTS TAB =====
 
 async function loadComponents() {
+    console.log('[Components] Loading...');
     try {
-        const response = await fetch(`${ADMIN_ELECTRONICS_BASE}/api/components`);
+        const url = `${ADMIN_ELECTRONICS_BASE}/api/components`;
+        console.log('[Components] Fetching from:', url);
+        
+        const response = await fetch(url);
+        console.log('[Components] Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[Components] Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
         const data = await response.json();
+        console.log('[Components] Received data:', data);
+        
         allComponents = data.components || [];
+        console.log('[Components] Component count:', allComponents.length);
+        
         renderComponentsTable(allComponents);
     } catch (error) {
-        console.error('Error loading components:', error);
-        showToast('Failed to load components', 'error');
+        console.error('[Components] Error loading:', error);
+        showToast('Failed to load components: ' + error.message, 'error');
+        
+        // Show error in table
+        const tbody = document.getElementById('components-table-body');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="px-4 py-8 text-center text-red-600 dark:text-red-400">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error: ${error.message}</p>
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
