@@ -91,23 +91,42 @@ function switchTab(tabName) {
 async function loadComponents() {
     console.log('[Components] Loading...');
     try {
-        const url = `${ELECTRONICS_API_BASE}/components`;
-        console.log('[Components] Fetching from:', url);
+        // Smart pagination - fetch until we get less than requested
+        let allData = [];
+        let offset = 0;
+        let batchSize = 100;
+        let hasMore = true;
         
-        const response = await fetch(url);
-        console.log('[Components] Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[Components] Error response:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        while (hasMore) {
+            const url = `${ELECTRONICS_API_BASE}/components?limit=${batchSize}&offset=${offset}`;
+            console.log(`[Components] Fetching batch from: ${url}`);
+            
+            const response = await fetch(url);
+            console.log('[Components] Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[Components] Error response:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const batch = await response.json();
+            console.log(`[Components] Received batch of ${Array.isArray(batch) ? batch.length : 0} items`);
+            
+            // API returns array directly, not wrapped in object
+            if (Array.isArray(batch) && batch.length > 0) {
+                allData = allData.concat(batch);
+                offset += batch.length;
+                
+                // If we got fewer items than requested, we've reached the end
+                hasMore = batch.length === batchSize;
+            } else {
+                hasMore = false;
+            }
         }
         
-        const data = await response.json();
-        console.log('[Components] Received data:', data);
-        
-        allComponents = data.components || [];
-        console.log('[Components] Component count:', allComponents.length);
+        console.log('[Components] Total components loaded:', allData.length);
+        allComponents = allData;
         
         renderComponentsTable(allComponents);
     } catch (error) {
@@ -166,19 +185,19 @@ function renderComponentsTable(components) {
     
     tbody.innerHTML = components.map(comp => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value}</td>
-            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package}</td>
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.manufacturer_code || comp.mpn || comp.value || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                ${comp.seller || '-'}<br>
-                <span class="text-xs text-gray-500">${comp.seller_code || ''}</span>
+                ${comp.seller || comp.supplier || '-'}<br>
+                <span class="text-xs text-gray-500">${comp.seller_code || comp.supplier_code || ''}</span>
             </td>
             <td class="px-4 py-3 text-sm">
-                ${getStockBadge(comp.qty_left)}
+                ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty)}
             </td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                €${(comp.price || 0).toFixed(4)}
+                €${(comp.price !== undefined ? comp.price : comp.unit_price || 0).toFixed(4)}
             </td>
             <td class="px-4 py-3 text-sm text-right">
                 <button onclick="editComponent(${comp.id})" 
@@ -308,9 +327,27 @@ async function deleteComponent(id) {
 
 async function loadBoards() {
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/boards`);
-        const data = await response.json();
-        allBoards = data.boards || [];
+        // Smart pagination
+        let allData = [];
+        let offset = 0;
+        let batchSize = 100;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/boards?limit=${batchSize}&offset=${offset}`);
+            const batch = await response.json();
+            
+            // API returns array directly
+            if (Array.isArray(batch) && batch.length > 0) {
+                allData = allData.concat(batch);
+                offset += batch.length;
+                hasMore = batch.length === batchSize;
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        allBoards = allData;
         renderBoardsGrid(allBoards);
     } catch (error) {
         console.error('Error loading boards:', error);
@@ -550,9 +587,27 @@ async function exportBOM() {
 
 async function loadJobs() {
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs`);
-        const data = await response.json();
-        allJobs = data.jobs || [];
+        // Smart pagination
+        let allData = [];
+        let offset = 0;
+        let batchSize = 100;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=${batchSize}&offset=${offset}`);
+            const batch = await response.json();
+            
+            // API returns array directly
+            if (Array.isArray(batch) && batch.length > 0) {
+                allData = allData.concat(batch);
+                offset += batch.length;
+                hasMore = batch.length === batchSize;
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        allJobs = allData;
         renderJobsGrid(allJobs);
     } catch (error) {
         console.error('Error loading jobs:', error);
@@ -799,15 +854,50 @@ async function generateMissingBOM() {
 async function loadFiles() {
     try {
         const boardFilter = document.getElementById('files-board-filter')?.value || '';
-        const typeFilter = document.getElementById('files-type-filter')?.value || '';
+        const categoryFilter = document.getElementById('files-type-filter')?.value || '';
         
-        let url = `${ELECTRONICS_API_BASE}/files?`;
-        if (boardFilter) url += `board_id=${boardFilter}&`;
-        if (typeFilter) url += `file_type=${typeFilter}`;
+        // Smart pagination
+        let allData = [];
+        let offset = 0;
+        let batchSize = 100;
+        let hasMore = true;
         
-        const response = await fetch(url);
-        const data = await response.json();
-        allFiles = data.files || [];
+        while (hasMore) {
+            let url = `${ELECTRONICS_API_BASE}/files?limit=${batchSize}&offset=${offset}`;
+            if (boardFilter) url += `&board_id=${boardFilter}`;
+            if (categoryFilter) url += `&category=${categoryFilter}`;
+            
+            const response = await fetch(url);
+            
+            // If files endpoint doesn't exist (404), show message and stop
+            if (response.status === 404) {
+                console.warn('[Files] Files endpoint not available in API');
+                const grid = document.getElementById('files-grid');
+                if (grid) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-info-circle text-4xl text-blue-500 dark:text-blue-400 mb-3"></i>
+                            <p class="text-gray-600 dark:text-gray-400 mb-2">File management not yet available</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500">The files API endpoint is not configured</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            const batch = await response.json();
+            
+            // API returns array directly
+            if (Array.isArray(batch) && batch.length > 0) {
+                allData = allData.concat(batch);
+                offset += batch.length;
+                hasMore = batch.length === batchSize;
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        allFiles = allData;
         renderFilesGrid(allFiles);
         
         // Populate board filter if empty
