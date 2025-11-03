@@ -348,7 +348,7 @@ function renderInterest() {
             ${subscriptionDatesHtml}`;
         
         const interestHtml = interests.map(sub => `
-            <tr class="border-b border-gray-200 dark:border-gray-700">
+            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-4 py-3">
                     <input type="checkbox" 
                            class="interest-checkbox w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -360,6 +360,13 @@ function renderInterest() {
                 <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
                 <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
                 <td class="px-4 py-3 text-sm">${sub.note || '-'}</td>
+                <td class="px-4 py-3 text-right">
+                    <button onclick="deleteInterest(${sub.id})" 
+                            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                            title="Elimina espressione di interesse">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
         
@@ -390,6 +397,7 @@ function renderInterest() {
                                 <th class="px-4 py-2">Categoria</th>
                                 <th class="px-4 py-2">Classe</th>
                                 <th class="px-4 py-2">Note</th>
+                                <th class="px-4 py-2 text-right">Azioni</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-900 dark:text-gray-300">
@@ -410,6 +418,45 @@ function toggleAllInterests(codiceGara, checked) {
     document.querySelectorAll(`.interest-checkbox[data-competition-code="${codiceGara}"]`).forEach(checkbox => {
         checkbox.checked = checked;
     });
+}
+
+async function deleteInterest(interestId) {
+    const interest = allInterests.find(i => i.id === interestId);
+    
+    if (!interest) {
+        alert('Espressione di interesse non trovata');
+        return;
+    }
+    
+    const athleteName = interest.nome_atleta || interest.tessera_atleta;
+    
+    if (!confirm(`Confermi l'eliminazione dell'espressione di interesse di ${athleteName}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/archery/api/interesse/${interestId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            // Remove from local array
+            const index = allInterests.findIndex(i => i.id === interestId);
+            if (index !== -1) {
+                allInterests.splice(index, 1);
+            }
+            
+            // Re-render
+            renderInterest();
+            showNotification('Espressione di interesse eliminata con successo', 'success');
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Errore durante l\'eliminazione');
+        }
+    } catch (error) {
+        console.error('Error deleting interest:', error);
+        showNotification('Errore durante l\'eliminazione: ' + error.message, 'error');
+    }
 }
 
 async function convertSelectedInterests(codiceGara) {
