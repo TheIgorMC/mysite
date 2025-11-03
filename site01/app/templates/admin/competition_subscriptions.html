@@ -349,6 +349,12 @@ function renderInterest() {
         
         const interestHtml = interests.map(sub => `
             <tr class="border-b border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-3">
+                    <input type="checkbox" 
+                           class="interest-checkbox w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                           data-interest-id="${sub.id}"
+                           data-competition-code="${codiceGara}">
+                </td>
                 <td class="px-4 py-3">${sub.tessera_atleta}</td>
                 <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
                 <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
@@ -360,13 +366,25 @@ function renderInterest() {
         competitionCard.innerHTML = `
             ${competitionInfo}
             <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> espressioni di interesse
-                </p>
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> espressioni di interesse
+                    </p>
+                    <button onclick="convertSelectedInterests('${codiceGara}')"
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
+                        <i class="fas fa-exchange-alt"></i>
+                        Converti Selezionati
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-yellow-100 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-300">
                             <tr>
+                                <th class="px-4 py-2">
+                                    <input type="checkbox" 
+                                           class="select-all-checkbox w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+                                           onchange="toggleAllInterests('${codiceGara}', this.checked)">
+                                </th>
                                 <th class="px-4 py-2">Tessera</th>
                                 <th class="px-4 py-2">Atleta</th>
                                 <th class="px-4 py-2">Categoria</th>
@@ -388,30 +406,170 @@ function renderInterest() {
     list.classList.remove('hidden');
 }
 
+function toggleAllInterests(codiceGara, checked) {
+    document.querySelectorAll(`.interest-checkbox[data-competition-code="${codiceGara}"]`).forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+}
+
+async function convertSelectedInterests(codiceGara) {
+    const checkboxes = document.querySelectorAll(`.interest-checkbox[data-competition-code="${codiceGara}"]:checked`);
+    
+    if (checkboxes.length === 0) {
+        alert('Seleziona almeno un\'espressione di interesse da convertire');
+        return;
+    }
+    
+    if (!confirm(`Confermi la conversione di ${checkboxes.length} espressioni di interesse in iscrizioni?`)) {
+        return;
+    }
+    
+    const invito = allInviti[codiceGara];
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const checkbox of checkboxes) {
+        const interestId = parseInt(checkbox.dataset.interestId);
+        const interest = allInterests.find(i => i.id === interestId);
+        
+        if (!interest) {
+            errorCount++;
+            continue;
+        }
+        
+        try {
+            // Create subscription
+            const subscriptionData = {
+                codice_gara: interest.codice_gara,
+                tessera_atleta: interest.tessera_atleta,
+                categoria: interest.categoria,
+                classe: interest.classe || '',
+                turno: invito?.turno_default || 1,
+                stato: 'confermato',
+                note: interest.note || ''
+            };
+            
+            const createResp = await fetch('/archery/api/iscrizioni', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscriptionData)
+            });
+            
+            if (createResp.ok) {
+                // Delete interest expression
+                const deleteResp = await fetch(`/archery/api/interesse/${interestId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (deleteResp.ok) {
+                    successCount++;
+                    // Remove from local array
+                    const index = allInterests.findIndex(i => i.id === interestId);
+                    if (index !== -1) {
+                        allInterests.splice(index, 1);
+                    }
+                } else {
+                    errorCount++;
+                    console.error(`Failed to delete interest ${interestId}`);
+                }
+            } else {
+                errorCount++;
+                const error = await createResp.json();
+                console.error(`Failed to create subscription for interest ${interestId}:`, error);
+            }
+        } catch (error) {
+            errorCount++;
+            console.error(`Error converting interest ${interestId}:`, error);
+        }
+    }
+    
+    // Show results
+    if (successCount > 0) {
+        alert(`✅ Convertiti con successo: ${successCount}\n${errorCount > 0 ? `⚠️ Errori: ${errorCount}` : ''}`);
+        // Reload data
+        await loadData();
+    } else {
+        alert(`❌ Nessuna conversione riuscita. Errori: ${errorCount}`);
+    }
+}
+
 async function updateSubscriptionStatus(subscriptionId, newStatus) {
     try {
+        // Find the subscription to get its details
+        const sub = allSubscriptions.find(s => s.id === subscriptionId);
+        if (!sub) {
+            throw new Error('Subscription not found');
+        }
+        
+        // Prepare update data with all required fields
+        const updateData = {
+            stato: newStatus,
+            note: sub.note || '',
+            turno: sub.turno,
+            categoria: sub.categoria,
+            classe: sub.classe || ''
+        };
+        
         const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stato: newStatus })
+            body: JSON.stringify(updateData)
         });
         
         if (response.ok) {
             // Update local data
-            const sub = allSubscriptions.find(s => s.id === subscriptionId);
-            if (sub) sub.stato = newStatus;
+            sub.stato = newStatus;
             
             // Show notification
             showNotification('Stato aggiornato con successo', 'success');
             
             // Re-render
             renderSubscriptions();
+            
+            // If subscription is confirmed, check if there's a matching interest to clean up
+            if (newStatus === 'confermato') {
+                await cleanupMatchingInterest(sub);
+            }
         } else {
-            throw new Error('Failed to update status');
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update status');
         }
     } catch (error) {
         console.error('Error updating status:', error);
-        showNotification('Errore durante l\'aggiornamento', 'error');
+        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+}
+
+async function cleanupMatchingInterest(subscription) {
+    // Find matching interest expression
+    const matchingInterest = allInterests.find(int => 
+        int.codice_gara === subscription.codice_gara &&
+        int.tessera_atleta === subscription.tessera_atleta &&
+        int.stato === 'attivo'
+    );
+    
+    if (matchingInterest) {
+        try {
+            const response = await fetch(`/archery/api/interesse/${matchingInterest.id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                console.log(`Cleaned up interest expression ${matchingInterest.id} for athlete ${subscription.tessera_atleta}`);
+                // Remove from local array
+                const index = allInterests.findIndex(i => i.id === matchingInterest.id);
+                if (index !== -1) {
+                    allInterests.splice(index, 1);
+                }
+                // Re-render interest tab if it's active
+                if (currentTab === 'interest') {
+                    renderInterest();
+                }
+            }
+        } catch (error) {
+            console.error('Error cleaning up interest expression:', error);
+            // Don't show error to user - this is a background cleanup
+        }
     }
 }
 

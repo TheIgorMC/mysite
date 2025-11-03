@@ -471,23 +471,33 @@ function renderBoardsGrid(boards) {
         return;
     }
     
-    grid.innerHTML = boards.map(board => `
+    grid.innerHTML = boards.map(board => {
+        // Handle both 'board_name' and 'name' fields
+        const boardName = board.board_name || board.name || 'Unnamed Board';
+        const version = board.version || 'v1.0';
+        const variant = board.variant || '';
+        const description = board.description || '';
+        const bomCount = board.bom_count || 0;
+        const filesCount = board.files_count || 0;
+        
+        return `
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
              onclick="viewBoardDetails(${board.id})">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${board.board_name}</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">${board.version}${board.variant ? ` - ${board.variant}` : ''}</p>
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${boardName}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${version}${variant ? ` - ${variant}` : ''}</p>
                 </div>
                 <i class="fas fa-microchip text-blue-500 text-2xl"></i>
             </div>
-            ${board.description ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${board.description}</p>` : ''}
+            ${description ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${description}</p>` : ''}
             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span><i class="fas fa-list mr-1"></i>${board.bom_count || 0} components</span>
-                <span><i class="fas fa-folder mr-1"></i>${board.files_count || 0} files</span>
+                <span><i class="fas fa-list mr-1"></i>${bomCount} components</span>
+                <span><i class="fas fa-folder mr-1"></i>${filesCount} files</span>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function showAddBoardModal() {
@@ -531,8 +541,13 @@ async function viewBoardDetails(boardId) {
     const board = allBoards.find(b => b.id === boardId);
     if (!board) return;
     
-    document.getElementById('board-detail-name').textContent = board.board_name;
-    document.getElementById('board-detail-version').textContent = `${board.version}${board.variant ? ` - ${board.variant}` : ''}`;
+    // Handle both 'board_name' and 'name' fields
+    const boardName = board.board_name || board.name || 'Unnamed Board';
+    const version = board.version || 'v1.0';
+    const variant = board.variant || '';
+    
+    document.getElementById('board-detail-name').textContent = boardName;
+    document.getElementById('board-detail-version').textContent = `${version}${variant ? ` - ${variant}` : ''}`;
     
     document.getElementById('board-details-modal').classList.remove('hidden');
     document.getElementById('board-details-modal').classList.add('flex');
@@ -698,6 +713,36 @@ async function loadJobs() {
             const response = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=${limit}`);
             
             if (!response.ok) {
+                // If jobs endpoint returns 500 or 404, show appropriate message
+                if (response.status === 404) {
+                    console.warn('[Jobs] Jobs endpoint not available');
+                    const grid = document.getElementById('jobs-grid');
+                    if (grid) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-8">
+                                <i class="fas fa-info-circle text-4xl text-blue-500 dark:text-blue-400 mb-3"></i>
+                                <p class="text-gray-600 dark:text-gray-400 mb-2">Production jobs not yet available</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500">The jobs API endpoint is not configured</p>
+                            </div>
+                        `;
+                    }
+                    allJobs = [];
+                    return;
+                } else if (response.status === 500) {
+                    console.error('[Jobs] Server error loading jobs');
+                    const grid = document.getElementById('jobs-grid');
+                    if (grid) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-8">
+                                <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
+                                <p class="text-gray-600 dark:text-gray-400 mb-2">Server error loading jobs</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500">The jobs API endpoint returned an error</p>
+                            </div>
+                        `;
+                    }
+                    allJobs = [];
+                    return;
+                }
                 throw new Error(`HTTP ${response.status}`);
             }
             
@@ -705,7 +750,7 @@ async function loadJobs() {
             
             // Ensure it's an array
             if (!Array.isArray(data)) {
-                console.error('[Jobs] Expected array, got:', typeof data);
+                console.error('[Jobs] Expected array, got:', typeof data, data);
                 allJobs = [];
                 break;
             }
@@ -730,34 +775,56 @@ async function loadJobs() {
         renderJobsGrid(allJobs);
     } catch (error) {
         console.error('Error loading jobs:', error);
-        showToast('Failed to load jobs', 'error');
+        allJobs = [];
+        const grid = document.getElementById('jobs-grid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
+                    <p class="text-gray-600 dark:text-gray-400">Failed to load jobs</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-500">${error.message}</p>
+                </div>
+            `;
+        }
     }
 }
 
 function renderJobsGrid(jobs) {
     const grid = document.getElementById('jobs-grid');
     
-    if (jobs.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-500">No jobs found</p></div>';
+    if (!grid) {
+        console.error('[Jobs] jobs-grid element not found');
         return;
     }
     
-    grid.innerHTML = jobs.map(job => `
+    if (!jobs || jobs.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-500 dark:text-gray-400">No jobs found</p></div>';
+        return;
+    }
+    
+    grid.innerHTML = jobs.map(job => {
+        const jobName = job.job_name || job.name || 'Unnamed Job';
+        const status = job.status || 'planning';
+        const notes = job.notes || '';
+        const createdAt = job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Unknown date';
+        
+        return `
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
              onclick="viewJobDetails(${job.id})">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${job.job_name}</h4>
-                    ${getStatusBadge(job.status)}
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${jobName}</h4>
+                    ${getStatusBadge(status)}
                 </div>
                 <i class="fas fa-industry text-blue-500 text-2xl"></i>
             </div>
-            ${job.notes ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${job.notes}</p>` : ''}
+            ${notes ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${notes}</p>` : ''}
             <div class="text-xs text-gray-500 dark:text-gray-400">
-                <span><i class="fas fa-calendar mr-1"></i>${new Date(job.created_at).toLocaleDateString()}</span>
+                <span><i class="fas fa-calendar mr-1"></i>${createdAt}</span>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function getStatusBadge(status) {
@@ -998,11 +1065,24 @@ async function loadFiles() {
                         </div>
                     `;
                 }
+                allFiles = [];
                 return;
             }
             
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
             const data = await response.json();
-            const count = Array.isArray(data) ? data.length : 0;
+            
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+                console.error('[Files] Expected array, got:', typeof data);
+                allFiles = [];
+                break;
+            }
+            
+            const count = data.length;
             
             // API returns array directly
             if (count < limit) {
@@ -1022,37 +1102,64 @@ async function loadFiles() {
         renderFilesGrid(allFiles);
         
         // Populate board filter if empty
-        if (!document.getElementById('files-board-filter').innerHTML || document.getElementById('files-board-filter').innerHTML === '<option value="">All Boards</option>') {
-            const boardSelect = document.getElementById('files-board-filter');
+        const boardSelect = document.getElementById('files-board-filter');
+        if (boardSelect && allBoards.length > 0) {
+            const currentValue = boardSelect.value;
             boardSelect.innerHTML = '<option value="">All Boards</option>' + 
-                allBoards.map(board => `<option value="${board.id}">${board.board_name} - ${board.version}</option>`).join('');
+                allBoards.map(board => {
+                    const boardName = board.board_name || board.name || 'Unnamed';
+                    const version = board.version || 'v1.0';
+                    return `<option value="${board.id}">${boardName} - ${version}</option>`;
+                }).join('');
+            boardSelect.value = currentValue;
         }
     } catch (error) {
         console.error('Error loading files:', error);
-        showToast('Failed to load files', 'error');
+        allFiles = [];
+        const grid = document.getElementById('files-grid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
+                    <p class="text-gray-600 dark:text-gray-400">Failed to load files</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-500">${error.message}</p>
+                </div>
+            `;
+        }
     }
 }
 
 function renderFilesGrid(files) {
     const grid = document.getElementById('files-grid');
     
-    if (files.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-500">No files found</p></div>';
+    if (!grid) {
+        console.error('[Files] files-grid element not found');
         return;
     }
     
-    grid.innerHTML = files.map(file => `
+    if (!files || files.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-500 dark:text-gray-400">No files found</p></div>';
+        return;
+    }
+    
+    grid.innerHTML = files.map(file => {
+        const fileType = file.file_type || 'unknown';
+        const displayName = file.display_name || file.filename || file.file_path?.split('/').pop() || 'Unknown File';
+        const boardName = file.board_name || file.board?.name || file.board?.board_name || 'No board';
+        
+        return `
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
              onclick="viewFileDetails(${file.id})">
             <div class="flex items-center justify-between mb-3">
-                <i class="fas ${getFileIcon(file.file_type)} text-4xl text-gray-600 dark:text-gray-400"></i>
-                ${file.file_type === 'ibom' ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Interactive</span>' : ''}
+                <i class="fas ${getFileIcon(fileType)} text-4xl text-gray-600 dark:text-gray-400"></i>
+                ${fileType === 'ibom' ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Interactive</span>' : ''}
             </div>
-            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 truncate">${file.display_name || file.file_path.split('/').pop()}</h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${file.file_type}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-500 truncate">${file.board_name}</p>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 truncate" title="${displayName}">${displayName}</h4>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${fileType}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-500 truncate" title="${boardName}">${boardName}</p>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function getFileIcon(fileType) {

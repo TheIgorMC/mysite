@@ -529,8 +529,15 @@ def api_proxy_upload_bom(board_id):
 @login_required
 def api_proxy_get_jobs():
     """Proxy: Get jobs list"""
-    result = api_request('/api/elec/jobs', params=request.args.to_dict())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch jobs'}), 500)
+    try:
+        result = api_request('/api/elec/jobs', params=request.args.to_dict())
+        if result is None:
+            current_app.logger.error("[Jobs Proxy] API request returned None")
+            return jsonify({'error': 'Failed to fetch jobs - API returned no data'}), 500
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"[Jobs Proxy] Exception: {e}", exc_info=True)
+        return jsonify({'error': f'Failed to fetch jobs: {str(e)}'}), 500
 
 @api_bp.route('/jobs', methods=['POST'])
 @login_required
@@ -610,15 +617,24 @@ def parse_order_file():
         return jsonify({'error': 'No file provided'}), 400
     
     file = request.files['file']
-    supplier = request.form.get('supplier', '').upper()
-    order_date = request.form.get('order_date')
+    supplier = request.form.get('supplier', '')
+    order_date = request.form.get('order_date', '')
     
+    # Validate inputs
     if not file or not supplier or not order_date:
         return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Safely convert supplier to uppercase
+    supplier = str(supplier).strip().upper() if supplier else ''
+    if not supplier:
+        return jsonify({'error': 'Supplier cannot be empty'}), 400
     
     try:
         # Read file content
         file_content = file.read()
+        
+        if not file_content:
+            return jsonify({'error': 'File is empty'}), 400
         
         # Parse based on supplier
         if supplier == 'LCSC':
@@ -640,15 +656,28 @@ def parse_order_file():
             # Try to match by seller_code or manufacturer_code
             matched_comp = None
             
-            # Match by seller code first
-            if item.get('seller_code'):
+            # Match by seller code first (safely)
+            seller_code = item.get('seller_code', '').strip() if item.get('seller_code') else ''
+            if seller_code:
                 matched_comp = next((c for c in all_components 
-                                   if c.get('seller_code', '').lower() == item['seller_code'].lower()), None)
+                                   if str(c.get('seller_code', '')).strip().lower() == seller_code.lower()), None)
+                
+                # Also try 'supplier_code' field
+                if not matched_comp:
+                    matched_comp = next((c for c in all_components 
+                                       if str(c.get('supplier_code', '')).strip().lower() == seller_code.lower()), None)
             
-            # If not found, try manufacturer code
-            if not matched_comp and item.get('manufacturer_code'):
-                matched_comp = next((c for c in all_components 
-                                   if c.get('manufacturer_code', '').lower() == item['manufacturer_code'].lower()), None)
+            # If not found, try manufacturer code (safely)
+            if not matched_comp:
+                mfg_code = item.get('manufacturer_code', '').strip() if item.get('manufacturer_code') else ''
+                if mfg_code:
+                    matched_comp = next((c for c in all_components 
+                                       if str(c.get('manufacturer_code', '')).strip().lower() == mfg_code.lower()), None)
+                    
+                    # Also try 'mpn' field
+                    if not matched_comp:
+                        matched_comp = next((c for c in all_components 
+                                           if str(c.get('mpn', '')).strip().lower() == mfg_code.lower()), None)
             
             if matched_comp:
                 matched.append({
@@ -681,7 +710,7 @@ def parse_order_file():
         })
         
     except Exception as e:
-        current_app.logger.error(f"[Order Parse] Error: {e}")
+        current_app.logger.error(f"[Order Parse] Error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/orders/import', methods=['POST'])

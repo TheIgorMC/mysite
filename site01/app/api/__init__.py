@@ -225,8 +225,22 @@ class OrionAPIClient:
         return self._make_request('DELETE', f'/api/iscrizioni/{subscription_id}')
 
     def update_subscription(self, subscription_id, data):
-        """Update a subscription (iscrizione) by ID"""
-        return self._make_request('PATCH', f'/api/iscrizioni/{subscription_id}', json=data)
+        """Update a subscription (iscrizione) by ID
+        
+        Args:
+            subscription_id: Subscription ID (the 'id' field, not 'codice')
+            data: Dict with fields to update (stato, note, turno, categoria, classe)
+        
+        Example:
+            data = {
+                "stato": "confermato",
+                "note": "Tripla",
+                "turno": 2,
+                "categoria": "OL",
+                "classe": "SM"
+            }
+        """
+        return self._make_request('PATCH', f'/api/iscrizioni/{subscription_id}', data=data)
     
     # Interest expressions (interesse) endpoints
     def get_interests(self, tessera_atleta=None, codice_gara=None):
