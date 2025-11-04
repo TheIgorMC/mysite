@@ -1005,12 +1005,11 @@ function renderCompetitions(competitions) {
             if (interestEditBtn) {
                 interestEditBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // Edit first interest (or show menu if multiple)
+                    // Show selection if multiple interests
                     if (unsubscribedInterests.length === 1) {
                         editUserInterest(unsubscribedInterests[0].id, competition.codice);
                     } else {
-                        // TODO: Show selection menu for multiple interests
-                        editUserInterest(unsubscribedInterests[0].id, competition.codice);
+                        showInterestSelectionForEdit(unsubscribedInterests, competition.codice);
                     }
                 });
             }
@@ -1118,12 +1117,11 @@ function renderCompetitions(competitions) {
             if (editSubscriptionsBtn) {
                 editSubscriptionsBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // Edit first subscription (or show menu if multiple)
+                    // Show selection if multiple subscriptions
                     if (subSummary.activeSubs.length === 1) {
                         editUserSubscription(subSummary.activeSubs[0].id, competition.codice);
                     } else {
-                        // TODO: Show selection menu for multiple subscriptions
-                        editUserSubscription(subSummary.activeSubs[0].id, competition.codice);
+                        showSubscriptionSelectionForEdit(subSummary.activeSubs, competition.codice);
                     }
                 });
             }
@@ -1307,19 +1305,28 @@ function populateTurnsDropdown(turns) {
     
     turns.forEach(turn => {
         const option = document.createElement('option');
-        option.value = turn.turno;
+        option.value = turn.numero_turno || turn.turno;
         // Build display text, only including non-null parts
         const parts = [];
         if (turn.giorno) parts.push(turn.giorno);
         if (turn.fase) parts.push(turn.fase);
         if (turn.ora_ritrovo) {
-            // Format time from "08:45:00" to "08:45"
-            // Convert to string if it's not already
-            const timeStr = typeof turn.ora_ritrovo === 'string' ? turn.ora_ritrovo : String(turn.ora_ritrovo);
-            const timeFormatted = timeStr.substring(0, 5);
+            // Format time - handle both string ("08:45:00") and number (seconds since midnight: 68400 = 19:30:00)
+            let timeFormatted;
+            if (typeof turn.ora_ritrovo === 'string') {
+                timeFormatted = turn.ora_ritrovo.substring(0, 5);  // "08:45:00" -> "08:45"
+            } else if (typeof turn.ora_ritrovo === 'number') {
+                // Convert seconds since midnight to HH:MM format
+                // Example: 68400 seconds = 19 hours * 3600 + 30 minutes * 60 = 19:30
+                const hours = Math.floor(turn.ora_ritrovo / 3600);
+                const minutes = Math.floor((turn.ora_ritrovo % 3600) / 60);
+                timeFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            } else {
+                timeFormatted = String(turn.ora_ritrovo);
+            }
             parts.push(timeFormatted);
         }
-        option.textContent = parts.length > 0 ? parts.join(' - ') : `Turno ${turn.turno}`;
+        option.textContent = parts.length > 0 ? parts.join(' - ') : `Turno ${turn.numero_turno || turn.turno}`;
         select.appendChild(option);
     });
 }
@@ -1508,33 +1515,76 @@ async function submitSubscription() {
         let response, result;
         
         if (isExpressInterest) {
-            // Use interesse API for interest expressions
-            response = await fetch(`/archery/api/interesse`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    codice_gara: codiceGara,
-                    tessera_atleta: tessera,
-                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
-                    classe: ageCategory,            // Age category: SM, SF, MM, MF, etc.
-                    note: notes
-                })
-            });
+            // Check for existing cancelled interest expression first
+            const existingInterests = userInterests.get(codiceGara) || [];
+            const cancelledInterest = existingInterests.find(int => 
+                int.tessera_atleta === tessera && int.stato === 'cancellato'
+            );
+            
+            if (cancelledInterest) {
+                // Reactivate cancelled interest via PATCH
+                console.log('Found cancelled interest, reactivating:', cancelledInterest.id);
+                response = await fetch(`/archery/api/interesse/${cancelledInterest.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        stato: 'in attesa',
+                        categoria: bowType,         // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                        classe: ageCategory,        // Age category: SM, SF, MM, MF, etc.
+                        note: notes
+                    })
+                });
+            } else {
+                // Use interesse API for interest expressions
+                response = await fetch(`/archery/api/interesse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        codice_gara: codiceGara,
+                        tessera_atleta: tessera,
+                        categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                        classe: ageCategory,            // Age category: SM, SF, MM, MF, etc.
+                        note: notes
+                    })
+                });
+            }
         } else {
-            // Use iscrizioni API for actual subscriptions
-            response = await fetch(`/archery/api/iscrizioni`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    codice_gara: codiceGara,
-                    tessera_atleta: tessera,
-                    categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
-                    classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
-                    turno: parseInt(turn),
-                    stato: 'in attesa',  // Pending - admin must confirm manually
-                    note: notes
-                })
-            });
+            // Check for existing cancelled subscription first
+            const existingSubscriptions = userSubscriptions.get(codiceGara) || [];
+            const cancelledSubscription = existingSubscriptions.find(sub => 
+                sub.tessera_atleta === tessera && sub.stato === 'cancellato'
+            );
+            
+            if (cancelledSubscription) {
+                // Reactivate cancelled subscription via PATCH
+                console.log('Found cancelled subscription, reactivating:', cancelledSubscription.id);
+                response = await fetch(`/archery/api/iscrizioni/${cancelledSubscription.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        stato: 'in attesa',
+                        categoria: bowType,         // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                        classe: ageCategory,        // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
+                        turno: parseInt(turn),
+                        note: notes
+                    })
+                });
+            } else {
+                // Use iscrizioni API for actual subscriptions
+                response = await fetch(`/archery/api/iscrizioni`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        codice_gara: codiceGara,
+                        tessera_atleta: tessera,
+                        categoria: bowType,             // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
+                        classe: ageCategory,            // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
+                        turno: parseInt(turn),
+                        stato: 'in attesa',  // Pending - admin must confirm manually
+                        note: notes
+                    })
+                });
+            }
         }
         
         if (!response.ok) {
@@ -1551,50 +1601,83 @@ async function submitSubscription() {
             throw new Error('Risposta del server non valida');
         }
         
+        // Determine if this was a reactivation or new subscription
+        const isReactivation = (response.url && (response.url.includes('/interesse/') || response.url.includes('/iscrizioni/'))) && 
+                              !response.url.endsWith('/interesse') && !response.url.endsWith('/iscrizioni');
+        
         if (isExpressInterest) {
-            // Create interest object from response
-            const interest = {
-                id: result.id,
-                codice_gara: codiceGara,
-                tessera_atleta: tessera,
-                categoria: bowType,
-                classe: ageCategory,
-                stato: 'attivo',
-                note: notes
-            };
-            
-            // Add to interests array
-            if (!userInterests.has(codiceGara)) {
-                userInterests.set(codiceGara, []);
+            if (isReactivation) {
+                // Update existing interest object in the map
+                const interests = userInterests.get(codiceGara) || [];
+                const existingIdx = interests.findIndex(int => int.id === result.id);
+                if (existingIdx !== -1) {
+                    interests[existingIdx] = {
+                        ...interests[existingIdx],
+                        categoria: bowType,
+                        classe: ageCategory,
+                        stato: 'attivo',
+                        note: notes
+                    };
+                }
+            } else {
+                // Create interest object from response
+                const interest = {
+                    id: result.id,
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,
+                    classe: ageCategory,
+                    stato: 'attivo',
+                    note: notes
+                };
+                
+                // Add to interests array
+                if (!userInterests.has(codiceGara)) {
+                    userInterests.set(codiceGara, []);
+                }
+                userInterests.get(codiceGara).push(interest);
             }
-            userInterests.get(codiceGara).push(interest);
         } else {
-            // Create subscription object from response
-            const subscription = {
-                id: result.id,
-                codice_gara: codiceGara,
-                tessera_atleta: tessera,
-                categoria: bowType,
-                classe: ageCategory,
-                turno: parseInt(turn),
-                stato: 'in attesa',
-                note: notes
-            };
-            
-            // Add to subscriptions array
-            if (!userSubscriptions.has(codiceGara)) {
-                userSubscriptions.set(codiceGara, []);
+            if (isReactivation) {
+                // Update existing subscription object in the map
+                const subscriptions = userSubscriptions.get(codiceGara) || [];
+                const existingIdx = subscriptions.findIndex(sub => sub.id === result.id);
+                if (existingIdx !== -1) {
+                    subscriptions[existingIdx] = {
+                        ...subscriptions[existingIdx],
+                        categoria: bowType,
+                        classe: ageCategory,
+                        turno: parseInt(turn),
+                        stato: 'in attesa',
+                        note: notes
+                    };
+                }
+            } else {
+                // Create subscription object from response
+                const subscription = {
+                    id: result.id,
+                    codice_gara: codiceGara,
+                    tessera_atleta: tessera,
+                    categoria: bowType,
+                    classe: ageCategory,
+                    turno: parseInt(turn),
+                    stato: 'in attesa',
+                    note: notes
+                };
+                
+                // Add to subscriptions array
+                if (!userSubscriptions.has(codiceGara)) {
+                    userSubscriptions.set(codiceGara, []);
+                }
+                userSubscriptions.get(codiceGara).push(subscription);
             }
-            userSubscriptions.get(codiceGara).push(subscription);
         }
         
         closeSubscriptionModal();
-        showNotification(
-            isExpressInterest ? 
-                'Interesse espresso con successo!' : 
-                (window.translations.competitions?.subscription_success || 'Iscrizione effettuata con successo!'), 
-            'success'
-        );
+        const successMessage = isReactivation ?
+            (isExpressInterest ? 'Interesse riattivato con successo!' : 'Iscrizione riattivata con successo!') :
+            (isExpressInterest ? 'Interesse espresso con successo!' : (window.translations.competitions?.subscription_success || 'Iscrizione effettuata con successo!'));
+        showNotification(successMessage, 'success');
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error subscribing:', error);
@@ -2092,7 +2175,13 @@ function editUserSubscription(subscriptionId, codiceGara) {
     const athleteName = athlete ? `${athlete.cognome} ${athlete.nome} (${athlete.tessera})` : sub.tessera_atleta;
     document.getElementById('edit-user-sub-athlete').value = athleteName;
     document.getElementById('edit-user-sub-id').value = sub.id;
-    document.getElementById('edit-user-sub-original-categoria').value = sub.categoria;
+    
+    // REMEMBER: In iscrizioni table, categoria=bow_type and classe=age_category (REVERSED!)
+    // But in the form we use the natural labeling, so we need to swap when reading/writing
+    const ageCategory = sub.classe;  // In DB: classe = age category
+    const bowType = sub.categoria;    // In DB: categoria = bow type
+    
+    document.getElementById('edit-user-sub-original-categoria').value = ageCategory;
     
     // Populate turno dropdown
     const turnoSelect = document.getElementById('edit-user-sub-turno');
@@ -2101,8 +2190,8 @@ function editUserSubscription(subscriptionId, codiceGara) {
         `<option value="${t.numero_turno}" ${t.numero_turno == sub.turno ? 'selected' : ''}>Turno ${t.numero_turno}</option>`
     ).join('');
     
-    // Populate categoria dropdown with valid options
-    const validCategories = getValidCategoryChanges(sub.categoria);
+    // Populate categoria dropdown with valid options (age categories)
+    const validCategories = getValidCategoryChanges(ageCategory);
     const categoriaSelect = document.getElementById('edit-user-sub-categoria');
     const categoryNames = {
         'GM': 'GM - Giovanissimi Maschile',
@@ -2120,11 +2209,11 @@ function editUserSubscription(subscriptionId, codiceGara) {
     };
     
     categoriaSelect.innerHTML = validCategories.map(cat => 
-        `<option value="${cat}" ${cat === sub.categoria ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+        `<option value="${cat}" ${cat === ageCategory ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
     ).join('');
     
-    // Set classe (bow type)
-    document.getElementById('edit-user-sub-classe').value = sub.classe || '';
+    // Set classe field to bow type
+    document.getElementById('edit-user-sub-classe').value = bowType || '';
     
     // Set notes (exclude CAMBI RICHIESTI part)
     let userNotes = sub.note || '';
@@ -2155,16 +2244,21 @@ function setupSubscriptionChangeTracking() {
 function updateSubscriptionChangesPreview() {
     if (!editingSubscription) return;
     
+    // Form uses natural naming, but DB is reversed
+    const newAgeCategory = document.getElementById('edit-user-sub-categoria').value;
+    const newBowType = document.getElementById('edit-user-sub-classe').value;
+    
     const newData = {
         turno: parseInt(document.getElementById('edit-user-sub-turno').value),
-        categoria: document.getElementById('edit-user-sub-categoria').value,
-        classe: document.getElementById('edit-user-sub-classe').value
+        categoria: newAgeCategory,  // For comparison, use natural naming
+        classe: newBowType
     };
     
+    // Original data from DB (reversed): sub.categoria=bowType, sub.classe=ageCategory
     const changes = buildChangeDescription({
         turno: editingSubscription.turno,
-        categoria: editingSubscription.categoria,
-        classe: editingSubscription.classe
+        categoria: editingSubscription.classe,  // ageCategory from DB classe
+        classe: editingSubscription.categoria   // bowType from DB categoria
     }, newData);
     
     const preview = document.getElementById('edit-user-sub-changes-preview');
@@ -2181,18 +2275,28 @@ function updateSubscriptionChangesPreview() {
 async function submitUserSubscriptionEdit() {
     if (!editingSubscription) return;
     
+    // Get values from form (natural naming)
+    const newAgeCategory = document.getElementById('edit-user-sub-categoria').value;
+    const newBowType = document.getElementById('edit-user-sub-classe').value;
+    const newTurno = parseInt(document.getElementById('edit-user-sub-turno').value);
+    
+    // Prepare data for API (REVERSED: categoria=bowType, classe=ageCategory)
     const newData = {
-        turno: parseInt(document.getElementById('edit-user-sub-turno').value),
-        categoria: document.getElementById('edit-user-sub-categoria').value,
-        classe: document.getElementById('edit-user-sub-classe').value || ''
+        turno: newTurno,
+        categoria: newBowType,      // Send bow type as categoria
+        classe: newAgeCategory      // Send age category as classe
     };
     
-    // Build change description
+    // Build change description using natural names for user display
     const changes = buildChangeDescription({
         turno: editingSubscription.turno,
-        categoria: editingSubscription.categoria,
-        classe: editingSubscription.classe
-    }, newData);
+        categoria: editingSubscription.classe,   // Original age category from DB classe
+        classe: editingSubscription.categoria    // Original bow type from DB categoria
+    }, {
+        turno: newTurno,
+        categoria: newAgeCategory,  // New age category
+        classe: newBowType          // New bow type
+    });
     
     // Get user notes and apply changes
     let userNotes = document.getElementById('edit-user-sub-note').value || '';
@@ -2254,10 +2358,15 @@ function editUserInterest(interestId, codiceGara) {
     const athleteName = athlete ? `${athlete.cognome} ${athlete.nome} (${athlete.tessera})` : interest.tessera_atleta;
     document.getElementById('edit-user-int-athlete').value = athleteName;
     document.getElementById('edit-user-int-id').value = interest.id;
-    document.getElementById('edit-user-int-original-categoria').value = interest.categoria;
     
-    // Populate categoria dropdown with valid options
-    const validCategories = getValidCategoryChanges(interest.categoria);
+    // REMEMBER: In interesse table, categoria=bow_type and classe=age_category (REVERSED!)
+    const ageCategory = interest.classe;  // In DB: classe = age category
+    const bowType = interest.categoria;    // In DB: categoria = bow type
+    
+    document.getElementById('edit-user-int-original-categoria').value = ageCategory;
+    
+    // Populate categoria dropdown with valid options (age categories)
+    const validCategories = getValidCategoryChanges(ageCategory);
     const categoriaSelect = document.getElementById('edit-user-int-categoria');
     const categoryNames = {
         'GM': 'GM - Giovanissimi Maschile',
@@ -2275,11 +2384,11 @@ function editUserInterest(interestId, codiceGara) {
     };
     
     categoriaSelect.innerHTML = validCategories.map(cat => 
-        `<option value="${cat}" ${cat === interest.categoria ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+        `<option value="${cat}" ${cat === ageCategory ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
     ).join('');
     
     // Set classe (bow type)
-    document.getElementById('edit-user-int-classe').value = interest.classe || '';
+    document.getElementById('edit-user-int-classe').value = bowType || '';
     
     // Set notes
     document.getElementById('edit-user-int-note').value = interest.note || '';
@@ -2291,9 +2400,14 @@ function editUserInterest(interestId, codiceGara) {
 async function submitUserInterestEdit() {
     if (!editingInterest) return;
     
+    // Get values from form (natural naming)
+    const newAgeCategory = document.getElementById('edit-user-int-categoria').value;
+    const newBowType = document.getElementById('edit-user-int-classe').value;
+    
+    // Prepare data for API (REVERSED: categoria=bowType, classe=ageCategory)
     const newData = {
-        categoria: document.getElementById('edit-user-int-categoria').value,
-        classe: document.getElementById('edit-user-int-classe').value || '',
+        categoria: newBowType,      // Send bow type as categoria
+        classe: newAgeCategory,     // Send age category as classe
         note: document.getElementById('edit-user-int-note').value || ''
     };
     
@@ -2325,6 +2439,50 @@ function closeEditUserInterestModal() {
     document.getElementById('edit-user-interest-form').reset();
     editingInterest = null;
 }
+
+// Show selection menu for multiple subscriptions/interests
+function showSubscriptionSelectionForEdit(subscriptions, codiceGara) {
+    const items = subscriptions.map(sub => {
+        const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+        const athleteName = athlete ? `${athlete.cognome} ${athlete.nome}` : sub.tessera_atleta;
+        return `${athleteName} - ${sub.categoria || ''} ${sub.classe || ''} (Turno ${sub.turno})`;
+    });
+    
+    const selection = prompt(
+        'Seleziona quale iscrizione modificare:\n\n' + 
+        subscriptions.map((sub, i) => `${i + 1}. ${items[i]}`).join('\n') +
+        '\n\nInserisci il numero:'
+    );
+    
+    if (selection) {
+        const index = parseInt(selection) - 1;
+        if (index >= 0 && index < subscriptions.length) {
+            editUserSubscription(subscriptions[index].id, codiceGara);
+        }
+    }
+}
+
+function showInterestSelectionForEdit(interests, codiceGara) {
+    const items = interests.map(interest => {
+        const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+        const athleteName = athlete ? `${athlete.cognome} ${athlete.nome}` : interest.tessera_atleta;
+        return `${athleteName} - ${interest.categoria || ''} ${interest.classe || ''}`;
+    });
+    
+    const selection = prompt(
+        'Seleziona quale interesse modificare:\n\n' + 
+        interests.map((int, i) => `${i + 1}. ${items[i]}`).join('\n') +
+        '\n\nInserisci il numero:'
+    );
+    
+    if (selection) {
+        const index = parseInt(selection) - 1;
+        if (index >= 0 && index < interests.length) {
+            editUserInterest(interests[index].id, codiceGara);
+        }
+    }
+}
+
 
 </script>
 

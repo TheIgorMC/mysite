@@ -696,7 +696,7 @@ async function showEditBOMModal() {
         select.innerHTML = '<option value="">Select component...</option>' + 
             allComponents.map(comp => {
                 const label = `${comp.value || comp.manufacturer_code || comp.mpn || 'Unknown'} - ${comp.package || ''} (${comp.product_type || ''})`;
-                return `<option value="${comp.id}" data-component='${JSON.stringify(comp)}'>${label}</option>`;
+                return `<option value="${comp.id}">${label}</option>`;
             }).join('');
         
         renderEditBOMTable();
@@ -759,10 +759,12 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', functio
         return;
     }
     
-    // Get component data
-    const select = document.getElementById('bom-component-select');
-    const option = select.options[select.selectedIndex];
-    const component = JSON.parse(option.dataset.component);
+    // Get component data from allComponents array
+    const component = allComponents.find(c => c.id === parseInt(componentId));
+    if (!component) {
+        showToast('Component not found', 'error');
+        return;
+    }
     
     // Add to BOM items
     currentBOMItems.push({
