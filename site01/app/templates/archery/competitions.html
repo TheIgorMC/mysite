@@ -112,9 +112,14 @@
                         <span>{{ t('competitions.subscribed') }}</span>
                         <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
                     </div>
-                    <button class="btn-unsubscribe text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="{{ t('competitions.delete_subscription') }}">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="btn-edit-subscriptions text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-2 py-1 rounded transition" title="Modifica iscrizioni">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-unsubscribe text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="{{ t('competitions.delete_subscription') }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="athlete-list hidden mt-3 pt-3 border-t border-green-200 dark:border-green-800 space-y-2">
                     <!-- Athletes will be populated here -->
@@ -129,9 +134,14 @@
                         <span class="interest-status-text">Interesse espresso</span>
                         <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
                     </div>
-                    <button class="btn-delete-interest text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="Rimuovi interesse">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="btn-edit-interests text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-2 py-1 rounded transition" title="Modifica interessi">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete-interest text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="Rimuovi interesse">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="athlete-list hidden mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 space-y-2">
                     <!-- Athletes will be populated here -->
@@ -285,6 +295,175 @@
                     <i class="fas fa-trash mr-2"></i>Elimina Selezionate
                 </button>
                 <button type="button" onclick="closeDeleteModal()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto sm:text-sm">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Subscription Modal (User) -->
+<div id="edit-user-subscription-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeEditUserSubscriptionModal()"></div>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-edit mr-2"></i>Richiedi Modifica Iscrizione
+                        </h3>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
+                            <p class="text-sm text-blue-800 dark:text-blue-300">
+                                <i class="fas fa-info-circle mr-2"></i>Le modifiche richieste saranno revisionate dall'amministratore
+                            </p>
+                        </div>
+                        
+                        <form id="edit-user-subscription-form">
+                            <input type="hidden" id="edit-user-sub-id">
+                            <input type="hidden" id="edit-user-sub-original-categoria">
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Atleta</label>
+                                <input type="text" id="edit-user-sub-athlete" readonly
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-sub-turno" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turno</label>
+                                <select id="edit-user-sub-turno" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-sub-categoria" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Categoria di Età
+                                </label>
+                                <select id="edit-user-sub-categoria" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <!-- Populated dynamically based on validation rules -->
+                                </select>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <i class="fas fa-info-circle mr-1"></i>Solo categorie valide per il tuo livello corrente
+                                </p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-sub-classe" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Tipo di Arco
+                                </label>
+                                <select id="edit-user-sub-classe" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="CO">CO - Compound</option>
+                                    <option value="OL">OL - Olympic Recurve</option>
+                                    <option value="AN">AN - Barebow</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-sub-note" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Note Aggiuntive (Opzionale)
+                                </label>
+                                <textarea id="edit-user-sub-note" rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          placeholder="Aggiungi note alla richiesta di modifica..."></textarea>
+                            </div>
+                            
+                            <div id="edit-user-sub-changes-preview" class="hidden mb-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+                                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>Modifiche richieste:
+                                </p>
+                                <ul id="edit-user-sub-changes-list" class="text-sm text-yellow-700 dark:text-yellow-400 list-disc list-inside">
+                                    <!-- Changes will be listed here -->
+                                </ul>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="submitUserSubscriptionEdit()"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-paper-plane mr-2"></i>Invia Richiesta
+                </button>
+                <button type="button" onclick="closeEditUserSubscriptionModal()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto sm:text-sm">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Interest Modal (User) -->
+<div id="edit-user-interest-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeEditUserInterestModal()"></div>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-edit mr-2"></i>Modifica Espressione di Interesse
+                        </h3>
+                        
+                        <form id="edit-user-interest-form">
+                            <input type="hidden" id="edit-user-int-id">
+                            <input type="hidden" id="edit-user-int-original-categoria">
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Atleta</label>
+                                <input type="text" id="edit-user-int-athlete" readonly
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-int-categoria" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Categoria di Età
+                                </label>
+                                <select id="edit-user-int-categoria" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <!-- Populated dynamically based on validation rules -->
+                                </select>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <i class="fas fa-info-circle mr-1"></i>Solo categorie valide per il tuo livello corrente
+                                </p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-int-classe" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Tipo di Arco
+                                </label>
+                                <select id="edit-user-int-classe" required
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="CO">CO - Compound</option>
+                                    <option value="OL">OL - Olympic Recurve</option>
+                                    <option value="AN">AN - Barebow</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="edit-user-int-note" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Note (Opzionale)
+                                </label>
+                                <textarea id="edit-user-int-note" rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="submitUserInterestEdit()"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-save mr-2"></i>Salva Modifiche
+                </button>
+                <button type="button" onclick="closeEditUserInterestModal()"
                         class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto sm:text-sm">
                     Annulla
                 </button>
@@ -820,6 +999,21 @@ function renderCompetitions(competitions) {
                 e.stopPropagation();
                 showDeleteInterestModal(unsubscribedInterests, competition);
             });
+            
+            // Wire up edit button for interests
+            const interestEditBtn = card.querySelector('.btn-edit-interests');
+            if (interestEditBtn) {
+                interestEditBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Edit first interest (or show menu if multiple)
+                    if (unsubscribedInterests.length === 1) {
+                        editUserInterest(unsubscribedInterests[0].id, competition.codice);
+                    } else {
+                        // TODO: Show selection menu for multiple interests
+                        editUserInterest(unsubscribedInterests[0].id, competition.codice);
+                    }
+                });
+            }
         }
         
         if (subSummary.hasActiveSubscription) {
@@ -918,6 +1112,21 @@ function renderCompetitions(competitions) {
                 e.stopPropagation();
                 showDeleteSubscriptionModal(subSummary.subscriptions, competition);
             });
+            
+            // Wire up edit button for subscriptions
+            const editSubscriptionsBtn = card.querySelector('.btn-edit-subscriptions');
+            if (editSubscriptionsBtn) {
+                editSubscriptionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Edit first subscription (or show menu if multiple)
+                    if (subSummary.activeSubs.length === 1) {
+                        editUserSubscription(subSummary.activeSubs[0].id, competition.codice);
+                    } else {
+                        // TODO: Show selection menu for multiple subscriptions
+                        editUserSubscription(subSummary.activeSubs[0].id, competition.codice);
+                    }
+                });
+            }
         } else if (subSummary.allCancelled) {
             // All subscriptions cancelled - allow resubscription
             subscribeBtn.disabled = false;
@@ -1136,8 +1345,29 @@ function populateAthleteDropdown(filteredAthletes = null) {
         if (athlete.categoria) {
             const ageCategoryEl = document.getElementById('age-category');
             if (ageCategoryEl) {
-                ageCategoryEl.value = athlete.categoria;
-                console.log('Set age-category to:', athlete.categoria);
+                // Populate with valid categories only
+                const validCategories = getValidCategoryChanges(athlete.categoria);
+                const categoryNames = {
+                    'GM': 'GM - Giovanissimi Maschile',
+                    'GF': 'GF - Giovanissimi Femminile',
+                    'RM': 'RM - Ragazzi Maschile',
+                    'RF': 'RF - Ragazzi Femminile',
+                    'AM': 'AM - Allievi Maschile',
+                    'AF': 'AF - Allievi Femminile',
+                    'JM': 'JM - Juniores Maschile',
+                    'JF': 'JF - Juniores Femminile',
+                    'SM': 'SM - Seniores Maschile',
+                    'SF': 'SF - Seniores Femminile',
+                    'MM': 'MM - Master Maschile',
+                    'MF': 'MF - Master Femminile'
+                };
+                
+                ageCategoryEl.innerHTML = '<option value="">Seleziona categoria...</option>' +
+                    validCategories.map(cat => 
+                        `<option value="${cat}" ${cat === athlete.categoria ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+                    ).join('');
+                
+                console.log('Set age-category options to valid categories:', validCategories);
             }
         }
         if (athlete.classe) {
@@ -1179,8 +1409,29 @@ function populateAthleteDropdown(filteredAthletes = null) {
             const bowTypeEl = document.getElementById('bow-type');
             
             if (selectedOption.dataset.ageCategory && ageCategoryEl) {
-                ageCategoryEl.value = selectedOption.dataset.ageCategory;
-                console.log('Set age-category to:', selectedOption.dataset.ageCategory);
+                // Populate category dropdown with valid options based on athlete's current category
+                const validCategories = getValidCategoryChanges(selectedOption.dataset.ageCategory);
+                const categoryNames = {
+                    'GM': 'GM - Giovanissimi Maschile',
+                    'GF': 'GF - Giovanissimi Femminile',
+                    'RM': 'RM - Ragazzi Maschile',
+                    'RF': 'RF - Ragazzi Femminile',
+                    'AM': 'AM - Allievi Maschile',
+                    'AF': 'AF - Allievi Femminile',
+                    'JM': 'JM - Juniores Maschile',
+                    'JF': 'JF - Juniores Femminile',
+                    'SM': 'SM - Seniores Maschile',
+                    'SF': 'SF - Seniores Femminile',
+                    'MM': 'MM - Master Maschile',
+                    'MF': 'MF - Master Femminile'
+                };
+                
+                ageCategoryEl.innerHTML = '<option value="">Seleziona categoria...</option>' +
+                    validCategories.map(cat => 
+                        `<option value="${cat}" ${cat === selectedOption.dataset.ageCategory ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+                    ).join('');
+                
+                console.log('Set age-category options to valid categories:', validCategories);
             }
             if (selectedOption.dataset.bowType && bowTypeEl) {
                 bowTypeEl.value = selectedOption.dataset.bowType;
@@ -1188,7 +1439,21 @@ function populateAthleteDropdown(filteredAthletes = null) {
             }
         } else {
             // Reset fields if no athlete selected
-            document.getElementById('age-category').value = '';
+            document.getElementById('age-category').innerHTML = `
+                <option value="">Seleziona categoria...</option>
+                <option value="GM">GM - Giovanissimi Maschile</option>
+                <option value="GF">GF - Giovanissimi Femminile</option>
+                <option value="RM">RM - Ragazzi Maschile</option>
+                <option value="RF">RF - Ragazzi Femminile</option>
+                <option value="AM">AM - Allievi Maschile</option>
+                <option value="AF">AF - Allievi Femminile</option>
+                <option value="JM">JM - Juniores Maschile</option>
+                <option value="JF">JF - Juniores Femminile</option>
+                <option value="SM">SM - Seniores Maschile</option>
+                <option value="SF">SF - Seniores Femminile</option>
+                <option value="MM">MM - Master Maschile</option>
+                <option value="MF">MF - Master Femminile</option>
+            `;
             document.getElementById('bow-type').value = '';
         }
     });
@@ -1737,6 +2002,330 @@ function showError(message) {
     showNotification(message, 'error');
     document.getElementById('empty-state').classList.remove('hidden');
 }
+
+// Category validation rules
+// G -> R, R -> A, A -> J, J -> S, M -> S
+// Gender must remain the same (M stays M, F stays F)
+function getValidCategoryChanges(currentCategory) {
+    if (!currentCategory || currentCategory.length !== 2) return [];
+    
+    const ageCode = currentCategory[0];  // G, R, A, J, S, M
+    const gender = currentCategory[1];   // M or F
+    
+    const validAges = [];
+    
+    switch(ageCode) {
+        case 'G':
+            validAges.push('G', 'R');  // G can change to R
+            break;
+        case 'R':
+            validAges.push('R', 'A');  // R can change to A
+            break;
+        case 'A':
+            validAges.push('A', 'J');  // A can change to J
+            break;
+        case 'J':
+            validAges.push('J', 'S');  // J can change to S
+            break;
+        case 'S':
+            validAges.push('S');       // S cannot change
+            break;
+        case 'M':
+            validAges.push('M', 'S');  // M can change to S
+            break;
+        default:
+            validAges.push(ageCode);   // Unknown, allow only same
+    }
+    
+    // Generate valid categories with same gender
+    return validAges.map(age => age + gender);
+}
+
+// Build change description
+function buildChangeDescription(originalData, newData) {
+    const changes = [];
+    
+    if (originalData.turno !== newData.turno) {
+        changes.push(`TURNO cambia da ${originalData.turno} a ${newData.turno}`);
+    }
+    
+    if (originalData.categoria !== newData.categoria) {
+        changes.push(`CATEGORIA cambia da ${originalData.categoria} a ${newData.categoria}`);
+    }
+    
+    if (originalData.classe !== newData.classe) {
+        changes.push(`CLASSE cambia da "${originalData.classe || 'nessuna'}" a "${newData.classe || 'nessuna'}"`);
+    }
+    
+    return changes;
+}
+
+// Apply changes to notes
+function applyChangesToNotes(originalNotes, changes) {
+    if (changes.length === 0) return originalNotes;
+    
+    const changeText = 'CAMBI RICHIESTI: ' + changes.join('; ');
+    
+    // If notes already contain "CAMBI RICHIESTI:", replace it
+    if (originalNotes && originalNotes.includes('CAMBI RICHIESTI:')) {
+        const beforeChanges = originalNotes.substring(0, originalNotes.indexOf('CAMBI RICHIESTI:'));
+        return beforeChanges.trim() + (beforeChanges.trim() ? '\n\n' : '') + changeText;
+    }
+    
+    // Otherwise append to existing notes
+    return (originalNotes || '').trim() + (originalNotes ? '\n\n' : '') + changeText;
+}
+
+// Edit user subscription
+let editingSubscription = null;
+
+function editUserSubscription(subscriptionId, codiceGara) {
+    // Find subscription
+    const subs = userSubscriptions.get(codiceGara) || [];
+    const sub = subs.find(s => s.id === subscriptionId);
+    if (!sub) return;
+    
+    editingSubscription = { ...sub, codiceGara };
+    
+    // Populate form
+    const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+    const athleteName = athlete ? `${athlete.cognome} ${athlete.nome} (${athlete.tessera})` : sub.tessera_atleta;
+    document.getElementById('edit-user-sub-athlete').value = athleteName;
+    document.getElementById('edit-user-sub-id').value = sub.id;
+    document.getElementById('edit-user-sub-original-categoria').value = sub.categoria;
+    
+    // Populate turno dropdown
+    const turnoSelect = document.getElementById('edit-user-sub-turno');
+    const turni = allTurni[codiceGara] || [];
+    turnoSelect.innerHTML = turni.map(t => 
+        `<option value="${t.numero_turno}" ${t.numero_turno == sub.turno ? 'selected' : ''}>Turno ${t.numero_turno}</option>`
+    ).join('');
+    
+    // Populate categoria dropdown with valid options
+    const validCategories = getValidCategoryChanges(sub.categoria);
+    const categoriaSelect = document.getElementById('edit-user-sub-categoria');
+    const categoryNames = {
+        'GM': 'GM - Giovanissimi Maschile',
+        'GF': 'GF - Giovanissimi Femminile',
+        'RM': 'RM - Ragazzi Maschile',
+        'RF': 'RF - Ragazzi Femminile',
+        'AM': 'AM - Allievi Maschile',
+        'AF': 'AF - Allievi Femminile',
+        'JM': 'JM - Juniores Maschile',
+        'JF': 'JF - Juniores Femminile',
+        'SM': 'SM - Seniores Maschile',
+        'SF': 'SF - Seniores Femminile',
+        'MM': 'MM - Master Maschile',
+        'MF': 'MF - Master Femminile'
+    };
+    
+    categoriaSelect.innerHTML = validCategories.map(cat => 
+        `<option value="${cat}" ${cat === sub.categoria ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+    ).join('');
+    
+    // Set classe (bow type)
+    document.getElementById('edit-user-sub-classe').value = sub.classe || '';
+    
+    // Set notes (exclude CAMBI RICHIESTI part)
+    let userNotes = sub.note || '';
+    if (userNotes.includes('CAMBI RICHIESTI:')) {
+        userNotes = userNotes.substring(0, userNotes.indexOf('CAMBI RICHIESTI:')).trim();
+    }
+    document.getElementById('edit-user-sub-note').value = userNotes;
+    
+    // Setup change tracking
+    setupSubscriptionChangeTracking();
+    
+    // Show modal
+    document.getElementById('edit-user-subscription-modal').classList.remove('hidden');
+}
+
+function setupSubscriptionChangeTracking() {
+    const form = document.getElementById('edit-user-subscription-form');
+    const inputs = form.querySelectorAll('select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', updateSubscriptionChangesPreview);
+    });
+    
+    // Initial preview
+    updateSubscriptionChangesPreview();
+}
+
+function updateSubscriptionChangesPreview() {
+    if (!editingSubscription) return;
+    
+    const newData = {
+        turno: parseInt(document.getElementById('edit-user-sub-turno').value),
+        categoria: document.getElementById('edit-user-sub-categoria').value,
+        classe: document.getElementById('edit-user-sub-classe').value
+    };
+    
+    const changes = buildChangeDescription({
+        turno: editingSubscription.turno,
+        categoria: editingSubscription.categoria,
+        classe: editingSubscription.classe
+    }, newData);
+    
+    const preview = document.getElementById('edit-user-sub-changes-preview');
+    const changesList = document.getElementById('edit-user-sub-changes-list');
+    
+    if (changes.length > 0) {
+        changesList.innerHTML = changes.map(c => `<li>${c}</li>`).join('');
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+async function submitUserSubscriptionEdit() {
+    if (!editingSubscription) return;
+    
+    const newData = {
+        turno: parseInt(document.getElementById('edit-user-sub-turno').value),
+        categoria: document.getElementById('edit-user-sub-categoria').value,
+        classe: document.getElementById('edit-user-sub-classe').value || ''
+    };
+    
+    // Build change description
+    const changes = buildChangeDescription({
+        turno: editingSubscription.turno,
+        categoria: editingSubscription.categoria,
+        classe: editingSubscription.classe
+    }, newData);
+    
+    // Get user notes and apply changes
+    let userNotes = document.getElementById('edit-user-sub-note').value || '';
+    const finalNotes = applyChangesToNotes(userNotes, changes);
+    
+    newData.note = finalNotes;
+    
+    // Set status to "modifica richiesta" if there are changes
+    if (changes.length > 0) {
+        newData.stato = 'modifica richiesta';
+    } else {
+        newData.stato = editingSubscription.stato;  // Keep current status
+    }
+    
+    try {
+        const response = await fetch(`/archery/api/iscrizioni/${editingSubscription.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+        });
+        
+        if (response.ok) {
+            showNotification(changes.length > 0 ? 
+                'Richiesta di modifica inviata con successo' : 
+                'Iscrizione aggiornata con successo', 'success');
+            closeEditUserSubscriptionModal();
+            
+            // Reload data
+            await loadInitialData();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update subscription');
+        }
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+}
+
+function closeEditUserSubscriptionModal() {
+    document.getElementById('edit-user-subscription-modal').classList.add('hidden');
+    document.getElementById('edit-user-subscription-form').reset();
+    editingSubscription = null;
+}
+
+// Edit user interest
+let editingInterest = null;
+
+function editUserInterest(interestId, codiceGara) {
+    // Find interest
+    const interests = userInterests.get(codiceGara) || [];
+    const interest = interests.find(i => i.id === interestId);
+    if (!interest) return;
+    
+    editingInterest = { ...interest, codiceGara };
+    
+    // Populate form
+    const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+    const athleteName = athlete ? `${athlete.cognome} ${athlete.nome} (${athlete.tessera})` : interest.tessera_atleta;
+    document.getElementById('edit-user-int-athlete').value = athleteName;
+    document.getElementById('edit-user-int-id').value = interest.id;
+    document.getElementById('edit-user-int-original-categoria').value = interest.categoria;
+    
+    // Populate categoria dropdown with valid options
+    const validCategories = getValidCategoryChanges(interest.categoria);
+    const categoriaSelect = document.getElementById('edit-user-int-categoria');
+    const categoryNames = {
+        'GM': 'GM - Giovanissimi Maschile',
+        'GF': 'GF - Giovanissimi Femminile',
+        'RM': 'RM - Ragazzi Maschile',
+        'RF': 'RF - Ragazzi Femminile',
+        'AM': 'AM - Allievi Maschile',
+        'AF': 'AF - Allievi Femminile',
+        'JM': 'JM - Juniores Maschile',
+        'JF': 'JF - Juniores Femminile',
+        'SM': 'SM - Seniores Maschile',
+        'SF': 'SF - Seniores Femminile',
+        'MM': 'MM - Master Maschile',
+        'MF': 'MF - Master Femminile'
+    };
+    
+    categoriaSelect.innerHTML = validCategories.map(cat => 
+        `<option value="${cat}" ${cat === interest.categoria ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
+    ).join('');
+    
+    // Set classe (bow type)
+    document.getElementById('edit-user-int-classe').value = interest.classe || '';
+    
+    // Set notes
+    document.getElementById('edit-user-int-note').value = interest.note || '';
+    
+    // Show modal
+    document.getElementById('edit-user-interest-modal').classList.remove('hidden');
+}
+
+async function submitUserInterestEdit() {
+    if (!editingInterest) return;
+    
+    const newData = {
+        categoria: document.getElementById('edit-user-int-categoria').value,
+        classe: document.getElementById('edit-user-int-classe').value || '',
+        note: document.getElementById('edit-user-int-note').value || ''
+    };
+    
+    try {
+        const response = await fetch(`/archery/api/interesse/${editingInterest.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+        });
+        
+        if (response.ok) {
+            showNotification('Espressione di interesse aggiornata con successo', 'success');
+            closeEditUserInterestModal();
+            
+            // Reload data
+            await loadInitialData();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update interest');
+        }
+    } catch (error) {
+        console.error('Error updating interest:', error);
+        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+}
+
+function closeEditUserInterestModal() {
+    document.getElementById('edit-user-interest-modal').classList.add('hidden');
+    document.getElementById('edit-user-interest-form').reset();
+    editingInterest = null;
+}
+
 </script>
 
 {% endblock %}

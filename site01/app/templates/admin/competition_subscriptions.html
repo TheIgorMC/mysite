@@ -73,6 +73,141 @@
             </div>
         </div>
     </div>
+    
+    <!-- Edit Subscription Modal -->
+    <div id="edit-subscription-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-edit mr-2"></i>Modifica Iscrizione
+                    </h3>
+                    <button onclick="closeEditSubscriptionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <form id="edit-subscription-form" class="space-y-4">
+                    <input type="hidden" id="edit-sub-id">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera</label>
+                            <input type="text" id="edit-sub-tessera" readonly
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turno</label>
+                            <input type="number" id="edit-sub-turno" required min="1"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <input type="text" id="edit-sub-categoria" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <input type="text" id="edit-sub-classe"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</label>
+                        <textarea id="edit-sub-note" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label>
+                        <select id="edit-sub-stato" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="in attesa">In attesa</option>
+                            <option value="confermato">Confermato</option>
+                            <option value="lista d'attesa">Lista d'attesa</option>
+                            <option value="attesa cancellazione">Attesa cancellazione</option>
+                            <option value="modifica richiesta">Modifica richiesta</option>
+                            <option value="cancellato">Cancellato</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeEditSubscriptionModal()"
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
+                            Annulla
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            <i class="fas fa-save mr-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Interest Modal -->
+    <div id="edit-interest-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-edit mr-2"></i>Modifica Espressione di Interesse
+                    </h3>
+                    <button onclick="closeEditInterestModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <form id="edit-interest-form" class="space-y-4">
+                    <input type="hidden" id="edit-int-id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera</label>
+                        <input type="text" id="edit-int-tessera" readonly
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <input type="text" id="edit-int-categoria" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <input type="text" id="edit-int-classe"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</label>
+                        <textarea id="edit-int-note" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeEditInterestModal()"
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
+                            Annulla
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            <i class="fas fa-save mr-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </section>
 
 <script>
@@ -244,8 +379,18 @@ function renderSubscriptions() {
                                 class="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="in attesa" ${sub.stato === 'in attesa' ? 'selected' : ''}>In attesa</option>
                             <option value="confermato" ${sub.stato === 'confermato' ? 'selected' : ''}>Confermato</option>
+                            <option value="lista d'attesa" ${sub.stato === "lista d'attesa" ? 'selected' : ''}>Lista d'attesa</option>
+                            <option value="attesa cancellazione" ${sub.stato === 'attesa cancellazione' ? 'selected' : ''}>Attesa cancellazione</option>
+                            <option value="modifica richiesta" ${sub.stato === 'modifica richiesta' ? 'selected' : ''}>Modifica richiesta</option>
                             <option value="cancellato" ${sub.stato === 'cancellato' ? 'selected' : ''}>Cancellato</option>
                         </select>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editSubscription(${sub.id})" 
+                                class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                title="Modifica iscrizione">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -269,6 +414,7 @@ function renderSubscriptions() {
                                 <th class="px-4 py-2">Stato</th>
                                 <th class="px-4 py-2">Note</th>
                                 <th class="px-4 py-2">Azioni</th>
+                                <th class="px-4 py-2 text-right">Modifica</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-900 dark:text-gray-300">
@@ -360,7 +506,12 @@ function renderInterest() {
                 <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
                 <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
                 <td class="px-4 py-3 text-sm">${sub.note || '-'}</td>
-                <td class="px-4 py-3 text-right">
+                <td class="px-4 py-3 text-right space-x-2">
+                    <button onclick="editInterest(${sub.id})" 
+                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Modifica espressione di interesse">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button onclick="deleteInterest(${sub.id})" 
                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                             title="Elimina espressione di interesse">
@@ -377,11 +528,18 @@ function renderInterest() {
                     <p class="text-sm text-gray-700 dark:text-gray-300">
                         <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> espressioni di interesse
                     </p>
-                    <button onclick="convertSelectedInterests('${codiceGara}')"
-                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
-                        <i class="fas fa-exchange-alt"></i>
-                        Converti Selezionati
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="deleteSelectedInterests('${codiceGara}')"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
+                            <i class="fas fa-trash-alt"></i>
+                            Elimina Selezionati
+                        </button>
+                        <button onclick="convertSelectedInterests('${codiceGara}')"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
+                            <i class="fas fa-exchange-alt"></i>
+                            Converti Selezionati
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -632,6 +790,262 @@ function formatDate(dateStr) {
     const monthShort = date.toLocaleDateString('it-IT', { month: 'short' });
     return `${day}-${monthShort.charAt(0).toUpperCase() + monthShort.slice(1)}-${year}`;
 }
+
+// Edit Subscription
+function editSubscription(subscriptionId) {
+    const sub = allSubscriptions.find(s => s.id === subscriptionId);
+    if (!sub) return;
+    
+    document.getElementById('edit-sub-id').value = sub.id;
+    document.getElementById('edit-sub-tessera').value = sub.tessera_atleta;
+    document.getElementById('edit-sub-turno').value = sub.turno;
+    document.getElementById('edit-sub-categoria').value = sub.categoria || '';
+    document.getElementById('edit-sub-classe').value = sub.classe || '';
+    document.getElementById('edit-sub-note').value = sub.note || '';
+    document.getElementById('edit-sub-stato').value = sub.stato;
+    
+    document.getElementById('edit-subscription-modal').classList.remove('hidden');
+    document.getElementById('edit-subscription-modal').classList.add('flex');
+}
+
+function closeEditSubscriptionModal() {
+    document.getElementById('edit-subscription-modal').classList.add('hidden');
+    document.getElementById('edit-subscription-modal').classList.remove('flex');
+    document.getElementById('edit-subscription-form').reset();
+}
+
+document.getElementById('edit-subscription-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const subId = parseInt(document.getElementById('edit-sub-id').value);
+    const sub = allSubscriptions.find(s => s.id === subId);
+    if (!sub) return;
+    
+    const newData = {
+        turno: parseInt(document.getElementById('edit-sub-turno').value),
+        categoria: document.getElementById('edit-sub-categoria').value,
+        classe: document.getElementById('edit-sub-classe').value || '',
+        stato: document.getElementById('edit-sub-stato').value
+    };
+    
+    // Build change description (don't include status and note changes)
+    const changes = buildChangeDescription({
+        turno: sub.turno,
+        categoria: sub.categoria,
+        classe: sub.classe
+    }, newData);
+    
+    // Get new notes (admin can edit freely, changes are tracked separately if needed)
+    let newNotes = document.getElementById('edit-sub-note').value || '';
+    
+    // Add note field to update data
+    newData.note = newNotes;
+    
+    try {
+        const response = await fetch(`/archery/api/iscrizioni/${subId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+        });
+        
+        if (response.ok) {
+            // Update local data
+            Object.assign(sub, newData);
+            
+            showNotification('Iscrizione aggiornata con successo', 'success');
+            closeEditSubscriptionModal();
+            renderSubscriptions();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update subscription');
+        }
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+});
+
+// Edit Interest
+function editInterest(interestId) {
+    const interest = allInterests.find(i => i.id === interestId);
+    if (!interest) return;
+    
+    document.getElementById('edit-int-id').value = interest.id;
+    document.getElementById('edit-int-tessera').value = interest.tessera_atleta;
+    document.getElementById('edit-int-categoria').value = interest.categoria || '';
+    document.getElementById('edit-int-classe').value = interest.classe || '';
+    document.getElementById('edit-int-note').value = interest.note || '';
+    
+    document.getElementById('edit-interest-modal').classList.remove('hidden');
+    document.getElementById('edit-interest-modal').classList.add('flex');
+}
+
+function closeEditInterestModal() {
+    document.getElementById('edit-interest-modal').classList.add('hidden');
+    document.getElementById('edit-interest-modal').classList.remove('flex');
+    document.getElementById('edit-interest-form').reset();
+}
+
+document.getElementById('edit-interest-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const intId = parseInt(document.getElementById('edit-int-id').value);
+    const updateData = {
+        categoria: document.getElementById('edit-int-categoria').value,
+        classe: document.getElementById('edit-int-classe').value || '',
+        note: document.getElementById('edit-int-note').value || ''
+    };
+    
+    try {
+        const response = await fetch(`/archery/api/interesse/${intId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (response.ok) {
+            // Update local data
+            const interest = allInterests.find(i => i.id === intId);
+            if (interest) {
+                Object.assign(interest, updateData);
+            }
+            
+            showNotification('Espressione di interesse aggiornata con successo', 'success');
+            closeEditInterestModal();
+            renderInterest();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update interest');
+        }
+    } catch (error) {
+        console.error('Error updating interest:', error);
+        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+});
+
+// Bulk Delete Interests
+async function deleteSelectedInterests(codiceGara) {
+    const checkboxes = document.querySelectorAll(`.interest-checkbox[data-competition-code="${codiceGara}"]:checked`);
+    
+    if (checkboxes.length === 0) {
+        showNotification('Seleziona almeno un\'espressione di interesse da eliminare', 'error');
+        return;
+    }
+    
+    if (!confirm(`Sei sicuro di voler eliminare ${checkboxes.length} espressioni di interesse?`)) {
+        return;
+    }
+    
+    const interestIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.interestId));
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const id of interestIds) {
+        try {
+            const response = await fetch(`/archery/api/interesse/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                successCount++;
+                // Remove from local array
+                const index = allInterests.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    allInterests.splice(index, 1);
+                }
+            } else {
+                errorCount++;
+            }
+        } catch (error) {
+            console.error(`Error deleting interest ${id}:`, error);
+            errorCount++;
+        }
+    }
+    
+    if (successCount > 0) {
+        showNotification(`${successCount} espressioni di interesse eliminate con successo`, 'success');
+        renderInterest();
+    }
+    
+    if (errorCount > 0) {
+        showNotification(`${errorCount} espressioni non sono state eliminate`, 'error');
+    }
+}
+
+// Category validation rules
+// G -> R, R -> A, A -> J, J -> S, M -> S
+// Gender must remain the same (M stays M, F stays F)
+function getValidCategoryChanges(currentCategory) {
+    if (!currentCategory || currentCategory.length !== 2) return [];
+    
+    const ageCode = currentCategory[0];  // G, R, A, J, S, M
+    const gender = currentCategory[1];   // M or F
+    
+    const validAges = [];
+    
+    switch(ageCode) {
+        case 'G':
+            validAges.push('G', 'R');  // G can change to R
+            break;
+        case 'R':
+            validAges.push('R', 'A');  // R can change to A
+            break;
+        case 'A':
+            validAges.push('A', 'J');  // A can change to J
+            break;
+        case 'J':
+            validAges.push('J', 'S');  // J can change to S
+            break;
+        case 'S':
+            validAges.push('S');       // S cannot change
+            break;
+        case 'M':
+            validAges.push('M', 'S');  // M can change to S
+            break;
+        default:
+            validAges.push(ageCode);   // Unknown, allow only same
+    }
+    
+    // Generate valid categories with same gender
+    return validAges.map(age => age + gender);
+}
+
+// Build change description
+function buildChangeDescription(originalData, newData) {
+    const changes = [];
+    
+    if (originalData.turno !== newData.turno) {
+        changes.push(`TURNO cambia da ${originalData.turno} a ${newData.turno}`);
+    }
+    
+    if (originalData.categoria !== newData.categoria) {
+        changes.push(`CATEGORIA cambia da ${originalData.categoria} a ${newData.categoria}`);
+    }
+    
+    if (originalData.classe !== newData.classe) {
+        changes.push(`CLASSE cambia da "${originalData.classe || 'nessuna'}" a "${newData.classe || 'nessuna'}"`);
+    }
+    
+    return changes;
+}
+
+// Apply changes to notes
+function applyChangesToNotes(originalNotes, changes) {
+    if (changes.length === 0) return originalNotes;
+    
+    const changeText = 'CAMBI RICHIESTI: ' + changes.join('; ');
+    
+    // If notes already contain "CAMBI RICHIESTI:", replace it
+    if (originalNotes && originalNotes.includes('CAMBI RICHIESTI:')) {
+        const beforeChanges = originalNotes.substring(0, originalNotes.indexOf('CAMBI RICHIESTI:'));
+        return beforeChanges.trim() + (beforeChanges.trim() ? '\n\n' : '') + changeText;
+    }
+    
+    // Otherwise append to existing notes
+    return (originalNotes || '').trim() + (originalNotes ? '\n\n' : '') + changeText;
+}
+
+
 </script>
 
 <style>

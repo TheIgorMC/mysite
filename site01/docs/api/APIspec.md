@@ -361,6 +361,36 @@ List electronic boards.
 
 List available components.
 
+**Params:**
+
+| Param          | Type   | Description                      |
+| -------------- | ------ | -------------------------------- |
+| `q`            | string | Search query (optional)          |
+| `product_type` | string | Filter by product type (optional)|
+| `package`      | string | Filter by package (optional)     |
+| `limit`        | int    | Max results (default: 100)       |
+| `offset`       | int    | Pagination offset (default: 0)   |
+
+**Response:**
+
+```json
+[
+  {
+    "id": "COMP001",
+    "seller": "LCSC",
+    "seller_code": "C25804",
+    "manufacturer": "Yageo",
+    "manufacturer_code": "RC0402FR-0710KL",
+    "smd_footprint": "RESC1005",
+    "package": "0402",
+    "product_type": "Resistor",
+    "value": "10k",
+    "price": 0.0025,
+    "qty_left": 5000
+  }
+]
+```
+
 ---
 
 ## 💬 Interesse (Expressions of Interest)

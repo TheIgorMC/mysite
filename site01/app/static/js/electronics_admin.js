@@ -196,7 +196,7 @@ async function loadComponents() {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="px-4 py-8 text-center text-red-600 dark:text-red-400">
+                    <td colspan="9" class="px-4 py-8 text-center text-red-600 dark:text-red-400">
                         <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                         <p>Error: ${error.message}</p>
                     </td>
@@ -234,7 +234,7 @@ function renderComponentsTable(components) {
     if (components.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="9" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No components found
                 </td>
             </tr>
@@ -258,7 +258,8 @@ function renderComponentsTable(components) {
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
             <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
-            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate" title="${comp.manufacturer_code || comp.mpn || comp.value || '-'}">${comp.manufacturer_code || comp.mpn || comp.value || '-'}</td>
+            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code || comp.mpn || ''}">${comp.manufacturer_code || comp.mpn || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
@@ -676,6 +677,139 @@ function closeUploadBOMModal() {
     document.getElementById('upload-bom-modal').classList.add('hidden');
     document.getElementById('upload-bom-modal').classList.remove('flex');
     document.getElementById('upload-bom-form').reset();
+}
+
+// Edit BOM Modal
+let currentBOMItems = [];
+
+async function showEditBOMModal() {
+    if (!currentBoardId) return;
+    
+    // Load current BOM
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom`);
+        const data = await response.json();
+        currentBOMItems = data.bom || [];
+        
+        // Populate component dropdown
+        const select = document.getElementById('bom-component-select');
+        select.innerHTML = '<option value="">Select component...</option>' + 
+            allComponents.map(comp => {
+                const label = `${comp.value || comp.manufacturer_code || comp.mpn || 'Unknown'} - ${comp.package || ''} (${comp.product_type || ''})`;
+                return `<option value="${comp.id}" data-component='${JSON.stringify(comp)}'>${label}</option>`;
+            }).join('');
+        
+        renderEditBOMTable();
+        
+        document.getElementById('edit-bom-modal').classList.remove('hidden');
+        document.getElementById('edit-bom-modal').classList.add('flex');
+    } catch (error) {
+        console.error('Error loading BOM for edit:', error);
+        showToast('Failed to load BOM', 'error');
+    }
+}
+
+function closeEditBOMModal() {
+    document.getElementById('edit-bom-modal').classList.add('hidden');
+    document.getElementById('edit-bom-modal').classList.remove('flex');
+    document.getElementById('add-bom-item-form').reset();
+    currentBOMItems = [];
+}
+
+function renderEditBOMTable() {
+    const tbody = document.getElementById('edit-bom-table');
+    
+    if (currentBOMItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No components in BOM</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = currentBOMItems.map((item, index) => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-3 text-sm font-mono">${item.designators || item.designator || '-'}</td>
+            <td class="px-4 py-3 text-sm">${item.product_type || '-'}</td>
+            <td class="px-4 py-3 text-sm font-medium">${item.value || '-'}</td>
+            <td class="px-4 py-3 text-sm">${item.package || '-'}</td>
+            <td class="px-4 py-3 text-sm">${item.quantity || item.qty || 1}</td>
+            <td class="px-4 py-3 text-sm text-right">
+                <button onclick="removeBOMItem(${index})" 
+                        class="text-red-600 hover:text-red-800 dark:text-red-400"
+                        title="Remove">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function removeBOMItem(index) {
+    currentBOMItems.splice(index, 1);
+    renderEditBOMTable();
+}
+
+document.getElementById('add-bom-item-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const componentId = document.getElementById('bom-component-select').value;
+    const designators = document.getElementById('bom-designators').value.trim();
+    const quantity = parseInt(document.getElementById('bom-quantity').value);
+    
+    if (!componentId || !designators) {
+        showToast('Please select a component and enter designators', 'error');
+        return;
+    }
+    
+    // Get component data
+    const select = document.getElementById('bom-component-select');
+    const option = select.options[select.selectedIndex];
+    const component = JSON.parse(option.dataset.component);
+    
+    // Add to BOM items
+    currentBOMItems.push({
+        component_id: parseInt(componentId),
+        designators: designators,
+        quantity: quantity,
+        product_type: component.product_type || component.category,
+        value: component.value,
+        package: component.package
+    });
+    
+    renderEditBOMTable();
+    
+    // Reset form
+    document.getElementById('add-bom-item-form').reset();
+    showToast('Component added to BOM', 'success');
+});
+
+async function saveBOM() {
+    if (!currentBoardId) return;
+    
+    try {
+        // Format data according to API spec: array of {component_id, quantity, designators}
+        const bomData = currentBOMItems.map(item => ({
+            component_id: item.component_id,
+            quantity: item.quantity,
+            designators: item.designators
+        }));
+        
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom/upload`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(bomData)
+        });
+        
+        if (response.ok) {
+            showToast('BOM saved successfully', 'success');
+            closeEditBOMModal();
+            loadBoardBOM(currentBoardId);
+        } else {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save BOM');
+        }
+    } catch (error) {
+        console.error('Error saving BOM:', error);
+        showToast('Failed to save BOM: ' + error.message, 'error');
+    }
 }
 
 document.getElementById('upload-bom-form')?.addEventListener('submit', async function(e) {
@@ -1456,7 +1590,7 @@ function renderStockTable(components) {
     const tbody = document.getElementById('stock-overview-table');
     
     if (components.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">No components found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No components found</td></tr>';
         return;
     }
     
