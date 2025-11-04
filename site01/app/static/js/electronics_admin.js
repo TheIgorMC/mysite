@@ -516,11 +516,19 @@ document.getElementById('add-board-form')?.addEventListener('submit', async func
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     
+    // Transform board_name to name for API compatibility
+    const apiData = {
+        name: data.board_name,
+        version: data.version,
+        variant: data.variant || '',
+        description: data.description || ''
+    };
+    
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: JSON.stringify(apiData)
         });
         
         if (response.ok) {
@@ -528,11 +536,13 @@ document.getElementById('add-board-form')?.addEventListener('submit', async func
             closeAddBoardModal();
             loadBoards();
         } else {
-            throw new Error('Failed to create board');
+            const error = await response.json();
+            console.error('Board creation error:', error);
+            throw new Error(error.detail || 'Failed to create board');
         }
     } catch (error) {
         console.error('Error creating board:', error);
-        showToast('Failed to create board', 'error');
+        showToast('Failed to create board: ' + error.message, 'error');
     }
 });
 
