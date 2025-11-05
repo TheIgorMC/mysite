@@ -2186,9 +2186,28 @@ function editUserSubscription(subscriptionId, codiceGara) {
     // Populate turno dropdown
     const turnoSelect = document.getElementById('edit-user-sub-turno');
     const turni = allTurni[codiceGara] || [];
-    turnoSelect.innerHTML = turni.map(t => 
-        `<option value="${t.numero_turno}" ${t.numero_turno == sub.turno ? 'selected' : ''}>Turno ${t.numero_turno}</option>`
-    ).join('');
+    turnoSelect.innerHTML = turni.map(t => {
+        // Build display text with proper time formatting
+        const parts = [];
+        if (t.giorno) parts.push(t.giorno);
+        if (t.fase) parts.push(t.fase);
+        if (t.ora_ritrovo) {
+            // Format time - handle both string and seconds since midnight
+            let timeFormatted;
+            if (typeof t.ora_ritrovo === 'string') {
+                timeFormatted = t.ora_ritrovo.substring(0, 5);
+            } else if (typeof t.ora_ritrovo === 'number') {
+                const hours = Math.floor(t.ora_ritrovo / 3600);
+                const minutes = Math.floor((t.ora_ritrovo % 3600) / 60);
+                timeFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            } else {
+                timeFormatted = String(t.ora_ritrovo);
+            }
+            parts.push(timeFormatted);
+        }
+        const displayText = parts.length > 0 ? parts.join(' - ') : `Turno ${t.numero_turno || t.turno}`;
+        return `<option value="${t.numero_turno || t.turno}" ${(t.numero_turno || t.turno) == sub.turno ? 'selected' : ''}>${displayText}</option>`;
+    }).join('');
     
     // Populate categoria dropdown with valid options (age categories)
     const validCategories = getValidCategoryChanges(ageCategory);
