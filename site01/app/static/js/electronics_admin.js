@@ -1726,6 +1726,11 @@ async function processOrderFile() {
 }
 
 function displayOrderResults(data) {
+    // Debug: Log the data to console
+    console.log('[Order Import] Full data:', data);
+    console.log('[Order Import] Matched items:', data.matched);
+    console.log('[Order Import] Sample matched item:', data.matched[0]);
+    
     // Show results section
     document.getElementById('order-results').classList.remove('hidden');
     
@@ -1737,7 +1742,9 @@ function displayOrderResults(data) {
     // Display matched components
     document.getElementById('matched-count').textContent = data.matched.length;
     const matchedBody = document.getElementById('matched-components-body');
-    matchedBody.innerHTML = data.matched.map(item => `
+    matchedBody.innerHTML = data.matched.map(item => {
+        console.log(`[Order Import] Rendering item - Price: ${item.unit_price}, Total: ${item.total_price}`, item);
+        return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
             <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${item.seller_code || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.manufacturer || '-'}</td>
@@ -1747,7 +1754,8 @@ function displayOrderResults(data) {
             <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">€${item.unit_price.toFixed(4)}</td>
             <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">€${item.total_price.toFixed(2)}</td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
     
     // Display unmatched components
     if (data.unmatched.length > 0) {
