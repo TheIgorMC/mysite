@@ -114,12 +114,29 @@ Auth: *(currently open, optional Bearer auth can be added)*
 
 ---
 
+### **ELEC_components**
+
+| Column              | Type          | Description                          |
+| ------------------- | ------------- | ------------------------------------ |
+| `id`                | int           | Primary key                          |
+| `seller`            | varchar(64)   | Seller/distributor name (e.g. LCSC)  |
+| `seller_code`       | varchar(64)   | Seller's part number                 |
+| `manufacturer`      | varchar(128)  | Manufacturer name                    |
+| `manufacturer_code` | varchar(128)  | Manufacturer part number (MPN)       |
+| `smd_footprint`     | varchar(32)   | SMD footprint (e.g. RESC1005)        |
+| `package`           | varchar(32)   | Package size (e.g. 0402, 0603)       |
+| `product_type`      | varchar(64)   | Component type (Resistor, Capacitor) |
+| `value`             | varchar(64)   | Component value (e.g. 10k, 100nF)    |
+| `price`             | decimal(10,4) | Unit price                           |
+| `qty_left`          | int           | Available quantity in stock          |
+
+---
+
 ### **ELEC_* tables** (for electronics inventory)
 
 | Table                              | Purpose                               |
 | ---------------------------------- | ------------------------------------- |
 | `ELEC_boards`                      | Boards info (name, version, quantity) |
-| `ELEC_components`                  | Electronic components list            |
 | `ELEC_board_components`            | Board–component relation              |
 | `ELEC_orders` / `ELEC_order_items` | Purchase orders                       |
 | `ELEC_jobs`                        | Production jobs                       |
@@ -376,7 +393,7 @@ List available components.
 ```json
 [
   {
-    "id": "COMP001",
+    "id": 1,
     "seller": "LCSC",
     "seller_code": "C25804",
     "manufacturer": "Yageo",

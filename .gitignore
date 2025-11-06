@@ -70,3 +70,4 @@ htmlcov/
 # Node (if you add npm later)
 node_modules/
 package-lock.json
+site01/docs/api/apiCode\[DONOTEDIT\].py
