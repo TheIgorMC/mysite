@@ -786,7 +786,23 @@ def parse_lcsc_csv(file_content):
     content = file_content.decode('utf-8')
     reader = csv.DictReader(io.StringIO(content))
     
+    # USD to EUR conversion rate (approximate)
+    USD_TO_EUR = 0.92  # Update this periodically or use an API
+    
     for row in reader:
+        # Try both Euro and Dollar currency symbols for Unit Price
+        unit_price_eur = row.get('Unit Price(€)', '')
+        unit_price_usd = row.get('Unit Price($)', '')
+        
+        unit_price = 0.0
+        if unit_price_eur:
+            # Price is already in euros
+            unit_price = float(unit_price_eur.strip().replace(',', ''))
+        elif unit_price_usd:
+            # Price is in dollars, convert to euros
+            unit_price_usd_float = float(unit_price_usd.strip().replace(',', ''))
+            unit_price = unit_price_usd_float * USD_TO_EUR
+        
         items.append({
             'seller_code': row.get('LCSC Part Number', '').strip(),
             'manufacturer_code': row.get('Manufacture Part Number', '').strip(),
@@ -794,7 +810,7 @@ def parse_lcsc_csv(file_content):
             'package': row.get('Package', '').strip(),
             'description': row.get('Description', '').strip(),
             'quantity': int(row.get('Quantity', 0)),
-            'unit_price': float(row.get('Unit Price(€)', '0').replace(',', ''))
+            'unit_price': unit_price
         })
     
     return items
