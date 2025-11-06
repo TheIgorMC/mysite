@@ -1203,6 +1203,9 @@ async function openSubscriptionModal(competition) {
             
             console.log(`Turns for ${competition.codice}:`, turns);
             
+            // Store turns for later use (e.g., in edit modal)
+            allTurni[competition.codice] = turns;
+            
             // Check if invite is published (has turns)
             if (!turns || turns.length === 0) {
                 // No invite published - show "Express Interest" mode
@@ -2162,7 +2165,7 @@ function applyChangesToNotes(originalNotes, changes) {
 // Edit user subscription
 let editingSubscription = null;
 
-function editUserSubscription(subscriptionId, codiceGara) {
+async function editUserSubscription(subscriptionId, codiceGara) {
     // Find subscription
     const subs = userSubscriptions.get(codiceGara) || [];
     const sub = subs.find(s => s.id === subscriptionId);
@@ -2182,6 +2185,21 @@ function editUserSubscription(subscriptionId, codiceGara) {
     const bowType = sub.categoria;    // In DB: categoria = bow type
     
     document.getElementById('edit-user-sub-original-categoria').value = ageCategory;
+    
+    // Load turns if not already cached
+    if (!allTurni[codiceGara]) {
+        try {
+            const turnsResp = await fetch(`/archery/api/turni?codice_gara=${codiceGara}`);
+            if (turnsResp.ok) {
+                allTurni[codiceGara] = await turnsResp.json();
+            } else {
+                allTurni[codiceGara] = [];
+            }
+        } catch (error) {
+            console.error('Error loading turns for edit:', error);
+            allTurni[codiceGara] = [];
+        }
+    }
     
     // Populate turno dropdown
     const turnoSelect = document.getElementById('edit-user-sub-turno');
