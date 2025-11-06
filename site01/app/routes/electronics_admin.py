@@ -420,7 +420,13 @@ def api_proxy_get_components():
 @login_required
 def api_proxy_search_components():
     """Proxy: Smart component search"""
-    result = api_request('/api/elec/components/search', params=request.args.to_dict())
+    params = request.args.to_dict()
+    
+    # API requires 'q' parameter - provide empty string if missing
+    if 'q' not in params or not params['q']:
+        params['q'] = ''
+    
+    result = api_request('/api/elec/components/search', params=params)
     return jsonify(result) if result else (jsonify({'error': 'Search failed'}), 500)
 
 @api_bp.route('/components/types', methods=['GET'])
@@ -725,18 +731,49 @@ def import_order():
     try:
         api_client = OrionAPIClient()
         
+        # Get all components first to check current stock
+        all_components_result = api_client.get_components(limit=10000)
+        all_components = all_components_result if isinstance(all_components_result, list) else []
+        components_by_id = {c['id']: c for c in all_components}
+        
+        updated_count = 0
+        
         # Update stock for each matched component
         for item in data['matched']:
             component_id = item['component_id']
-            quantity = item['quantity']
+            quantity_to_add = item['quantity']
             unit_price = item['unit_price']
             
+            # Get current component data
+            current_comp = components_by_id.get(component_id)
+            if not current_comp:
+                current_app.logger.warning(f"[Order Import] Component {component_id} not found, skipping")
+                continue
+            
+            # Calculate new stock (add to existing) - handle NULL/None values safely
+            current_stock = current_comp.get('qty_left') or current_comp.get('stock_qty') or 0
+            # Ensure current_stock is an integer (could be None, null, or string)
+            try:
+                current_stock = int(current_stock) if current_stock is not None else 0
+            except (ValueError, TypeError):
+                current_stock = 0
+            
+            new_stock = current_stock + quantity_to_add
+            
+            current_app.logger.info(f"[Order Import] Updating component {component_id}: {current_stock} + {quantity_to_add} = {new_stock}")
+            
             # Update component stock and price
-            api_client.update_component(component_id, 
-                                       stock_qty=quantity,  # This should add to existing stock
-                                       unit_price=unit_price)
+            update_data = {
+                'qty_left': new_stock,
+                'stock_qty': new_stock,  # Update both fields for compatibility
+                'price': float(unit_price),
+                'unit_price': float(unit_price)  # Update both fields for compatibility
+            }
+            
+            api_client.update_component(component_id, **update_data)
+            updated_count += 1
         
-        return jsonify({'success': True, 'updated': len(data['matched'])})
+        return jsonify({'success': True, 'updated': updated_count})
         
     except Exception as e:
         current_app.logger.error(f"[Order Import] Error: {e}")

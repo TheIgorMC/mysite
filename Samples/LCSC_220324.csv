@@ -1,0 +1,14 @@
+LCSC Part Number,Manufacture Part Number,Manufacturer,Customer NO.,Package,Description,RoHS,Quantity,Unit Price(€),Ext.Price(€),Estimated lead time (business days),Date Code / Lot No.,Status
+C2969989,STM32F042F6P6TR,STMicroelectronics,,TSSOP-20(4.4x6.5),ARM-M0 48MHz 16 TSSOP-20(4.4x6.5) Microcontrollers RoHS,YES,3,1.195,3.59,,,-
+C15999,USBLC6-2P6,STMicroelectronics,,SOT-666-6,5A@8/20us 17V 6V Unidirectional 5.25V SOT-666-6 TVS Diodes RoHS,YES,20,0.1948,3.90,,,-
+C253528,RUM001L02T2CL,ROHM Semicon,,SOT-723,"20V 100mA 150mW 9Ω@1.5V 1V@100uA 1 N-Channel SOT-723 Single FETs, MOSFETs RoHS",YES,40,0.0282,1.13,,,-
+C434441,SZYY1206W,Yongyu Photoelectric,115,1206,5mA 430mcd White 3.1V 100mW 1206 LED Indication - Discrete RoHS,YES,150,0.017,2.55,,,-
+C2890037,SK6812SIDE-A-RVS,OPSCO Optoelectronics,47,"SMD-4P,4x2mm","SMD-4P,4x2mm LED Addressable, Specialty RoHS",YES,50,0.1465,7.33,,,-
+C3019721,GT-USB-9014A,G-Switch,18,SMD,"USB 2.0 1 16P -40℃~+85℃ Type-C SMD USB, DVI, HDMI Connector Assemblies RoHS",YES,50,0.1695,8.48,,,-
+C965555,WS2812B-2020,Worldsemi,,"SMD,2.2x2mm","SMD,2.2x2mm LED Addressable, Specialty RoHS",YES,50,0.0775,3.88,,,-
+C228947,AC0805FR-07649RL,YAGEO,,0805,649Ω 125mW 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0038,0.38,,,-
+C3013946,ESP32-S3-WROOM-1U-N16R8,Espressif Systems,10,"SMD,19.2x18mm","SMD,19.2x18mm RF Transceiver Modules and Modems RoHS",YES,3,5.0577,15.17,,,-
+C90227,APAN3105,PANASONIC,,"SIP,20x5mm","5V 5A SIP,20x5mm Power Relays RoHS",YES,5,1.0753,5.38,,,-
+C84367,1N4148W,MDD(Microdiode Electronics),,SOD-123,4ns 100V Independent 1.25V@150mA 150mA SOD-123 Single Diodes RoHS,YES,100,0.0066,0.66,,,-
+C2935888,DW200R-22-06-45,DEALON,,"Through Hole,P=2mm","2mm 2mm 2 6P 2x3P 4mm Top 1.5A Square Hole Through Hole Through Hole,P=2mm Headers, Receptacles, Female Sockets RoHS",YES,10,0.0914,0.91,,,-
+C541864,PZ200V-12-06P,XFCN,,"Through Hole,P=2mm","6P 2x3P Brass -40℃~+105℃ Black Pin Header 2mm 2mm 3.9mm 2.8mm 2 Through Hole 2mm Through Hole,P=2mm Headers, Male Pins RoHS",YES,20,0.0256,0.51,,,-

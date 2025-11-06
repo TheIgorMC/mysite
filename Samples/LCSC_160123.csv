@@ -1,0 +1,36 @@
+LCSC Part Number,Manufacture Part Number,Manufacturer,Customer NO.,Package,Description,RoHS,Quantity,Unit Price($),Ext.Price($),Estimated lead time (business days),Date Code / Lot No.,Status
+C2683610,B2B-PH-KL,JST Sales America,,"Through Hole,P=2mm","2P 1x2P PH Tin -25℃~+85℃ Gray 2mm 100V 2 2A 1 Through Hole Through Hole,P=2mm Headers, Male Pins RoHS",YES,10,0.0689,0.69,,,-
+C265456,SPH-002T-P0.5L,JST Sales America,,-,24~28 0.08~0.22 Rectangular Connector Contacts RoHS,YES,100,0.0142,1.42,,,-
+C3195190,PHR-2,JST Sales America,,P=2mm,2mm 1 PH -25℃~+85℃ 2 Non-Latching P=2mm Rectangular Connector Housings RoHS,YES,50,0.0129,0.65,,,-
+C427382,AO3400,MDD（Microdiode Electronics）,,SOT-23,"30V 5.8A 20mΩ@10V 1.5W 800mV@250uA 1 N-Channel SOT-23 Single FETs, MOSFETs RoHS",YES,40,0.0422,1.69,,,-
+C1954175,TMCP1A475MTRF,Vishay Intertech,,0805,4.7uF 10V 4Ω@100kHz ±20% 0805 Tantalum Capacitors RoHS,YES,20,0.095,1.90,,,-
+C28234,CL21B225KOFNNNE,Samsung Electro-Mechanics,,0805,16V 2.2uF X7R ±10% 0805 Ceramic Capacitors RoHS,YES,50,0.0166,0.83,,,-
+C17408,0805W8F1000T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 100Ω 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C17414,0805W8F1002T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 10kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.001,0.10,,,-
+C17513,0805W8F1001T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 1kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0021,0.21,,,-
+C434433,SZYY0805B,Yongyu Photoelectric,,0805,5mA 100mcd 460nm~475nm Blue 3.1V 100mW 0805 LED Indication - Discrete RoHS,YES,50,0.0135,0.68,,,-
+C84260,NCD0805G1,Foshan NationStar Optoelectronics,,0805,20mA 400mcd 525nm~537.5nm Green 2.5V~3.6V 72mW 0805 LED Indication - Discrete RoHS,YES,20,0.0201,0.40,,,-
+C84256,NCD0805R1,Foshan NationStar Optoelectronics,,0805,25mA 195mcd 615nm~630nm Red 65mW 1.6V~2.6V 0805 LED Indication - Discrete RoHS,YES,50,0.0116,0.58,,,-
+C910830,BSMD1206-100-24V,BHFUSE,,1206,24V 1A 40A 1.8A 50mΩ 1206 PTC Resettable Fuses RoHS,YES,20,0.064,1.28,,,-
+C393937,SK12D07VG4,SHOU HAN,,Through Hole,500mA SPDT 50V 5000 cycles Through Hole Slide Switches RoHS,YES,50,0.0184,0.92,,,-
+C727156,AO3401,TWGMC,,SOT-23,"30V 4.2A 65mΩ@10V,4.2A 350mW 1.3V 1 P-Channel SOT-23 Single FETs, MOSFETs RoHS",YES,30,0.0353,1.06,,,-
+C413465,VS-10BQ015HM3/5BT,Vishay Intertech,,DO-214AA(SMB),140A 1 Independent 15V 210mV@1A 1A DO-214AA(SMB) Single Diodes RoHS,YES,7,0.4105,2.87,,,-
+C882787,LM3674MFX-ADJ/NOPB,Texas Instruments,,SOT-23-5,2MHz 600mA Buck Adjustable 1V~3.3V 1 SOT-23-5 Voltage Regulators - DC DC Switching Regulators RoHS,YES,5,1.1423,5.71,,,-
+C92788,JMK212BJ475KG-T,Taiyo Yuden,,0805,6.3V 4.7uF X5R ±10% 0805 Ceramic Capacitors RoHS,YES,40,0.0246,0.98,,,-
+C92786,JMK212BJ106KD-T,Taiyo Yuden,,0805,6.3V 10uF X5R ±10% 0805 Ceramic Capacitors RoHS,YES,30,0.0528,1.58,,,-
+C167267,CDRH2D14NP-2R2NC,Sumida,,"SMD,3x3mm","2.2uH ±30% 1.5A 94mΩ SMD,3x3mm Fixed Inductors RoHS",YES,5,0.4614,2.31,,,-
+C2892669,XC6206-2.8V,YONGYUTAI,,SOT-23-3L,"Positive Fixed 2.8V SOT-23-3L Voltage Regulators - Linear, Low Drop Out (LDO) Regulators RoHS",YES,10,0.0467,0.47,,,-
+C424699,XC6206P122MR-G,Torex Semicon,,SOT-23,"Positive Fixed 1.2V SOT-23 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators RoHS",YES,5,0.1595,0.80,,,-
+C107115,CC0805JRNPO9BN330,YAGEO,,0805,50V 33pF NP0 ±5% 0805 Ceramic Capacitors RoHS,YES,100,0.0066,0.66,,,-
+C228904,AC0805FR-07562KL,YAGEO,,0805,562kΩ 125mW 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,50,0.0042,0.21,,,-
+C96346,RC0805FR-07100KL,YAGEO,,0805,125mW 100kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0022,0.22,,,-
+C1525,CL05B104KO5NNNC,Samsung Electro-Mechanics,,0402,16V 100nF X7R ±10% 0402 Ceramic Capacitors RoHS,YES,100,0.0011,0.11,,,-
+C5156716,MMBT3904,Shenzhen JingYang,,SOT-23,40V 200mW 200mA SOT-23 Single Bipolar Transistors RoHS,YES,50,0.0165,0.83,,,-
+C132160,FT231XS-R,FTDI,,SSOP-20-150mil,USB to UART USB 2.0 SSOP-20-150mil Interface Controllers RoHS,YES,4,2.9751,11.90,,,-
+C107118,CC0805JRNPO9BN470,YAGEO,,0805,50V 47pF NP0 ±5% 0805 Ceramic Capacitors RoHS,YES,50,0.0078,0.39,,,-
+C163408,RC0805FR-0727RL,YAGEO,,0805,125mW 27Ω 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0021,0.21,,,-
+C434436,SZYY0805Y,Yongyu Photoelectric,,0805,10mA 175mcd 584nm~594nm Yellow 2.4V 40mW 0805 LED Indication - Discrete RoHS,YES,50,0.0136,0.68,,,-
+C709037,918-518K2023S50001,Jing Extension of the Electronic Co.,,SMD,"USB 3.1 1 16P -55℃~+85℃ Type-C SMD USB, DVI, HDMI Connector Assemblies RoHS",YES,5,0.6316,3.16,,,-
+C17673,0805W8F4701T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 4.7kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C318884,TS-1187A-B-A-B,XKB Connectivity,,"SMD-4P,5.1x5.1mm","Without Bracket 5.1mm 12V 5.1mm Round Button No SPST 50mA SMD-4P,5.1x5.1mm Tactile Switches RoHS",YES,50,0.0155,0.78,,,-
+C296298,HX2301A,HX(hengjiaxing),,SOT-23,"20V 2.3A 1W 700mV@250uA 1 P-Channel SOT-23 Single FETs, MOSFETs RoHS",YES,50,0.0168,0.84,,,-

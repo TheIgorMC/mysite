@@ -1,0 +1,24 @@
+LCSC Part Number,Manufacture Part Number,Manufacturer,Customer NO.,Package,Description,RoHS,Quantity,Unit Price($),Ext.Price($),Estimated lead time (business days),Date Code / Lot No.,Status
+C24123,CL21B105KOFNNNE,Samsung Electro-Mechanics,,0805,16V 1uF X7R ±10% 0805 Ceramic Capacitors RoHS,YES,50,0.0091,0.46,,,-
+C108406,RC0805JR-0722RL,YAGEO,,0805,125mW 22Ω 150V ±100ppm/℃ Thick Film Resistor ±5% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C726587,AC0805KRX7R0BB102,YAGEO,,0805,100V 1nF X7R ±10% 0805 Ceramic Capacitors RoHS,YES,50,0.0191,0.96,,,-
+C17514,0805W8F1004T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 1MΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C3013946,ESP32-S3-WROOM-1U-N16R8,Espressif Systems,,"SMD,19.2x18mm","SMD,19.2x18mm RF Transceiver Modules and Modems RoHS",YES,2,4.9112,9.82,,,-
+C479072,SY8088IAAC,Silergy Corp,,SOT-23-5,1.5MHz Buck 1A Adjustable 1 SOT-23-5 Voltage Regulators - DC DC Switching Regulators RoHS,YES,10,0.0775,0.78,,,-
+C844973,IHLP1616ABER2R2M11,Vishay Intertech,,"SMD,4.5x4.1mm","2.75A 2.2uH ±20% 3A 83.5mΩ SMD,4.5x4.1mm Fixed Inductors RoHS",YES,5,0.7016,3.51,,,-
+C53100,ME6211C15M5G-N,MICRONE(Nanjing Micro One Elec),,SOT-23-5,"70dB@(1kHz) Positive Fixed 1.5V SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators RoHS",YES,20,0.0626,1.25,,,-
+C53099,ME6211C28M5G-N,MICRONE(Nanjing Micro One Elec),,SOT-23-5,"70dB@(1kHz) Positive Fixed 2.8V SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators RoHS",YES,20,0.0594,1.19,,,-
+C92786,JMK212BJ106KD-T,Taiyo Yuden,,0805,6.3V 10uF X5R ±10% 0805 Ceramic Capacitors RoHS,YES,50,0.0528,2.64,,,-
+C17414,0805W8F1002T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 10kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.001,0.10,,,-
+C519942,CC0805CRNPO9BN6R8,YAGEO,,0805,50V 6.8pF NP0 0805 Ceramic Capacitors RoHS,YES,100,0.0078,0.78,,,-
+C17513,0805W8F1001T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 1kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0017,0.17,,,-
+C2683610,B2B-PH-KL(LF)(SN),JST Sales America,,"Through Hole,P=2mm","2P 1x2P PH Tin -25℃~+85℃ Gray 2mm 100V 2 2A 1 Through Hole Through Hole,P=2mm Headers, Male Pins RoHS",YES,10,0.0623,0.62,,,-
+C84256,NCD0805R1,Foshan NationStar Optoelectronics,,0805,25mA 195mcd 615nm~630nm Red 65mW 1.6V~2.6V 0805 LED Indication - Discrete RoHS,YES,50,0.0114,0.57,,,-
+C3835503,AMK212BBJ107MG-T,Taiyo Yuden,,0805,4V 100uF X5R ±20% 0805 Ceramic Capacitors RoHS,YES,20,0.3629,7.26,,,-
+C5137614,FCC0805N220J500BT,FOJAN,,0805,50V 22pF C0G ±5% 0805 Ceramic Capacitors RoHS,YES,100,0.0047,0.47,,,-
+C17477,0805W8F0000T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 0Ω 150V ±800ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0017,0.17,,,-
+C17709,0805W8F4703T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 470kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C17604,0805W8F2001T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 2kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C17797,0805W8F6803T5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 680kΩ 150V ±100ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0018,0.18,,,-
+C478383,ME4054BM5G-N,MICRONE(Nanjing Micro One Elec),,SOT-23-5,Lithium Battery 1 500mA SOT-23-5 Battery Management RoHS,YES,10,0.0529,0.53,,,-
+C327053,YC164-JR-070RL,YAGEO,,0603x4,"4 ±5% 0Ω 62.5mW ±200ppm/℃ 0603x4 Resistor Networks, Arrays RoHS",YES,100,0.0069,0.69,,,-

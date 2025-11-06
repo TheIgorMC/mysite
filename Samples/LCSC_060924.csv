@@ -1,0 +1,10 @@
+LCSC Part Number,Manufacture Part Number,Manufacturer,Customer NO.,Package,Description,RoHS,Quantity,Unit Price(€),Ext.Price(€),Estimated lead time (business days),Date Code / Lot No.,Status
+C17774,0805W8F680KT5E,UNI-ROYAL(Uniroyal Elec),,0805,125mW 6.8Ω 150V ±200ppm/℃ Thick Film Resistor ±1% 0805 Chip Resistor - Surface Mount RoHS,YES,100,0.0029,0.29,,,-
+C160237,S2B-PH-KL(LF)(SN),JST,,"Through Hole,Right Angle,P=2mm","2P 1x2P PH Tin -25℃~+85℃ Gray 2mm 100V 2 2A 1 Right Angle Through Hole,Right Angle,P=2mm Headers, Male Pins RoHS",YES,20,0.0377,0.75,,,-
+C2682778,X201616MOB4SI,YXC Crystal Oscillators,110,SMD2016-4P,Crystal Oscillator 12pF SMD2016-4P Crystals RoHS,YES,15,0.0788,1.18,,,-
+C2969989,STM32F042F6P6TR,STMicroelectronics,119,TSSOP-20(4.4x6.5),ARM-M0 48MHz 16 TSSOP-20(4.4x6.5) Microcontrollers RoHS,YES,5,1.1661,5.83,,,-
+C5980,"74HCT245PW,118",Nexperia,,TSSOP-20,"8 160uA 4.5V~5.5V 1 12ns@4.5V,50pF TSSOP-20 Buffers, Drivers, Receivers, Transceivers RoHS",YES,5,0.1898,0.95,,,-
+C5127401,SNR4030-101MT,LanTu Micro,,"SMD,4x4mm","100uH Magnetic Shielded Inductor ±20% 600mA 1.48Ω SMD,4x4mm Fixed Inductors RoHS",YES,10,0.0435,0.44,,,-
+C2890037,SK6812SIDE-A-RVS,OPSCO Optoelectronics,47,"SMD-4P,4x2mm","SMD-4P,4x2mm LED Addressable, Specialty RoHS",YES,25,0.0901,2.25,,,-
+C5116488,PM2.54-1*5,ZHOURI,,"Through Hole,P=2.54mm","2.54mm 2.54mm 1 5P -40℃~+105℃ 1x5P Top 8.5mm 2.5A Square Hole Through Hole Through Hole,P=2.54mm Headers, Receptacles, Female Sockets RoHS",YES,20,0.0782,1.56,,,-
+C5224030,PM2.54-1*20,ZHOURI,,"Through Hole,P=2.54mm","2.54mm 2.54mm 1 20P -40℃~+105℃ 1x20P Top 8.5mm 2.5A Square Hole Through Hole Through Hole,P=2.54mm Headers, Receptacles, Female Sockets RoHS",YES,15,0.1608,2.41,,,-
