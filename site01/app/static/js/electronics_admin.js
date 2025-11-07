@@ -243,36 +243,34 @@ function renderComponentsTable(components) {
     }
     
     tbody.innerHTML = components.map(comp => {
-        // Debug first component
+        // Debug first component to see actual field names from API
         if (comp.id === components[0].id) {
             console.log('[Component Render] Sample component fields:', {
                 id: comp.id,
                 seller: comp.seller,
                 seller_code: comp.seller_code,
-                supplier: comp.supplier,
-                supplier_code: comp.supplier_code,
                 allFields: Object.keys(comp)
             });
         }
         
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || comp.category || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || '-'}</td>
             <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code || comp.mpn || ''}">${comp.manufacturer_code || comp.mpn || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code || ''}">${comp.manufacturer_code || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                 <div class="max-w-xs">
-                    <div class="font-medium">${comp.seller || comp.supplier || '-'}</div>
-                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code || comp.supplier_code || ''}">${comp.seller_code || comp.supplier_code || '-'}</div>
+                    <div class="font-medium">${comp.seller || '-'}</div>
+                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code || ''}">${comp.seller_code || '-'}</div>
                 </div>
             </td>
             <td class="px-3 py-3 text-sm">
-                ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty)}
+                ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0))}
             </td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                €${(comp.price !== undefined ? comp.price : comp.unit_price || 0).toFixed(4)}
+                €${(comp.price !== undefined ? comp.price : (comp.unit_price !== undefined ? comp.unit_price : 0)).toFixed(4)}
             </td>
             <td class="px-3 py-3 text-sm text-right whitespace-nowrap">
                 <button onclick="editComponent(${comp.id})" 
