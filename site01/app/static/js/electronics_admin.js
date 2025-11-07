@@ -1811,22 +1811,34 @@ async function saveQuickAddComponent() {
     const unmatchedIndex = parseInt(document.getElementById('quick-add-order-item-index').value);
     const orderItem = currentOrderData.unmatched[unmatchedIndex];
     
+    // Get and truncate package field to max 50 chars
+    const packageValue = document.getElementById('quick-add-package').value;
+    const truncatedPackage = packageValue.length > 50 ? packageValue.substring(0, 50) : packageValue;
+    
+    const supplierValue = document.getElementById('quick-add-supplier').value;
+    const supplierCodeValue = document.getElementById('quick-add-supplier-code').value;
+    const manufacturerCode = document.getElementById('quick-add-manufacturer-code').value;
+    const typeValue = document.getElementById('quick-add-type').value;
+    
+    // Match exact API schema
     const componentData = {
-        name: document.getElementById('quick-add-manufacturer-code').value,
-        category: document.getElementById('quick-add-type').value,
-        mpn: document.getElementById('quick-add-manufacturer-code').value,
+        seller: supplierValue,
+        seller_code: supplierCodeValue,
         manufacturer: document.getElementById('quick-add-manufacturer').value,
-        package: document.getElementById('quick-add-package').value,
-        supplier: document.getElementById('quick-add-supplier').value,
-        supplier_code: document.getElementById('quick-add-supplier-code').value,
-        unit_price: parseFloat(document.getElementById('quick-add-price').value),
-        stock_qty: parseInt(document.getElementById('quick-add-quantity').value),
-        description: document.getElementById('quick-add-description').value
+        manufacturer_code: manufacturerCode,
+        smd_footprint: "",  // Optional field - can be filled later
+        package: truncatedPackage,
+        product_type: typeValue,
+        value: document.getElementById('quick-add-value').value || manufacturerCode,
+        price: parseFloat(document.getElementById('quick-add-price').value) || 0,
+        qty_left: parseInt(document.getElementById('quick-add-quantity').value) || 0
     };
     
+    console.log('[Quick Add] Sending component data:', componentData);
+    
     // Validate required fields
-    if (!componentData.category || !componentData.package || !componentData.mpn) {
-        showToast('Please fill in all required fields', 'error');
+    if (!componentData.product_type || !componentData.package || !componentData.manufacturer_code) {
+        showToast('Please fill in Type, Package, and Manufacturer Code', 'error');
         return;
     }
     
@@ -1838,7 +1850,9 @@ async function saveQuickAddComponent() {
         });
         
         if (!response.ok) {
-            throw new Error('Failed to add component');
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.detail || `HTTP ${response.status}`;
+            throw new Error(errorMsg);
         }
         
         const newComponent = await response.json();
