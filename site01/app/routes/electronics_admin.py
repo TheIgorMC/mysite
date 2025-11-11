@@ -839,7 +839,7 @@ def parse_lcsc_csv(file_content):
 
 
 def parse_mouser_xls(file_content):
-    """Parse Mouser XLS format (.xlsx only, not old .xls)"""
+    """Parse Mouser XLSX format (Order History export)"""
     if not OPENPYXL_AVAILABLE:
         raise ImportError("openpyxl is required for Excel file parsing. Install it with: pip install openpyxl")
     
@@ -850,34 +850,85 @@ def parse_mouser_xls(file_content):
         raise ValueError(f"Failed to read Excel file. Make sure it's a valid .xlsx file (not .xls or CSV). Error: {str(e)}")
     sheet = workbook.active
     
-    # Find header row (usually row 1 or 2)
+    # Find header row (usually row 1)
     headers = []
-    for row in sheet.iter_rows(min_row=1, max_row=5):
-        if any('Mouser' in str(cell.value) for cell in row if cell.value):
-            headers = [cell.value for cell in row]
+    header_row_idx = 1
+    for row_idx, row in enumerate(sheet.iter_rows(min_row=1, max_row=5), start=1):
+        row_values = [cell.value for cell in row]
+        # Look for Mouser-specific headers
+        if any(h and ('Mouser No' in str(h) or 'Mfr. No' in str(h)) for h in row_values):
+            headers = [str(cell.value).strip() if cell.value else '' for cell in row]
+            header_row_idx = row_idx
+            current_app.logger.info(f"[Mouser XLSX] Found headers at row {row_idx}: {headers[:5]}...")
             break
     
     if not headers:
-        raise ValueError("Could not find Mouser header row")
+        raise ValueError("Could not find Mouser header row. Expected headers like 'Mouser No:', 'Mfr. No:', etc.")
     
     # Parse data rows
-    for row in sheet.iter_rows(min_row=sheet.min_row + 1):
+    for row in sheet.iter_rows(min_row=header_row_idx + 1):
         row_data = {headers[i]: cell.value for i, cell in enumerate(row) if i < len(headers)}
         
+        # Try various field names for Mouser part number
+        mouser_no = (row_data.get('Mouser No:') or 
+                    row_data.get('Mouser No.') or 
+                    row_data.get('Mouser Part No.') or 
+                    row_data.get('Mouser No'))
+        
         # Skip empty rows
-        if not row_data.get('Mouser Part No.'):
+        if not mouser_no:
             continue
         
+        # Get manufacturer part number
+        mfr_no = (row_data.get('Mfr. No:') or 
+                 row_data.get('Mfr. No.') or 
+                 row_data.get('Manufacturer Part No.') or 
+                 row_data.get('Mfr No') or '')
+        
+        # Get description
+        desc = (row_data.get('Desc.:') or 
+               row_data.get('Desc.') or 
+               row_data.get('Description') or '')
+        
+        # Get quantity
+        qty_value = (row_data.get('Order Qty.') or 
+                    row_data.get('Quantity') or 
+                    row_data.get('Qty') or 0)
+        try:
+            quantity = int(qty_value) if qty_value else 0
+        except (ValueError, TypeError):
+            quantity = 0
+        
+        # Get price (EUR) - remove € symbol and convert comma to dot
+        price_value = (row_data.get('Price (EUR)') or 
+                      row_data.get('Unit Price') or 
+                      row_data.get('Price') or '0')
+        price_str = str(price_value).strip().replace('€', '').replace(',', '.').replace(' ', '')
+        try:
+            unit_price = float(price_str) if price_str else 0.0
+        except (ValueError, TypeError):
+            unit_price = 0.0
+        
+        # Extract manufacturer name from description if available
+        # Mouser format: "Description goes here" 
+        manufacturer = ''
+        if desc:
+            # Try to extract manufacturer from description (usually first part)
+            desc_parts = str(desc).split(' ')
+            if len(desc_parts) > 0:
+                manufacturer = desc_parts[0]
+        
         items.append({
-            'seller_code': str(row_data.get('Mouser Part No.', '')).strip(),
-            'manufacturer_code': str(row_data.get('Manufacturer Part No.', '')).strip(),
-            'manufacturer': str(row_data.get('Manufacturer', '')).strip(),
-            'package': '',  # Mouser doesn't always include package in packing list
-            'description': str(row_data.get('Description', '')).strip(),
-            'quantity': int(row_data.get('Quantity', 0) or 0),
-            'unit_price': float(row_data.get('Unit Price', 0) or 0)
+            'seller_code': str(mouser_no).strip(),
+            'manufacturer_code': str(mfr_no).strip() if mfr_no else '',
+            'manufacturer': manufacturer,
+            'package': '',  # Mouser order history doesn't include package
+            'description': str(desc).strip() if desc else '',
+            'quantity': quantity,
+            'unit_price': unit_price
         })
     
+    current_app.logger.info(f"[Mouser XLSX] Parsed {len(items)} items")
     return items
 
 
@@ -890,14 +941,60 @@ def parse_mouser_csv(file_content):
     # USD to EUR conversion rate (approximate)
     USD_TO_EUR = 0.92
     
+    # Log headers for debugging
+    first_row = True
+    
     for row in reader:
+        if first_row:
+            current_app.logger.info(f"[Mouser CSV] Headers: {list(row.keys())}")
+            first_row = False
+        
+        # Try multiple field name variations for Mouser part number
+        mouser_part = (row.get('Mouser Part No.') or 
+                      row.get('Mouser Part No') or 
+                      row.get('Mouser P/N') or 
+                      row.get('Mouser No.') or 
+                      row.get('Part Number') or '')
+        
         # Skip empty rows
-        if not row.get('Mouser Part No.'):
+        if not mouser_part.strip():
             continue
         
+        # Try to get manufacturer part number
+        mfr_part = (row.get('Manufacturer Part No.') or 
+                   row.get('Manufacturer Part No') or
+                   row.get('Mfr. Part No.') or 
+                   row.get('Mfr Part No') or
+                   row.get('MPN') or '')
+        
+        # Try to get manufacturer name
+        manufacturer = (row.get('Manufacturer') or 
+                       row.get('Mfr.') or 
+                       row.get('Mfr') or 
+                       row.get('Brand') or '')
+        
+        # Try to get description
+        description = (row.get('Description') or 
+                      row.get('Product Description') or 
+                      row.get('Desc') or '')
+        
+        # Try to get quantity (handle various formats)
+        qty_str = (row.get('Quantity') or 
+                  row.get('Qty') or 
+                  row.get('Qty.') or 
+                  row.get('Ordered Quantity') or '0')
+        try:
+            quantity = int(str(qty_str).strip().replace(',', ''))
+        except (ValueError, TypeError):
+            quantity = 0
+        
         # Try to get price (Mouser uses different field names)
-        unit_price_str = row.get('Unit Price', '') or row.get('Price', '') or row.get('Unit Price ($)', '') or '0'
-        unit_price_str = unit_price_str.strip().replace('$', '').replace(',', '')
+        unit_price_str = (row.get('Unit Price') or 
+                         row.get('Price') or 
+                         row.get('Unit Price ($)') or 
+                         row.get('Unit Price (USD)') or
+                         row.get('Price/Unit') or '0')
+        unit_price_str = str(unit_price_str).strip().replace('$', '').replace('€', '').replace(',', '')
         
         # Convert USD to EUR
         try:
@@ -907,13 +1004,14 @@ def parse_mouser_csv(file_content):
             unit_price = 0.0
         
         items.append({
-            'seller_code': str(row.get('Mouser Part No.', '')).strip(),
-            'manufacturer_code': str(row.get('Manufacturer Part No.', '') or row.get('Mfr. Part No.', '')).strip(),
-            'manufacturer': str(row.get('Manufacturer', '') or row.get('Mfr.', '')).strip(),
+            'seller_code': str(mouser_part).strip(),
+            'manufacturer_code': str(mfr_part).strip(),
+            'manufacturer': str(manufacturer).strip(),
             'package': '',  # Mouser CSV usually doesn't include package
-            'description': str(row.get('Description', '')).strip(),
-            'quantity': int(row.get('Quantity', 0) or row.get('Qty', 0) or 0),
+            'description': str(description).strip(),
+            'quantity': quantity,
             'unit_price': unit_price
         })
     
+    current_app.logger.info(f"[Mouser CSV] Parsed {len(items)} items")
     return items
