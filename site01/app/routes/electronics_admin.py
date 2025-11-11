@@ -16,7 +16,9 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-    current_app.logger.warning("openpyxl not installed - Excel BOM parsing will not work")
+    # Note: Can't use current_app.logger here (module import time, no app context)
+    import warnings
+    warnings.warn("openpyxl not installed - Excel BOM parsing will not work", ImportWarning)
 
 bp = Blueprint('electronics_admin', __name__, url_prefix='/admin/electronics')
 
