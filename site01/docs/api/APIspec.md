@@ -55,6 +55,7 @@ Auth: *(currently open, optional Bearer auth can be added)*
 | `numero_turni`             | int        | Number of available rounds |
 | `data_apertura_iscrizioni` | date       | Registration opening date  |
 | `data_chiusura_iscrizioni` | date       | Registration closing date  |
+| `invite_raw`               | text       | Raw HTML invite content    |
 
 ---
 
@@ -238,6 +239,31 @@ List competition invitations.
     "data_chiusura_iscrizioni": "2025-10-25"
   }
 ]
+```
+
+---
+
+#### `GET /api/inviti/{codice}/text`
+
+Get full invite details including raw HTML text for a specific competition.
+
+**Path params:**
+
+| Param    | Type   | Description             |
+| -------- | ------ | ----------------------- |
+| `codice` | string | Competition invite code |
+
+**Response:**
+
+```json
+{
+  "codice": "25A001",
+  "solo_giovanile": 0,
+  "numero_turni": 2,
+  "data_apertura_iscrizioni": "2025-10-01",
+  "data_chiusura_iscrizioni": "2025-10-25",
+  "invite_raw": "<h1>Campionato Indoor 2025</h1><p>Details...</p>"
+}
 ```
 
 ---
@@ -685,7 +711,7 @@ Body:
 
 ## 🧠 Notes
 
-* IDs for ELEC entities are generated as 32-hex strings if not provided.
+* IDs for ELEC entities are nulls as the DB has them on Autoincrement
 * Stock reservation uses **transaction + row locks** to be safe under concurrency.
 * BOM CSV kept intentionally minimal (`component_id, qty`); expand later if you want fuzzy mapping by `manufacturer_code + package + value`.
 * For large exports, consider paging or streaming on the frontend.

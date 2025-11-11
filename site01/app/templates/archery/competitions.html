@@ -477,6 +477,87 @@
     </div>
 </div>
 
+<!-- Competition Invite Modal -->
+<div id="invite-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeInviteModal()"></div>
+        
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fas fa-file-alt text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="invite-modal-title">
+                                Invito Gara
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" id="invite-modal-subtitle"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="invite-loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-3xl text-blue-600 dark:text-blue-400 mb-2"></i>
+                    <p class="text-gray-600 dark:text-gray-400">Caricamento invito...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="invite-error" class="hidden text-center py-8">
+                    <i class="fas fa-exclamation-circle text-3xl text-red-600 dark:text-red-400 mb-2"></i>
+                    <p class="text-gray-600 dark:text-gray-400" id="invite-error-message"></p>
+                </div>
+
+                <!-- Content -->
+                <div id="invite-content" class="hidden">
+                    <!-- Competition Info Card -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 mb-6 border border-blue-200 dark:border-gray-600">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <div class="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase mb-1">Date Gara</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white" id="invite-dates"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase mb-1">Iscrizioni</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white" id="invite-registration-dates"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase mb-1">Turni Disponibili</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white" id="invite-turns"></div>
+                            </div>
+                        </div>
+                        <div id="invite-youth-only" class="hidden mt-3 pt-3 border-t border-blue-300 dark:border-gray-500">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                <i class="fas fa-child mr-1"></i> Solo Giovanile
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Invite HTML Content -->
+                    <div class="prose prose-sm dark:prose-invert max-w-none bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 max-h-96 overflow-y-auto" id="invite-html-content">
+                        <!-- Dynamic HTML content will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeInviteModal()"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-check mr-2"></i> Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Configuration - Use Flask proxy endpoints (no direct API calls)
 // All API calls go through Flask backend which handles Cloudflare Access
@@ -2546,27 +2627,89 @@ function showInterestSelectionForEdit(interests, codiceGara) {
 }
 
 /**
- * Show competition information modal (invite PDF/details)
- * TODO: Implement API backend to fetch and store competition invites
+ * Show competition invite modal
  */
-function showCompetitionInfo(competition) {
-    // Placeholder for future implementation
-    alert(`Informazioni per: ${competition.nome}\n\n` +
-          `Codice: ${competition.codice}\n` +
-          `Data: ${formatDateRange(competition.data_inizio, competition.data_fine)}\n` +
-          `Luogo: ${competition.luogo || 'TBA'}\n\n` +
-          `⚠️ Visualizzazione invito in arrivo!\n` +
-          `(Backend API da implementare per recuperare e mostrare l'invito della gara)`);
+async function showCompetitionInfo(competition) {
+    const modal = document.getElementById('invite-modal');
+    const loading = document.getElementById('invite-loading');
+    const error = document.getElementById('invite-error');
+    const content = document.getElementById('invite-content');
     
-    // Future implementation will:
-    // 1. Fetch invite PDF/URL from backend API
-    // 2. Display in a modal with embedded PDF viewer
-    // 3. Allow downloading the invite
-    // Example:
-    // fetch(`/archery/api/competitions/${competition.codice}/invite`)
-    //     .then(response => response.json())
-    //     .then(data => {
-    //         // Show modal with PDF viewer
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    loading.classList.remove('hidden');
+    error.classList.add('hidden');
+    content.classList.add('hidden');
+    
+    // Set title
+    document.getElementById('invite-modal-title').textContent = competition.nome;
+    document.getElementById('invite-modal-subtitle').textContent = 
+        `${competition.codice} • ${competition.luogo || 'Sede da definire'}`;
+    
+    try {
+        // Fetch invite details from API
+        const response = await fetch(`/archery/api/inviti/${competition.codice}/text`);
+        
+        if (!response.ok) {
+            throw new Error(response.status === 404 ? 'Invito non disponibile' : 'Errore nel caricamento');
+        }
+        
+        const invite = await response.json();
+        
+        // Populate info card
+        document.getElementById('invite-dates').textContent = 
+            formatDateRange(competition.data_inizio, competition.data_fine);
+        
+        document.getElementById('invite-registration-dates').textContent = 
+            invite.data_apertura_iscrizioni && invite.data_chiusura_iscrizioni
+                ? formatDateRange(invite.data_apertura_iscrizioni, invite.data_chiusura_iscrizioni)
+                : 'Non specificate';
+        
+        document.getElementById('invite-turns').textContent = 
+            invite.numero_turni ? `${invite.numero_turni} turni` : 'Non specificato';
+        
+        // Show youth-only badge if applicable
+        const youthOnlyBadge = document.getElementById('invite-youth-only');
+        if (invite.solo_giovanile) {
+            youthOnlyBadge.classList.remove('hidden');
+        } else {
+            youthOnlyBadge.classList.add('hidden');
+        }
+        
+        // Display HTML content
+        const htmlContent = document.getElementById('invite-html-content');
+        if (invite.invite_raw && invite.invite_raw.trim()) {
+            htmlContent.innerHTML = invite.invite_raw;
+        } else {
+            htmlContent.innerHTML = `
+                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <i class="fas fa-file-alt text-4xl mb-3"></i>
+                    <p>Contenuto invito non disponibile</p>
+                    <p class="text-sm mt-2">L'invito potrebbe non essere stato ancora pubblicato</p>
+                </div>
+            `;
+        }
+        
+        // Show content, hide loading
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+        
+    } catch (err) {
+        console.error('Error loading invite:', err);
+        
+        // Show error state
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        document.getElementById('invite-error-message').textContent = 
+            err.message || 'Errore nel caricamento dell\'invito';
+    }
+}
+
+/**
+ * Close invite modal
+ */
+function closeInviteModal() {
+    document.getElementById('invite-modal').classList.add('hidden');
     //         displayInviteModal(data.invite_url);
     //     });
 }
