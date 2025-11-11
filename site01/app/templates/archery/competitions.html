@@ -941,7 +941,20 @@ function renderCompetitions(competitions) {
         let locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
         card.querySelector('.competition-location').textContent = locationText;
         
-        card.querySelector('.competition-date').textContent = formatDateRange(competition.data_inizio, competition.data_fine);
+        // Format date range (shows both dates if they differ)
+        const dateText = formatDateRange(competition.data_inizio, competition.data_fine);
+        card.querySelector('.competition-date').textContent = dateText;
+        
+        // Debug: Log first competition's dates to verify data
+        if (competitions.indexOf(competition) === 0) {
+            console.log('[Competition Debug]', {
+                nome: competition.nome,
+                data_inizio: competition.data_inizio,
+                data_fine: competition.data_fine,
+                formatted: dateText
+            });
+        }
+        
         card.querySelector('.competition-type').textContent = competition.tipo || 'Competition';
         
         // Get competition status (red/green/blue/white)

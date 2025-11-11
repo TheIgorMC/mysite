@@ -652,11 +652,23 @@ def parse_order_file():
         if not file_content:
             return jsonify({'error': 'File is empty'}), 400
         
+        # Log file info for debugging
+        current_app.logger.info(f"[Order Parse] File: {file.filename}, Size: {len(file_content)} bytes, Supplier: {supplier}")
+        
         # Parse based on supplier
         if supplier == 'LCSC':
             items = parse_lcsc_csv(file_content)
         elif supplier == 'MOUSER':
-            items = parse_mouser_xls(file_content)
+            # Check file extension to determine format
+            filename = file.filename.lower()
+            if filename.endswith('.csv'):
+                items = parse_mouser_csv(file_content)
+            elif filename.endswith('.xlsx'):
+                items = parse_mouser_xls(file_content)
+            elif filename.endswith('.xls'):
+                return jsonify({'error': 'Old Excel format (.xls) not supported. Please save as CSV or .xlsx format'}), 400
+            else:
+                return jsonify({'error': 'Unsupported file format. Mouser orders should be CSV or .xlsx'}), 400
         else:
             return jsonify({'error': 'Unsupported supplier'}), 400
         
@@ -827,12 +839,15 @@ def parse_lcsc_csv(file_content):
 
 
 def parse_mouser_xls(file_content):
-    """Parse Mouser XLS format"""
+    """Parse Mouser XLS format (.xlsx only, not old .xls)"""
     if not OPENPYXL_AVAILABLE:
         raise ImportError("openpyxl is required for Excel file parsing. Install it with: pip install openpyxl")
     
     items = []
-    workbook = openpyxl.load_workbook(io.BytesIO(file_content))
+    try:
+        workbook = openpyxl.load_workbook(io.BytesIO(file_content))
+    except Exception as e:
+        raise ValueError(f"Failed to read Excel file. Make sure it's a valid .xlsx file (not .xls or CSV). Error: {str(e)}")
     sheet = workbook.active
     
     # Find header row (usually row 1 or 2)
@@ -861,6 +876,44 @@ def parse_mouser_xls(file_content):
             'description': str(row_data.get('Description', '')).strip(),
             'quantity': int(row_data.get('Quantity', 0) or 0),
             'unit_price': float(row_data.get('Unit Price', 0) or 0)
+        })
+    
+    return items
+
+
+def parse_mouser_csv(file_content):
+    """Parse Mouser CSV format (exported from Mouser packing list)"""
+    items = []
+    content = file_content.decode('utf-8')
+    reader = csv.DictReader(io.StringIO(content))
+    
+    # USD to EUR conversion rate (approximate)
+    USD_TO_EUR = 0.92
+    
+    for row in reader:
+        # Skip empty rows
+        if not row.get('Mouser Part No.'):
+            continue
+        
+        # Try to get price (Mouser uses different field names)
+        unit_price_str = row.get('Unit Price', '') or row.get('Price', '') or row.get('Unit Price ($)', '') or '0'
+        unit_price_str = unit_price_str.strip().replace('$', '').replace(',', '')
+        
+        # Convert USD to EUR
+        try:
+            unit_price_usd = float(unit_price_str) if unit_price_str else 0.0
+            unit_price = unit_price_usd * USD_TO_EUR
+        except (ValueError, TypeError):
+            unit_price = 0.0
+        
+        items.append({
+            'seller_code': str(row.get('Mouser Part No.', '')).strip(),
+            'manufacturer_code': str(row.get('Manufacturer Part No.', '') or row.get('Mfr. Part No.', '')).strip(),
+            'manufacturer': str(row.get('Manufacturer', '') or row.get('Mfr.', '')).strip(),
+            'package': '',  # Mouser CSV usually doesn't include package
+            'description': str(row.get('Description', '')).strip(),
+            'quantity': int(row.get('Quantity', 0) or row.get('Qty', 0) or 0),
+            'unit_price': unit_price
         })
     
     return items

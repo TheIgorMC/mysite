@@ -40,7 +40,7 @@ docker builder prune -f
 # Step 4: Rebuild with no cache
 echo ""
 echo "🔨 Step 4: Rebuilding container (no cache)..."
-CACHE_BUST=$(date +%s) docker compose build --no-cache --pull
+docker compose build --no-cache --pull --build-arg CACHE_BUST=$(date +%s)
 
 # Step 5: Start containers
 echo ""

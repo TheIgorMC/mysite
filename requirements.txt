@@ -32,6 +32,10 @@ python-dotenv==1.0.0
 # JSON Handling
 orjson==3.9.10
 
+# Excel/Spreadsheet Support
+openpyxl==3.1.2
+Pillow==10.3.0
+
 # Security
 cryptography==41.0.7
 
