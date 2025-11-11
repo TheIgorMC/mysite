@@ -10,6 +10,14 @@ import io
 from functools import wraps
 from app.api import OrionAPIClient
 
+# Try to import openpyxl, provide helpful error if missing
+try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+    current_app.logger.warning("openpyxl not installed - Excel BOM parsing will not work")
+
 bp = Blueprint('electronics_admin', __name__, url_prefix='/admin/electronics')
 
 # Also register API proxy routes under /electronics/api/ (like /archery/api/)
@@ -818,8 +826,8 @@ def parse_lcsc_csv(file_content):
 
 def parse_mouser_xls(file_content):
     """Parse Mouser XLS format"""
-    import openpyxl
-    import io
+    if not OPENPYXL_AVAILABLE:
+        raise ImportError("openpyxl is required for Excel file parsing. Install it with: pip install openpyxl")
     
     items = []
     workbook = openpyxl.load_workbook(io.BytesIO(file_content))

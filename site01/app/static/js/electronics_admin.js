@@ -745,29 +745,49 @@ function removeBOMItem(index) {
     renderEditBOMTable();
 }
 
-document.getElementById('add-bom-item-form')?.addEventListener('submit', function(e) {
+document.getElementById('add-bom-item-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const componentId = document.getElementById('bom-component-select').value;
+    // Get component ID from either dropdown or direct ID input
+    let componentId = document.getElementById('bom-component-select').value;
+    const manualId = document.getElementById('bom-component-id').value;
+    
+    if (manualId) {
+        componentId = manualId;
+    }
+    
     const designators = document.getElementById('bom-designators').value.trim();
     const quantity = parseInt(document.getElementById('bom-quantity').value);
     
-    if (!componentId || !designators) {
-        showToast('Please select a component and enter designators', 'error');
+    if (!componentId) {
+        showToast('Please select a component or enter a component ID', 'error');
         return;
     }
     
-    // Get component data from allComponents array
-    const component = allComponents.find(c => c.id === parseInt(componentId));
+    // Get component data from allComponents array or fetch if using manual ID
+    let component = allComponents.find(c => c.id === parseInt(componentId));
+    
+    if (!component && manualId) {
+        // Try to fetch component by ID from API
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/components/${manualId}`);
+            if (response.ok) {
+                component = await response.json();
+            }
+        } catch (error) {
+            console.error('Error fetching component:', error);
+        }
+    }
+    
     if (!component) {
         showToast('Component not found', 'error');
         return;
     }
     
-    // Add to BOM items
+    // Add to BOM items (designators now optional)
     currentBOMItems.push({
         component_id: parseInt(componentId),
-        designators: designators,
+        designators: designators || '-',
         quantity: quantity,
         product_type: component.product_type || component.category,
         value: component.value,

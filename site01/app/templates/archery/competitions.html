@@ -85,7 +85,12 @@
                         <span class="competition-date"></span>
                     </div>
                 </div>
-                <span class="competition-badge px-3 py-1 rounded-full text-xs font-semibold"></span>
+                <div class="flex flex-col items-end gap-2">
+                    <span class="competition-badge px-3 py-1 rounded-full text-xs font-semibold"></span>
+                    <button class="btn-info text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm px-2 py-1 rounded transition" title="Visualizza invito">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Details -->
@@ -1169,6 +1174,13 @@ function renderCompetitions(competitions) {
             if (!subscribeBtn.disabled) {
                 openSubscriptionModal(competition);
             }
+        });
+        
+        // Info button - show competition invite (API backend to be implemented)
+        const infoBtn = card.querySelector('.btn-info');
+        infoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showCompetitionInfo(competition);
         });
         
         grid.appendChild(card);
@@ -2518,6 +2530,32 @@ function showInterestSelectionForEdit(interests, codiceGara) {
             editUserInterest(interests[index].id, codiceGara);
         }
     }
+}
+
+/**
+ * Show competition information modal (invite PDF/details)
+ * TODO: Implement API backend to fetch and store competition invites
+ */
+function showCompetitionInfo(competition) {
+    // Placeholder for future implementation
+    alert(`Informazioni per: ${competition.nome}\n\n` +
+          `Codice: ${competition.codice}\n` +
+          `Data: ${formatDateRange(competition.data_inizio, competition.data_fine)}\n` +
+          `Luogo: ${competition.luogo || 'TBA'}\n\n` +
+          `⚠️ Visualizzazione invito in arrivo!\n` +
+          `(Backend API da implementare per recuperare e mostrare l'invito della gara)`);
+    
+    // Future implementation will:
+    // 1. Fetch invite PDF/URL from backend API
+    // 2. Display in a modal with embedded PDF viewer
+    // 3. Allow downloading the invite
+    // Example:
+    // fetch(`/archery/api/competitions/${competition.codice}/invite`)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         // Show modal with PDF viewer
+    //         displayInviteModal(data.invite_url);
+    //     });
 }
 
 

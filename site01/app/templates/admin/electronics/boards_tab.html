@@ -242,17 +242,22 @@
             <!-- Add Component Section -->
             <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
                 <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Component</h4>
-                <form id="add-bom-item-form" class="grid grid-cols-5 gap-3">
-                    <div>
+                <form id="add-bom-item-form" class="grid grid-cols-6 gap-3">
+                    <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Component *</label>
-                        <select id="bom-component-select" required
+                        <select id="bom-component-select"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
-                            <option value="">Select...</option>
+                            <option value="">Select from list...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Designators *</label>
-                        <input type="text" id="bom-designators" required placeholder="R1,R2,R3"
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Or Component ID</label>
+                        <input type="number" id="bom-component-id" placeholder="e.g. 48"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Designators</label>
+                        <input type="text" id="bom-designators" placeholder="R1,R2,R3 (optional)"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
                     </div>
                     <div>
@@ -260,10 +265,10 @@
                         <input type="number" id="bom-quantity" required min="1" value="1"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
                     </div>
-                    <div class="col-span-2 flex items-end">
+                    <div class="flex items-end">
                         <button type="submit"
                                 class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                            <i class="fas fa-plus mr-2"></i>Add to BOM
+                            <i class="fas fa-plus mr-2"></i>Add
                         </button>
                     </div>
                 </form>
