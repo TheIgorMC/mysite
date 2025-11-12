@@ -579,6 +579,19 @@ def get_inviti():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/api/inviti/<codice>/text')
+def get_invite_text(codice):
+    """Proxy endpoint for fetching full invite details with raw HTML"""
+    client = OrionAPIClient()
+    
+    try:
+        invite = client.get_invite_text(codice)
+        if not invite:
+            return jsonify({'error': 'Invite not found'}), 404
+        return jsonify(invite)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @bp.route('/api/iscrizioni', methods=['GET', 'POST'])
 @login_required
 def handle_iscrizioni():

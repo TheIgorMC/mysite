@@ -2647,7 +2647,7 @@ async function showCompetitionInfo(competition) {
         `${competition.codice} • ${competition.luogo || 'Sede da definire'}`;
     
     try {
-        // Fetch invite details from API
+        // Fetch invite details from API (via Flask proxy for Cloudflare Zero Trust)
         const response = await fetch(`/archery/api/inviti/${competition.codice}/text`);
         
         if (!response.ok) {

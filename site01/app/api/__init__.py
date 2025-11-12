@@ -198,6 +198,10 @@ class OrionAPIClient:
             params['only_youth'] = 'true'
         return self._make_request('GET', '/api/inviti', params=params)
     
+    def get_invite_text(self, codice):
+        """Get full invite details including raw HTML text"""
+        return self._make_request('GET', f'/api/inviti/{codice}/text')
+    
     def get_subscriptions(self, tessera_atleta):
         """Get subscriptions (iscrizioni) for an athlete"""
         return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})
