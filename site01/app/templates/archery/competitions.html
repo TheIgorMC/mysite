@@ -541,7 +541,7 @@
                     </div>
 
                     <!-- Invite HTML Content -->
-                    <div class="prose prose-sm dark:prose-invert max-w-none bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 max-h-96 overflow-y-auto" id="invite-html-content">
+                    <div class="prose prose-sm dark:prose-invert max-w-none bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 max-h-96 overflow-y-auto" id="invite-html-content" style="white-space: pre-wrap;">
                         <!-- Dynamic HTML content will be inserted here -->
                     </div>
                 </div>
@@ -2676,10 +2676,17 @@ async function showCompetitionInfo(competition) {
             youthOnlyBadge.classList.add('hidden');
         }
         
-        // Display HTML content
+        // Display content (preserving formatting with textContent for plain text)
         const htmlContent = document.getElementById('invite-html-content');
         if (invite.invite_raw && invite.invite_raw.trim()) {
-            htmlContent.innerHTML = invite.invite_raw;
+            // Check if content looks like HTML or plain text
+            if (invite.invite_raw.includes('<') && invite.invite_raw.includes('>')) {
+                // Looks like HTML - render as HTML
+                htmlContent.innerHTML = invite.invite_raw;
+            } else {
+                // Plain text - use textContent to preserve newlines with white-space: pre-wrap
+                htmlContent.textContent = invite.invite_raw;
+            }
         } else {
             htmlContent.innerHTML = `
                 <div class="text-center text-gray-500 dark:text-gray-400 py-8">
