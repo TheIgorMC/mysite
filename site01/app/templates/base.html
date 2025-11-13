@@ -375,6 +375,41 @@
         </div>
     </footer>
     
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="fixed bottom-0 left-0 right-0 bg-gray-900 dark:bg-gray-950 border-t-2 border-primary shadow-lg z-50 transform translate-y-0 transition-transform duration-300" style="display: none;">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-start gap-3 text-sm text-gray-300">
+                    <i class="fas fa-cookie-bite text-primary text-xl mt-1"></i>
+                    <p>Questo sito usa esclusivamente cookie necessari all'esperienza di navigazione. Clicca su ACCETTA per accettare l'uso dei cookie.</p>
+                </div>
+                <button onclick="acceptCookies()" class="whitespace-nowrap px-6 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                    ACCETTA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cookie banner management
+        function acceptCookies() {
+            localStorage.setItem('cookiesAccepted', 'true');
+            const banner = document.getElementById('cookie-banner');
+            banner.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 300);
+        }
+
+        // Show banner if not accepted
+        window.addEventListener('DOMContentLoaded', function() {
+            const cookiesAccepted = localStorage.getItem('cookiesAccepted');
+            if (!cookiesAccepted) {
+                document.getElementById('cookie-banner').style.display = 'block';
+            }
+        });
+    </script>
+    
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
