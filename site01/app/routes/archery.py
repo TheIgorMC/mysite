@@ -44,6 +44,56 @@ def get_user_emails_for_athlete(tessera_atleta):
         current_app.logger.error(f"Error fetching user emails for athlete {tessera_atleta}: {e}")
         return []
 
+def get_athlete_name(tessera_atleta):
+    """Get athlete's full name from authorized_athletes table"""
+    try:
+        athlete = AuthorizedAthlete.query.filter_by(tessera_atleta=tessera_atleta).first()
+        if athlete:
+            return f"{athlete.nome_atleta} {athlete.cognome_atleta}"
+        return None
+    except Exception as e:
+        current_app.logger.error(f"Error fetching athlete name for {tessera_atleta}: {e}")
+        return None
+
+def get_competition_details(codice_gara, client):
+    """Fetch competition details from Orion API"""
+    try:
+        # Get all competitions and filter by code
+        competitions = client._make_request('GET', '/api/gare', params={'future': 'false', 'limit': 1000})
+        if competitions:
+            for comp in competitions:
+                if comp.get('codice') == codice_gara:
+                    return comp
+        return None
+    except Exception as e:
+        current_app.logger.error(f"Error fetching competition details for {codice_gara}: {e}")
+        return None
+
+def get_turn_details(codice_gara, turno, client):
+    """Fetch turn schedule details from Orion API"""
+    try:
+        turns = client._make_request('GET', '/api/turni', params={'codice_gara': codice_gara})
+        if turns:
+            for turn in turns:
+                if turn.get('turno') == turno:
+                    giorno = turn.get('giorno', '')
+                    ora_ritrovo = turn.get('ora_ritrovo', '')
+                    ora_inizio = turn.get('ora_inizio_tiri', '')
+                    
+                    parts = []
+                    if giorno:
+                        parts.append(giorno)
+                    if ora_ritrovo:
+                        parts.append(f"Ritrovo: {ora_ritrovo}")
+                    if ora_inizio:
+                        parts.append(f"Inizio: {ora_inizio}")
+                    
+                    return " - ".join(parts) if parts else None
+        return None
+    except Exception as e:
+        current_app.logger.error(f"Error fetching turn details for {codice_gara} turn {turno}: {e}")
+        return None
+
 def normalize_date(date_str):
     """
     Normalize date strings to YYYY-MM-DD format.
@@ -673,14 +723,50 @@ def handle_iscrizioni():
                 if user_emails:
                     current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                     
-                    details = {
-                        'Codice Gara': data['codice_gara'],
-                        'Tessera Atleta': data['tessera_atleta'],
-                        'Categoria': data['categoria'],
-                        'Classe': data.get('classe', 'N/A'),
-                        'Turno': str(data['turno']),
-                        'Stato': data.get('stato', 'confermato')
-                    }
+                    # Fetch competition and athlete details
+                    comp_details = get_competition_details(data['codice_gara'], client)
+                    athlete_name = get_athlete_name(data['tessera_atleta'])
+                    turn_info = get_turn_details(data['codice_gara'], data['turno'], client)
+                    
+                    # Build details with custom subject
+                    details = {}
+                    
+                    # Competition info
+                    if comp_details:
+                        details['Nome Gara'] = comp_details.get('nome', '')
+                        if comp_details.get('data_inizio'):
+                            data_inizio = comp_details['data_inizio']
+                            data_fine = comp_details.get('data_fine')
+                            if data_fine and data_fine != data_inizio:
+                                details['Date'] = f"{data_inizio} / {data_fine}"
+                            else:
+                                details['Data'] = data_inizio
+                        if comp_details.get('luogo'):
+                            details['Luogo'] = comp_details['luogo']
+                    
+                    details['Codice Gara'] = data['codice_gara']
+                    
+                    # Athlete info
+                    athlete_display = f"{data['tessera_atleta']}"
+                    if athlete_name:
+                        athlete_display += f" - {athlete_name}"
+                    details['Atleta'] = athlete_display
+                    
+                    details['Categoria'] = data['categoria']
+                    details['Classe'] = data.get('classe', 'N/A')
+                    
+                    # Turn info
+                    turn_display = str(data['turno'])
+                    if turn_info:
+                        turn_display += f" ({turn_info})"
+                    details['Turno'] = turn_display
+                    
+                    details['Stato'] = data.get('stato', 'confermato')
+                    
+                    # Custom subject
+                    subject = f"Iscrizione confermata"
+                    if comp_details and comp_details.get('nome'):
+                        subject += f" - {comp_details['nome']}"
                     
                     # Send email to each user managing this athlete
                     for user_email in user_emails:
@@ -690,6 +776,7 @@ def handle_iscrizioni():
                                 recipient_email=user_email,
                                 mail_type='subscription',
                                 locale='it',
+                                subject=subject,
                                 body_text='Iscrizione registrata con successo.',
                                 details_json=details
                             )
@@ -729,12 +816,29 @@ def manage_iscrizione(subscription_id):
                     if user_emails:
                         current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                         
-                        details = {
-                            'ID Iscrizione': str(subscription_id),
-                            'Tessera Atleta': tessera_atleta,
-                            'Codice Gara': subscription_data.get('codice_gara', ''),
-                            'Stato': 'Cancellata'
-                        }
+                        # Fetch details
+                        codice_gara = subscription_data.get('codice_gara', '')
+                        comp_details = get_competition_details(codice_gara, client) if codice_gara else None
+                        athlete_name = get_athlete_name(tessera_atleta)
+                        
+                        details = {}
+                        
+                        if comp_details and comp_details.get('nome'):
+                            details['Nome Gara'] = comp_details['nome']
+                        
+                        details['Codice Gara'] = codice_gara
+                        
+                        athlete_display = tessera_atleta
+                        if athlete_name:
+                            athlete_display += f" - {athlete_name}"
+                        details['Atleta'] = athlete_display
+                        
+                        details['ID Iscrizione'] = str(subscription_id)
+                        details['Stato'] = 'Cancellata'
+                        
+                        subject = "Iscrizione cancellata"
+                        if comp_details and comp_details.get('nome'):
+                            subject += f" - {comp_details['nome']}"
                         
                         for user_email in user_emails:
                             current_app.logger.info(f'[EMAIL] Sending cancellation email to {user_email}')
@@ -743,6 +847,7 @@ def manage_iscrizione(subscription_id):
                                     recipient_email=user_email,
                                     mail_type='cancellation_confirmed',
                                     locale='it',
+                                    subject=subject,
                                     body_text='Iscrizione cancellata con successo.',
                                     details_json=details
                                 )
@@ -773,16 +878,42 @@ def manage_iscrizione(subscription_id):
                     if user_emails:
                         current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                         
-                        # Build list of changes
-                        changes = [f'{k}: {v}' for k, v in data.items() 
-                                 if k not in ['tessera_atleta', 'codice_gara', 'athlete_email']]
+                        # Fetch details
+                        codice_gara = data.get('codice_gara', '')
+                        comp_details = get_competition_details(codice_gara, client) if codice_gara else None
+                        athlete_name = get_athlete_name(tessera_atleta)
                         
-                        details = {
-                            'ID Iscrizione': str(subscription_id),
-                            'Tessera Atleta': tessera_atleta,
-                            'Codice Gara': data.get('codice_gara', ''),
-                            'Modifiche': ', '.join(changes) if changes else 'Nessuna modifica specifica'
-                        }
+                        # Build list of changes with turn details if changed
+                        changes = []
+                        for k, v in data.items():
+                            if k not in ['tessera_atleta', 'codice_gara', 'athlete_email']:
+                                if k == 'turno':
+                                    turn_info = get_turn_details(codice_gara, v, client)
+                                    display = str(v)
+                                    if turn_info:
+                                        display += f" ({turn_info})"
+                                    changes.append(f"{k}: {display}")
+                                else:
+                                    changes.append(f"{k}: {v}")
+                        
+                        details = {}
+                        
+                        if comp_details and comp_details.get('nome'):
+                            details['Nome Gara'] = comp_details['nome']
+                        
+                        details['Codice Gara'] = codice_gara
+                        
+                        athlete_display = tessera_atleta
+                        if athlete_name:
+                            athlete_display += f" - {athlete_name}"
+                        details['Atleta'] = athlete_display
+                        
+                        details['ID Iscrizione'] = str(subscription_id)
+                        details['Modifiche'] = ', '.join(changes) if changes else 'Nessuna modifica specifica'
+                        
+                        subject = "Iscrizione modificata"
+                        if comp_details and comp_details.get('nome'):
+                            subject += f" - {comp_details['nome']}"
                         
                         for user_email in user_emails:
                             current_app.logger.info(f'[EMAIL] Sending modification email to {user_email}')
@@ -791,6 +922,7 @@ def manage_iscrizione(subscription_id):
                                     recipient_email=user_email,
                                     mail_type='modification_confirmed',
                                     locale='it',
+                                    subject=subject,
                                     body_text='Iscrizione modificata con successo.',
                                     details_json=details
                                 )
@@ -856,13 +988,41 @@ def handle_interesse():
                 if user_emails:
                     current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                     
-                    details = {
-                        'Codice Gara': data['codice_gara'],
-                        'Tessera Atleta': data['tessera_atleta'],
-                        'Categoria': data['categoria'],
-                        'Classe': data.get('classe', 'N/A'),
-                        'Note': data.get('note', 'N/A')
-                    }
+                    # Fetch competition and athlete details
+                    comp_details = get_competition_details(data['codice_gara'], client)
+                    athlete_name = get_athlete_name(data['tessera_atleta'])
+                    
+                    details = {}
+                    
+                    # Competition info
+                    if comp_details:
+                        details['Nome Gara'] = comp_details.get('nome', '')
+                        if comp_details.get('data_inizio'):
+                            data_inizio = comp_details['data_inizio']
+                            data_fine = comp_details.get('data_fine')
+                            if data_fine and data_fine != data_inizio:
+                                details['Date'] = f"{data_inizio} / {data_fine}"
+                            else:
+                                details['Data'] = data_inizio
+                    
+                    details['Codice Gara'] = data['codice_gara']
+                    
+                    # Athlete info
+                    athlete_display = data['tessera_atleta']
+                    if athlete_name:
+                        athlete_display += f" - {athlete_name}"
+                    details['Atleta'] = athlete_display
+                    
+                    details['Categoria'] = data['categoria']
+                    details['Classe'] = data.get('classe', 'N/A')
+                    
+                    if data.get('note'):
+                        details['Note'] = data['note']
+                    
+                    # Custom subject
+                    subject = "Interesse registrato"
+                    if comp_details and comp_details.get('nome'):
+                        subject += f" - {comp_details['nome']}"
                     
                     for user_email in user_emails:
                         current_app.logger.info(f'[EMAIL] Sending interest email to {user_email}')
@@ -871,6 +1031,7 @@ def handle_interesse():
                                 recipient_email=user_email,
                                 mail_type='interest',
                                 locale='it',
+                                subject=subject,
                                 body_text='Espressione di interesse registrata con successo.',
                                 details_json=details
                             )
