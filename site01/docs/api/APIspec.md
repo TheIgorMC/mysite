@@ -133,6 +133,26 @@ Auth: *(currently open, optional Bearer auth can be added)*
 
 ---
 
+### **mail_queue**
+
+| Column            | Type         | Description                                  |
+| ----------------- | ------------ | -------------------------------------------- |
+| `id`              | int          | Primary key (auto-increment)                 |
+| `recipient_email` | varchar(255) | Email address to send to                     |
+| `mail_type`       | varchar(50)  | Email template type (welcome, invite, etc.)  |
+| `locale`          | varchar(5)   | Language code ('it' or 'en')                 |
+| `subject`         | varchar(255) | Custom subject (NULL = use template)         |
+| `body_text`       | text         | Custom body text (NULL = use template)       |
+| `details_json`    | json         | Key-value pairs for details table            |
+| `status`          | enum         | 'pending', 'sent', or 'error'                |
+| `scheduled_time`  | datetime     | When to send the email                       |
+| `sent_at`         | datetime     | When email was sent (auto-filled)            |
+| `error_message`   | text         | Error details if sending failed              |
+| `created_at`      | datetime     | Record creation timestamp                    |
+| `updated_at`      | datetime     | Last update timestamp                        |
+
+---
+
 ### **ELEC_* tables** (for electronics inventory)
 
 | Table                              | Purpose                               |
@@ -508,6 +528,104 @@ Delete an interest expression (by ID).
 
 ---
 
+## 📬 Mail Queue (Email Sending)
+
+### `POST /api/mail/send`
+
+Queue an email for sending. The mailer service picks up emails from the queue and sends them automatically.
+
+**Body:**
+
+```json
+{
+  "recipient_email": "user@example.com",
+  "mail_type": "invite",
+  "locale": "it",
+  "subject": "Invito alla Gara R2506017",
+  "body_text": "La gara è ora disponibile per le iscrizioni!",
+  "details_json": {
+    "Codice Gara": "R2506017",
+    "Nome Gara": "Campionato Regionale",
+    "Data": "2025-06-14",
+    "Luogo": "Firenze"
+  },
+  "scheduled_time": "2025-12-01T09:00:00"
+}
+```
+
+**Fields:**
+
+| Field              | Type   | Required | Default | Description                                      |
+| ------------------ | ------ | -------- | ------- | ------------------------------------------------ |
+| `recipient_email`  | string | ✅ Yes   | -       | Email address to send to                         |
+| `mail_type`        | string | ✅ Yes   | -       | Template type (see below)                        |
+| `locale`           | string | No       | `"it"`  | Language: `"it"` or `"en"`                       |
+| `subject`          | string | No       | `null`  | Custom subject (null = use template default)     |
+| `body_text`        | string | No       | `null`  | Custom body text (null = use template default)   |
+| `details_json`     | object | No       | `null`  | Key-value pairs displayed as table in email      |
+| `scheduled_time`   | string | No       | `null`  | ISO datetime (null = send immediately with NOW())|
+
+**Valid mail_type values:**
+
+- `welcome` - Welcome email
+- `access` - Access granted
+- `interest` - Interest registered
+- `invite` - Invite published
+- `subscription` - Subscription received
+- `modification` - Modification requested
+- `modification_confirmed` - Modification done
+- `cancellation` - Cancellation requested
+- `cancellation_confirmed` - Cancellation done
+- `closing_soon` - Closing warning
+- `opening_soon` - Opening notice
+
+**Response:**
+
+```json
+{
+  "id": 123,
+  "status": "queued",
+  "message": "Email queued successfully. Mailer will process it shortly."
+}
+```
+
+**Examples:**
+
+Simple email (immediate, using template defaults):
+```json
+{
+  "recipient_email": "user@example.com",
+  "mail_type": "welcome"
+}
+```
+
+Email with custom text and details:
+```json
+{
+  "recipient_email": "athlete@example.com",
+  "mail_type": "subscription",
+  "body_text": "La tua iscrizione è stata confermata. Ecco i dettagli:",
+  "details_json": {
+    "Atleta": "Mario Rossi",
+    "Tessera": "123456",
+    "Gara": "R2506017",
+    "Data": "2025-06-14",
+    "Arco": "Olimpico"
+  }
+}
+```
+
+Scheduled email for future:
+```json
+{
+  "recipient_email": "user@example.com",
+  "mail_type": "closing_soon",
+  "scheduled_time": "2025-12-23T09:00:00"
+}
+```
+
+---
+
 ## 🧱 Data Flow Update
 
 ```text
@@ -518,6 +636,7 @@ Modules:
   ├── /api/gare, /api/turni, /api/inviti → event and invite info
   ├── /api/interesse → interest tracking (pre-registration)
   ├── /api/iscrizioni → full CRUD + export
+  ├── /api/mail/send → email queue management
   ├── /api/stats, /api/ranking → analytics
   └── /api/elec/... → electronics management
 ```

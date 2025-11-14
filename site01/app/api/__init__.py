@@ -280,6 +280,41 @@ class OrionAPIClient:
         """Delete an interest expression by ID"""
         return self._make_request('DELETE', f'/api/interesse/{interest_id}')
     
+    def update_interest(self, interest_id, data):
+        """Update an interest expression by ID"""
+        return self._make_request('PATCH', f'/api/interesse/{interest_id}', data=data)
+    
+    # ==================== EMAIL QUEUE ====================
+    
+    def send_email(self, recipient_email, mail_type, locale='it', subject=None, body_text=None, details_json=None, scheduled_time=None):
+        """
+        Queue an email for sending
+        
+        Args:
+            recipient_email: Email address to send to
+            mail_type: Email template type (welcome, interest, subscription, etc.)
+            locale: Language code ('it' or 'en'), default 'it'
+            subject: Custom subject (null = use template)
+            body_text: Custom body text (null = use template)
+            details_json: Key-value pairs for details table
+            scheduled_time: ISO datetime string (null = send immediately)
+        """
+        data = {
+            'recipient_email': recipient_email,
+            'mail_type': mail_type,
+            'locale': locale
+        }
+        if subject:
+            data['subject'] = subject
+        if body_text:
+            data['body_text'] = body_text
+        if details_json:
+            data['details_json'] = details_json
+        if scheduled_time:
+            data['scheduled_time'] = scheduled_time
+        
+        return self._make_request('POST', '/api/mail/send', data=data)
+    
     # ==================== MATERIALS (STRINGMAKING STOCK) ====================
     
     def get_materials(self, q=None, tipo=None, low_stock_lt=None, limit=100, offset=0):
