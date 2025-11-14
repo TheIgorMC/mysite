@@ -667,12 +667,11 @@ def handle_iscrizioni():
             
             # Send email notification to all users managing this athlete
             try:
+                current_app.logger.info(f'[EMAIL] Attempting to send subscription notification for athlete {data["tessera_atleta"]}')
                 user_emails = get_user_emails_for_athlete(data['tessera_atleta'])
                 
                 if user_emails:
-                    # Get competition details for email
-                    gara_details = client.get_gare(codice=data['codice_gara'])
-                    atleta_details = client.get_atleti(q=data['tessera_atleta'])
+                    current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                     
                     details = {
                         'Codice Gara': data['codice_gara'],
@@ -683,25 +682,24 @@ def handle_iscrizioni():
                         'Stato': data.get('stato', 'confermato')
                     }
                     
-                    if gara_details and len(gara_details) > 0:
-                        details['Nome Gara'] = gara_details[0].get('nome', '')
-                        details['Data Gara'] = gara_details[0].get('data_inizio', '')
-                        details['Luogo'] = gara_details[0].get('luogo', '')
-                    
-                    if atleta_details and len(atleta_details) > 0:
-                        details['Nome Atleta'] = atleta_details[0].get('nome', '')
-                    
                     # Send email to each user managing this athlete
                     for user_email in user_emails:
-                        client.send_email(
-                            recipient_email=user_email,
-                            mail_type='subscription',
-                            locale='it',
-                            body_text='Iscrizione registrata con successo.',
-                            details_json=details
-                        )
+                        current_app.logger.info(f'[EMAIL] Sending subscription email to {user_email}')
+                        try:
+                            result = client.send_email(
+                                recipient_email=user_email,
+                                mail_type='subscription',
+                                locale='it',
+                                body_text='Iscrizione registrata con successo.',
+                                details_json=details
+                            )
+                            current_app.logger.info(f'[EMAIL] Successfully queued subscription email to {user_email}: {result}')
+                        except Exception as send_err:
+                            current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                else:
+                    current_app.logger.warning(f'[EMAIL] No users found managing athlete {data["tessera_atleta"]}')
             except Exception as email_err:
-                current_app.logger.warning(f'Failed to send subscription email: {email_err}')
+                current_app.logger.error(f'[EMAIL] Error in subscription email process: {email_err}', exc_info=True)
             
             return jsonify(result)
         except Exception as e:
@@ -725,9 +723,12 @@ def manage_iscrizione(subscription_id):
             # Send cancellation email to all users managing this athlete
             if tessera_atleta:
                 try:
+                    current_app.logger.info(f'[EMAIL] Attempting to send cancellation notification for athlete {tessera_atleta}')
                     user_emails = get_user_emails_for_athlete(tessera_atleta)
                     
                     if user_emails:
+                        current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
+                        
                         details = {
                             'ID Iscrizione': str(subscription_id),
                             'Tessera Atleta': tessera_atleta,
@@ -736,15 +737,24 @@ def manage_iscrizione(subscription_id):
                         }
                         
                         for user_email in user_emails:
-                            client.send_email(
-                                recipient_email=user_email,
-                                mail_type='cancellation_confirmed',
-                                locale='it',
-                                body_text='Iscrizione cancellata con successo.',
-                                details_json=details
-                            )
+                            current_app.logger.info(f'[EMAIL] Sending cancellation email to {user_email}')
+                            try:
+                                result_email = client.send_email(
+                                    recipient_email=user_email,
+                                    mail_type='cancellation_confirmed',
+                                    locale='it',
+                                    body_text='Iscrizione cancellata con successo.',
+                                    details_json=details
+                                )
+                                current_app.logger.info(f'[EMAIL] Successfully queued cancellation email to {user_email}: {result_email}')
+                            except Exception as send_err:
+                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    else:
+                        current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
-                    current_app.logger.warning(f'Failed to send cancellation email: {email_err}')
+                    current_app.logger.error(f'[EMAIL] Error in cancellation email process: {email_err}', exc_info=True)
+            else:
+                current_app.logger.warning(f'[EMAIL] No tessera_atleta provided for subscription {subscription_id} deletion')
             
             return jsonify(result if result else {'id': subscription_id, 'status': 'deleted'})
         
@@ -757,9 +767,12 @@ def manage_iscrizione(subscription_id):
             # Send modification email to all users managing this athlete
             if tessera_atleta:
                 try:
+                    current_app.logger.info(f'[EMAIL] Attempting to send modification notification for athlete {tessera_atleta}')
                     user_emails = get_user_emails_for_athlete(tessera_atleta)
                     
                     if user_emails:
+                        current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
+                        
                         # Build list of changes
                         changes = [f'{k}: {v}' for k, v in data.items() 
                                  if k not in ['tessera_atleta', 'codice_gara', 'athlete_email']]
@@ -772,15 +785,22 @@ def manage_iscrizione(subscription_id):
                         }
                         
                         for user_email in user_emails:
-                            client.send_email(
-                                recipient_email=user_email,
-                                mail_type='modification_confirmed',
-                                locale='it',
-                                body_text='Iscrizione modificata con successo.',
-                                details_json=details
-                            )
+                            current_app.logger.info(f'[EMAIL] Sending modification email to {user_email}')
+                            try:
+                                result_email = client.send_email(
+                                    recipient_email=user_email,
+                                    mail_type='modification_confirmed',
+                                    locale='it',
+                                    body_text='Iscrizione modificata con successo.',
+                                    details_json=details
+                                )
+                                current_app.logger.info(f'[EMAIL] Successfully queued modification email to {user_email}: {result_email}')
+                            except Exception as send_err:
+                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    else:
+                        current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
-                    current_app.logger.warning(f'Failed to send modification email: {email_err}')
+                    current_app.logger.error(f'[EMAIL] Error in modification email process: {email_err}', exc_info=True)
             
             return jsonify(result if result else {'id': subscription_id, 'status': 'updated'})
     except Exception as e:
@@ -830,10 +850,11 @@ def handle_interesse():
             
             # Send email notification to all users managing this athlete
             try:
+                current_app.logger.info(f'[EMAIL] Attempting to send interest notification for athlete {data["tessera_atleta"]}')
                 user_emails = get_user_emails_for_athlete(data['tessera_atleta'])
                 
                 if user_emails:
-                    gara_details = client.get_gare(codice=data['codice_gara'])
+                    current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                     
                     details = {
                         'Codice Gara': data['codice_gara'],
@@ -843,20 +864,23 @@ def handle_interesse():
                         'Note': data.get('note', 'N/A')
                     }
                     
-                    if gara_details and len(gara_details) > 0:
-                        details['Nome Gara'] = gara_details[0].get('nome', '')
-                        details['Data Gara'] = gara_details[0].get('data_inizio', '')
-                    
                     for user_email in user_emails:
-                        client.send_email(
-                            recipient_email=user_email,
-                            mail_type='interest',
-                            locale='it',
-                            body_text='Espressione di interesse registrata con successo.',
-                            details_json=details
-                        )
+                        current_app.logger.info(f'[EMAIL] Sending interest email to {user_email}')
+                        try:
+                            result = client.send_email(
+                                recipient_email=user_email,
+                                mail_type='interest',
+                                locale='it',
+                                body_text='Espressione di interesse registrata con successo.',
+                                details_json=details
+                            )
+                            current_app.logger.info(f'[EMAIL] Successfully queued interest email to {user_email}: {result}')
+                        except Exception as send_err:
+                            current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                else:
+                    current_app.logger.warning(f'[EMAIL] No users found managing athlete {data["tessera_atleta"]}')
             except Exception as email_err:
-                current_app.logger.warning(f'Failed to send interest email: {email_err}')
+                current_app.logger.error(f'[EMAIL] Error in interest email process: {email_err}', exc_info=True)
             
             return jsonify(result)
         except Exception as e:
@@ -881,9 +905,12 @@ def manage_interesse(interest_id):
             # Send cancellation email to all users managing this athlete
             if tessera_atleta:
                 try:
+                    current_app.logger.info(f'[EMAIL] Attempting to send interest cancellation notification for athlete {tessera_atleta}')
                     user_emails = get_user_emails_for_athlete(tessera_atleta)
                     
                     if user_emails:
+                        current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
+                        
                         details = {
                             'ID Interesse': str(interest_id),
                             'Tessera Atleta': tessera_atleta,
@@ -892,15 +919,24 @@ def manage_interesse(interest_id):
                         }
                         
                         for user_email in user_emails:
-                            client.send_email(
-                                recipient_email=user_email,
-                                mail_type='cancellation_confirmed',
-                                locale='it',
-                                body_text='Espressione di interesse cancellata con successo.',
-                                details_json=details
-                            )
+                            current_app.logger.info(f'[EMAIL] Sending interest cancellation email to {user_email}')
+                            try:
+                                result_email = client.send_email(
+                                    recipient_email=user_email,
+                                    mail_type='cancellation_confirmed',
+                                    locale='it',
+                                    body_text='Espressione di interesse cancellata con successo.',
+                                    details_json=details
+                                )
+                                current_app.logger.info(f'[EMAIL] Successfully queued interest cancellation email to {user_email}: {result_email}')
+                            except Exception as send_err:
+                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    else:
+                        current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
-                    current_app.logger.warning(f'Failed to send interest cancellation email: {email_err}')
+                    current_app.logger.error(f'[EMAIL] Error in interest cancellation email process: {email_err}', exc_info=True)
+            else:
+                current_app.logger.warning(f'[EMAIL] No tessera_atleta provided for interest {interest_id} deletion')
             
             return jsonify(result if result else {'id': interest_id, 'status': 'deleted'})
         
@@ -913,9 +949,12 @@ def manage_interesse(interest_id):
             # Send modification email to all users managing this athlete
             if tessera_atleta:
                 try:
+                    current_app.logger.info(f'[EMAIL] Attempting to send interest modification notification for athlete {tessera_atleta}')
                     user_emails = get_user_emails_for_athlete(tessera_atleta)
                     
                     if user_emails:
+                        current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
+                        
                         # Build list of changes
                         changes = [f'{k}: {v}' for k, v in data.items() 
                                  if k not in ['tessera_atleta', 'codice_gara', 'athlete_email']]
@@ -928,15 +967,22 @@ def manage_interesse(interest_id):
                         }
                         
                         for user_email in user_emails:
-                            client.send_email(
-                                recipient_email=user_email,
-                                mail_type='modification_confirmed',
-                                locale='it',
-                                body_text='Espressione di interesse modificata con successo.',
-                                details_json=details
-                            )
+                            current_app.logger.info(f'[EMAIL] Sending interest modification email to {user_email}')
+                            try:
+                                result_email = client.send_email(
+                                    recipient_email=user_email,
+                                    mail_type='modification_confirmed',
+                                    locale='it',
+                                    body_text='Espressione di interesse modificata con successo.',
+                                    details_json=details
+                                )
+                                current_app.logger.info(f'[EMAIL] Successfully queued interest modification email to {user_email}: {result_email}')
+                            except Exception as send_err:
+                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    else:
+                        current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
-                    current_app.logger.warning(f'Failed to send interest modification email: {email_err}')
+                    current_app.logger.error(f'[EMAIL] Error in interest modification email process: {email_err}', exc_info=True)
             
             return jsonify(result if result else {'id': interest_id, 'status': 'updated'})
     except Exception as e:
