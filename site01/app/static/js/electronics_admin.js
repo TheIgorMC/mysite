@@ -771,16 +771,25 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
         // Try to fetch component by ID from API
         try {
             const response = await fetch(`${ELECTRONICS_API_BASE}/components/${manualId}`);
-            if (response.ok) {
-                component = await response.json();
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error || `Component with ID ${manualId} not found`;
+                console.error(`[BOM] Failed to fetch component ${manualId}:`, response.status, errorMsg);
+                showToast(errorMsg, 'error');
+                return;
             }
+            component = await response.json();
+            console.log(`[BOM] Successfully fetched component ${manualId}:`, component);
         } catch (error) {
-            console.error('Error fetching component:', error);
+            console.error(`[BOM] Network error fetching component ${manualId}:`, error);
+            showToast(`Network error: ${error.message}. Please check your connection and try again.`, 'error');
+            return;
         }
     }
     
     if (!component) {
-        showToast('Component not found', 'error');
+        console.error(`[BOM] Component not found: ID ${componentId}`);
+        showToast('Component not found. Please select from the list or verify the ID.', 'error');
         return;
     }
     
@@ -799,6 +808,61 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
     // Reset form
     document.getElementById('add-bom-item-form').reset();
     showToast('Component added to BOM', 'success');
+});
+
+// Auto-fill component details when ID is entered manually
+let componentIdDebounceTimer;
+document.getElementById('bom-component-id')?.addEventListener('input', function(e) {
+    const componentId = e.target.value.trim();
+    const previewDiv = document.getElementById('bom-component-preview');
+    
+    // Clear previous timer
+    clearTimeout(componentIdDebounceTimer);
+    
+    if (!componentId) {
+        // Hide preview if field is empty
+        previewDiv.classList.add('hidden');
+        return;
+    }
+    
+    // Show loading state
+    previewDiv.classList.remove('hidden');
+    previewDiv.innerHTML = '<div class="text-gray-600 dark:text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>Loading...</div>';
+    
+    // Debounce: wait 500ms after user stops typing
+    componentIdDebounceTimer = setTimeout(async () => {
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/components/${componentId}`);
+            
+            if (!response.ok) {
+                previewDiv.innerHTML = '<div class="text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>Component not found</div>';
+                return;
+            }
+            
+            const component = await response.json();
+            
+            // Display component details
+            const details = [
+                component.seller_code ? `<strong>Seller:</strong> ${component.seller_code}` : null,
+                component.manufacturer ? `<strong>Mfr:</strong> ${component.manufacturer}` : null,
+                component.manufacturer_code ? `<strong>Mfr Code:</strong> ${component.manufacturer_code}` : null,
+                component.value ? `<strong>Value:</strong> ${component.value}` : null,
+                component.package ? `<strong>Package:</strong> ${component.package}` : null,
+                component.product_type ? `<strong>Type:</strong> ${component.product_type}` : null
+            ].filter(Boolean).join(' • ');
+            
+            previewDiv.innerHTML = `
+                <div class="text-green-600 dark:text-green-400 mb-1">
+                    <i class="fas fa-check-circle mr-1"></i>Component found
+                </div>
+                <div class="text-gray-700 dark:text-gray-300">${details || 'No details available'}</div>
+            `;
+            
+        } catch (error) {
+            console.error('[BOM Preview] Error fetching component:', error);
+            previewDiv.innerHTML = '<div class="text-red-600 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i>Network error</div>';
+        }
+    }, 500);
 });
 
 async function saveBOM() {
@@ -967,25 +1031,33 @@ function renderJobsGrid(jobs) {
     }
     
     grid.innerHTML = jobs.map(job => {
-        const jobName = job.job_name || job.name || 'Unnamed Job';
-        const status = job.status || 'planning';
-        const notes = job.notes || '';
-        const createdAt = job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Unknown date';
+        // Find the board for this job
+        const board = allBoards.find(b => b.id === job.board_id);
+        const boardName = board ? `${board.board_name} - ${board.version}` : `Board #${job.board_id}`;
+        const jobTitle = `Job #${job.job_id || job.id}`;
+        const status = job.status || 'created';
+        const quantity = job.quantity || 1;
+        const pnpJob = job.pnp_job || 0;
+        const dueDate = job.due_date ? new Date(job.due_date).toLocaleDateString() : null;
         
         return `
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
-             onclick="viewJobDetails(${job.id})">
+             onclick="viewJobDetails(${job.job_id || job.id})">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${jobName}</h4>
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${jobTitle}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${boardName}</p>
                     ${getStatusBadge(status)}
                 </div>
                 <i class="fas fa-industry text-blue-500 text-2xl"></i>
             </div>
-            ${notes ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${notes}</p>` : ''}
-            <div class="text-xs text-gray-500 dark:text-gray-400">
-                <span><i class="fas fa-calendar mr-1"></i>${createdAt}</span>
+            <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
+                <span><i class="fas fa-layer-group mr-1"></i>Qty: ${quantity}</span>
+                ${pnpJob > 0 ? `<span><i class="fas fa-robot mr-1"></i>PnP: ${pnpJob}</span>` : '<span><i class="fas fa-hand-paper mr-1"></i>Manual</span>'}
             </div>
+            ${dueDate ? `<div class="text-xs text-gray-500 dark:text-gray-400">
+                <span><i class="fas fa-calendar mr-1"></i>Due: ${dueDate}</span>
+            </div>` : ''}
         </div>
     `;
     }).join('');
@@ -993,19 +1065,30 @@ function renderJobsGrid(jobs) {
 
 function getStatusBadge(status) {
     const statusColors = {
-        planning: 'bg-gray-100 text-gray-800',
-        ready: 'bg-green-100 text-green-800',
-        in_progress: 'bg-blue-100 text-blue-800',
-        completed: 'bg-purple-100 text-purple-800',
-        on_hold: 'bg-yellow-100 text-yellow-800'
+        created: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+        in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        on_hold: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
     };
-    const color = statusColors[status] || statusColors.planning;
-    return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${color}">${status.replace('_', ' ')}</span>`;
+    const color = statusColors[status] || statusColors.created;
+    const displayText = status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+    return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${color}">${displayText}</span>`;
 }
 
 function showCreateJobModal() {
     document.getElementById('create-job-modal').classList.remove('hidden');
     document.getElementById('create-job-modal').classList.add('flex');
+    
+    // Populate board select
+    const select = document.getElementById('create-job-board-select');
+    if (allBoards.length > 0) {
+        select.innerHTML = '<option value="">Select a board...</option>' + 
+            allBoards.map(board => 
+                `<option value="${board.id}">${board.board_name} - ${board.version}</option>`
+            ).join('');
+    } else {
+        select.innerHTML = '<option value="">No boards available</option>';
+    }
 }
 
 function closeCreateJobModal() {
@@ -1019,11 +1102,24 @@ document.getElementById('create-job-form')?.addEventListener('submit', async fun
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     
+    // Convert to correct types
+    const jobData = {
+        board_id: parseInt(data.board_id),
+        quantity: parseInt(data.quantity),
+        pnp_job: parseInt(data.pnp_job) || 0,
+        status: data.status || 'created'
+    };
+    
+    // Add due_date only if provided
+    if (data.due_date) {
+        jobData.due_date = data.due_date;
+    }
+    
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/jobs`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: JSON.stringify(jobData)
         });
         
         if (response.ok) {
@@ -1031,23 +1127,46 @@ document.getElementById('create-job-form')?.addEventListener('submit', async fun
             closeCreateJobModal();
             loadJobs();
         } else {
-            throw new Error('Failed to create job');
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.error || 'Failed to create job';
+            console.error('[Job Create] Error:', errorMsg);
+            showToast(errorMsg, 'error');
         }
     } catch (error) {
-        console.error('Error creating job:', error);
-        showToast('Failed to create job', 'error');
+        console.error('[Job Create] Network error:', error);
+        showToast(`Network error: ${error.message}`, 'error');
     }
 });
 
 async function viewJobDetails(jobId) {
     currentJobId = jobId;
-    const job = allJobs.find(j => j.id === jobId);
-    if (!job) return;
+    const job = allJobs.find(j => (j.job_id || j.id) === jobId);
+    if (!job) {
+        console.error('[Job Details] Job not found:', jobId);
+        return;
+    }
     
-    document.getElementById('job-detail-name').textContent = job.job_name;
-    document.getElementById('job-detail-status').textContent = job.status.replace('_', ' ');
+    // Find the board for this job
+    const board = allBoards.find(b => b.id === job.board_id);
+    const boardName = board ? `${board.board_name} - ${board.version}` : `Board #${job.board_id}`;
+    const jobTitle = `Job #${job.job_id || job.id} - ${boardName}`;
+    const quantity = job.quantity || 1;
+    const pnpJob = job.pnp_job || 0;
+    
+    document.getElementById('job-detail-name').textContent = jobTitle;
+    const statusText = job.status.replace('_', ' ').charAt(0).toUpperCase() + job.status.replace('_', ' ').slice(1);
+    document.getElementById('job-detail-status').textContent = statusText;
     document.getElementById('job-detail-status').className = `px-3 py-1 text-sm font-semibold rounded-full ${getStatusBadge(job.status).split('class="')[1].split('"')[0]}`;
-    document.getElementById('job-detail-date').textContent = new Date(job.created_at).toLocaleString();
+    
+    const dateInfo = [];
+    if (job.due_date) {
+        dateInfo.push(`Due: ${new Date(job.due_date).toLocaleDateString()}`);
+    }
+    dateInfo.push(`Qty: ${quantity}`);
+    if (pnpJob > 0) {
+        dateInfo.push(`PnP: ${pnpJob}`);
+    }
+    document.getElementById('job-detail-date').textContent = dateInfo.join(' • ');
     document.getElementById('current-job-id').value = jobId;
     
     document.getElementById('job-details-modal').classList.remove('hidden');

@@ -492,6 +492,13 @@ def api_proxy_create_component():
     result = api_request('/api/elec/components', method='POST', data=request.get_json())
     return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create component'}), 500)
 
+@api_bp.route('/components/<component_id>', methods=['GET'])
+@login_required
+def api_proxy_get_component(component_id):
+    """Proxy: Get single component by ID"""
+    result = api_request(f'/api/elec/components/{component_id}')
+    return jsonify(result) if result else (jsonify({'error': 'Component not found'}), 404)
+
 @api_bp.route('/components/<component_id>', methods=['PATCH'])
 @login_required
 def api_proxy_update_component(component_id):
