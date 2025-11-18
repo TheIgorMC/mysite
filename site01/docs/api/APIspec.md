@@ -826,20 +826,52 @@ OR `?board_id={id}&qty=XX`
 
 ## 📁 File Storage Management
 
-**GET `/api/elec/files`** – list all files across all boards
-Params: `file_type`, `board_id`, `limit`, `offset`
-Returns files with board name and version included
+### Files Table Structure
+Database table: `ELEC_board_files` **(Already Implemented)**
 
-**GET `/api/elec/boards/{id}/files`** – list files for a specific board
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | int | Primary key (auto-increment) |
+| `board_id` | int | FK → `ELEC_boards.id` |
+| `file_type` | varchar(50) | Type: gerber, schematic, bom, pnp, datasheet, pcb_layout, ibom, documentation, firmware, cad |
+| `filename` | varchar(255) | Original filename |
+| `file_path` | varchar(500) | URL or storage path |
+| `file_size` | int | Size in bytes |
+| `mime_type` | varchar(100) | MIME type |
+| `uploaded_by` | varchar(100) | User who uploaded |
+| `uploaded_at` | datetime | Upload timestamp |
+| `version_tag` | varchar(50) | Optional version label |
+| `notes` | text | Optional notes |
 
-**POST `/api/elec/boards/{id}/files`** – register/upload metadata
+### Endpoints **(Already Implemented)**
+
+**GET `/api/elec/boards/{board_id}/files`** – list files for a specific board
+Returns:
+```json
+[
+  {
+    "id": 1,
+    "board_id": 5,
+    "file_type": "gerber",
+    "filename": "mainboard_v1.2_gerbers.zip",
+    "file_path": "/storage/boards/5/gerbers/mainboard_v1.2.zip",
+    "file_size": 524288,
+    "mime_type": "application/zip",
+    "uploaded_by": "admin",
+    "uploaded_at": "2025-11-18T10:30:00",
+    "version_tag": "v1.2",
+    "notes": "JLC job #2025-001"
+  }
+]
+```
+
+**POST `/api/elec/boards/{board_id}/files`** – register/upload file metadata
 Body:
-
 ```json
 {
   "file_type": "gerber",
   "filename": "controller_v1.2_gerbers.zip",
-  "file_path": "https://files.example.com/elec/boards/123/gerbers.zip",
+  "file_path": "/storage/boards/5/gerbers/controller_v1.2.zip",
   "file_size": 524288,
   "mime_type": "application/zip",
   "uploaded_by": "admin",
@@ -847,12 +879,126 @@ Body:
   "notes": "JLC job #2025-001"
 }
 ```
+Returns: `{"id": 1, "status": "created"}`
 
-**DELETE `/api/elec/boards/{id}/files/{file_id}`** – delete file metadata
+**DELETE `/api/elec/boards/{board_id}/files/{file_id}`** – delete file metadata
+Returns: `{"id": 1, "status": "deleted"}`
 
-**GET `/api/elec/files/{id}/download`** – HTTP 302 redirect to `file_path`
+**GET `/api/elec/files/{file_id}/download`** – download a file
+Returns: File download with appropriate Content-Type header
 
-**GET `/api/elec/files/types`** – supported `file_type` list
+---
+
+## 🤖 Pick & Place (PnP) File Management
+
+### PnP Table Structure
+Database table: `ELEC_pnp`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | int | Primary key (auto-increment) |
+| `board_id` | int | FK → `ELEC_boards.id` |
+| `filename` | varchar(255) | PnP file name |
+| `created_at` | datetime | Upload timestamp |
+| `component_count` | int | Total components in file |
+
+### PnP Data Table Structure
+Database table: `ELEC_pnp_data`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | int | Primary key (auto-increment) |
+| `pnp_id` | int | FK → `ELEC_pnp.id` |
+| `designator` | varchar(50) | Component reference (e.g., "U1", "R5") |
+| `mid_x` | varchar(20) | Center X coordinate with unit (e.g., "57.15mm") |
+| `mid_y` | varchar(20) | Center Y coordinate with unit |
+| `ref_x` | varchar(20) | Reference X coordinate (optional) |
+| `ref_y` | varchar(20) | Reference Y coordinate (optional) |
+| `pad_x` | varchar(20) | Pad X coordinate (optional) |
+| `pad_y` | varchar(20) | Pad Y coordinate (optional) |
+| `layer` | varchar(10) | PCB layer: "T" or "Top" for top, "B" or "Bottom" for bottom |
+| `rotation` | varchar(10) | Rotation angle in degrees (e.g., "0", "90", "180") |
+| `comment` | varchar(255) | Component value/description |
+| `device` | varchar(255) | Device/part name |
+
+### Endpoints
+
+**GET `/api/elec/pnp`** – list all PnP files
+Query params: `board_id`, `limit`, `offset`
+Returns:
+```json
+[
+  {
+    "id": 1,
+    "board_id": 5,
+    "board_name": "Mainboard",
+    "board_version": "v1.2",
+    "filename": "Mainboard_V1.2_PnP",
+    "created_at": "2025-11-18T10:30:00",
+    "component_count": 150
+  }
+]
+```
+
+**POST `/api/elec/pnp`** – upload new PnP file
+Body:
+```json
+{
+  "board_id": 5,
+  "filename": "Mainboard_V1.2_PnP",
+  "csv_data": "Designator,Mid X,Mid Y,Ref X,Ref Y,Pad X,Pad Y,Layer,Rotation,Comment,Device\n\"U1\",\"57.15mm\",\"68.834mm\",\"57.15mm\",\"68.834mm\",\"65.9mm\",\"79.634mm\",\"T\",\"180\",\"STM32F407ZGT6\",\"STM32F407ZGT6\"\n..."
+}
+```
+
+**CSV Parsing Logic:**
+- Parse CSV with headers (first line)
+- Required columns: `Designator`, `Mid X`, `Mid Y`, `Layer`, `Rotation`
+- Optional columns: `Ref X`, `Ref Y`, `Pad X`, `Pad Y`, `Comment`, `Device`
+- Strip quotes from values
+- Store coordinate values as-is (including "mm" suffix if present)
+- Count total components for `component_count`
+- Create one `ELEC_pnp` record and multiple `ELEC_pnp_data` records
+
+Returns: `{"id": 1, "status": "created", "component_count": 150}`
+
+**GET `/api/elec/pnp/{id}`** – get PnP file with full data
+Returns:
+```json
+{
+  "id": 1,
+  "board_id": 5,
+  "board_name": "Mainboard",
+  "board_version": "v1.2",
+  "filename": "Mainboard_V1.2_PnP",
+  "created_at": "2025-11-18T10:30:00",
+  "component_count": 150,
+  "pnp_data": [
+    {
+      "id": 1,
+      "designator": "U1",
+      "mid_x": "57.15mm",
+      "mid_y": "68.834mm",
+      "ref_x": "57.15mm",
+      "ref_y": "68.834mm",
+      "pad_x": "65.9mm",
+      "pad_y": "79.634mm",
+      "layer": "T",
+      "rotation": "180",
+      "comment": "STM32F407ZGT6",
+      "device": "STM32F407ZGT6"
+    },
+    ...
+  ]
+}
+```
+
+**DELETE `/api/elec/pnp/{id}`** – delete PnP file and all associated data
+- Deletes from `ELEC_pnp_data` where `pnp_id = {id}`
+- Deletes from `ELEC_pnp` where `id = {id}`
+Returns: `{"id": 1, "status": "deleted"}`
+
+**GET `/api/elec/boards/{board_id}/pnp`** – list PnP files for specific board
+Returns array like GET `/api/elec/pnp?board_id={board_id}`
 
 ---
 

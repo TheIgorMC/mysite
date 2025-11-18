@@ -164,47 +164,65 @@ function switchTab(tabName) {
 async function loadComponents() {
     console.log('[Components] Loading...');
     try {
-        // Smart pagination - increase limit until we get less than requested
-        let limit = 100;
-        let lastCount = 0;
+        // Try to load in batches to avoid 500 errors with large datasets
+        let allData = [];
+        let offset = 0;
+        const batchSize = 500;  // Smaller batch size to avoid backend issues
+        let hasMore = true;
         
-        while (true) {
-            const url = `${ELECTRONICS_API_BASE}/components?limit=${limit}`;
-            console.log(`[Components] Fetching from: ${url}`);
+        while (hasMore && offset < 10000) {  // Max 10000 items total
+            const url = `${ELECTRONICS_API_BASE}/components?limit=${batchSize}&offset=${offset}`;
+            console.log(`[Components] Fetching from: ${url} (batch ${Math.floor(offset/batchSize) + 1})`);
             
             const response = await fetch(url);
             console.log('[Components] Response status:', response.status);
             
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[Components] Error response:', errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
+                // If we get an error, try without offset parameter (backend might not support it)
+                if (offset === 0) {
+                    console.log('[Components] Offset not supported, trying simple limit...');
+                    const simpleUrl = `${ELECTRONICS_API_BASE}/components?limit=1000`;
+                    const simpleResponse = await fetch(simpleUrl);
+                    
+                    if (!simpleResponse.ok) {
+                        const errorText = await simpleResponse.text();
+                        console.error('[Components] Error response:', errorText);
+                        throw new Error(`HTTP ${simpleResponse.status}: ${errorText}`);
+                    }
+                    
+                    const data = await simpleResponse.json();
+                    allComponents = Array.isArray(data) ? data : [];
+                    console.log(`[Components] Loaded ${allComponents.length} components (fallback mode)`);
+                    renderComponentsTable();
+                    return;
+                }
+                
+                // For subsequent batches, just stop and use what we have
+                console.log(`[Components] Stopping at ${allData.length} components due to error`);
+                break;
             }
             
             const data = await response.json();
             const count = Array.isArray(data) ? data.length : 0;
-            console.log(`[Components] Received ${count} items (limit was ${limit})`);
+            console.log(`[Components] Received ${count} items in this batch`);
             
-            // API returns array directly
-            if (count < limit) {
-                // Got fewer than requested, this is all the data
-                console.log('[Components] Total components loaded:', count);
-                allComponents = data;
-                break;
-            }
-            
-            // Got exactly what we asked for, there might be more
-            limit += 100;
-            
-            // Safety: don't loop forever
-            if (limit > 10000) {
-                console.warn('[Components] Safety limit reached at 10000');
-                allComponents = data;
-                break;
+            if (count === 0) {
+                hasMore = false;
+            } else {
+                allData = allData.concat(data);
+                offset += batchSize;
+                
+                // If we got fewer than requested, we've reached the end
+                if (count < batchSize) {
+                    hasMore = false;
+                }
             }
         }
         
-        renderComponentsTable(allComponents);
+        allComponents = allData;
+        console.log(`[Components] Total components loaded: ${allComponents.length}`);
+        
+        renderComponentsTable();
     } catch (error) {
         console.error('[Components] Error loading:', error);
         showToast('Failed to load components: ' + error.message, 'error');
@@ -1395,6 +1413,7 @@ async function loadFiles() {
             }
         }
         
+        console.log('[Files] Loaded files:', allFiles.length, 'Sample:', allFiles[0]);
         renderFilesGrid(allFiles);
         
         // Populate board filter if empty
@@ -1403,14 +1422,15 @@ async function loadFiles() {
             const currentValue = boardSelect.value;
             boardSelect.innerHTML = '<option value="">All Boards</option>' + 
                 allBoards.map(board => {
-                    const boardName = board.board_name || board.name || 'Unnamed';
+                    const boardName = board.name || 'Unnamed';
                     const version = board.version || 'v1.0';
                     return `<option value="${board.id}">${boardName} - ${version}</option>`;
                 }).join('');
             boardSelect.value = currentValue;
         }
     } catch (error) {
-        console.error('Error loading files:', error);
+        console.error('[Files] Error in loadFiles:', error);
+        console.error('[Files] Error stack:', error.stack);
         allFiles = [];
         const grid = document.getElementById('files-grid');
         if (grid) {
@@ -1422,6 +1442,7 @@ async function loadFiles() {
                 </div>
             `;
         }
+        showToast('Failed to load files: ' + error.message, 'error');
     }
 }
 
@@ -1438,24 +1459,35 @@ function renderFilesGrid(files) {
         return;
     }
     
-    grid.innerHTML = files.map(file => {
-        const fileType = file.file_type || 'unknown';
-        const displayName = file.display_name || file.filename || file.file_path?.split('/').pop() || 'Unknown File';
-        const boardName = file.board_name || file.board?.name || file.board?.board_name || 'No board';
-        
-        return `
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
-             onclick="viewFileDetails(${file.id})">
-            <div class="flex items-center justify-between mb-3">
-                <i class="fas ${getFileIcon(fileType)} text-4xl text-gray-600 dark:text-gray-400"></i>
-                ${fileType === 'ibom' ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Interactive</span>' : ''}
+    try {
+        grid.innerHTML = files.map(file => {
+            const fileType = file.file_type || 'unknown';
+            const displayName = file.display_name || file.filename || file.file_path?.split('/').pop() || 'Unknown File';
+            const boardName = file.board_name || file.board?.name || file.board?.board_name || 'No board';
+            
+            return `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
+                 onclick="viewFileDetails(${file.id})">
+                <div class="flex items-center justify-between mb-3">
+                    <i class="fas ${getFileIcon(fileType)} text-4xl text-gray-600 dark:text-gray-400"></i>
+                    ${fileType === 'ibom' ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Interactive</span>' : ''}
+                </div>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 truncate" title="${displayName}">${displayName}</h4>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${fileType}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 truncate" title="${boardName}">${boardName}</p>
             </div>
-            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 truncate" title="${displayName}">${displayName}</h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${fileType}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-500 truncate" title="${boardName}">${boardName}</p>
-        </div>
-    `;
-    }).join('');
+        `;
+        }).join('');
+    } catch (error) {
+        console.error('[Files] Error rendering grid:', error);
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
+                <p class="text-gray-600 dark:text-gray-400">Error displaying files</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500">${error.message}</p>
+            </div>
+        `;
+    }
 }
 
 function getFileIcon(fileType) {
@@ -1481,7 +1513,7 @@ function showRegisterFileModal() {
     // Populate board select
     const select = document.getElementById('register-file-board');
     select.innerHTML = '<option value="">Select a board...</option>' + 
-        allBoards.map(board => `<option value="${board.id}">${board.board_name} - ${board.version}</option>`).join('');
+        allBoards.map(board => `<option value="${board.id}">${board.name || 'Unnamed'} - ${board.version}</option>`).join('');
 }
 
 function closeRegisterFileModal() {

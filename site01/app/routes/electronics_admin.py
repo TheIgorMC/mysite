@@ -652,22 +652,64 @@ def api_proxy_missing_bom(job_id):
 @api_bp.route('/files', methods=['GET'])
 @login_required
 def api_proxy_get_files():
-    """Proxy: Get files list"""
-    result = api_request('/api/elec/files', params=request.args.to_dict())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch files'}), 500)
+    """Proxy: Get files list - aggregates files from all boards"""
+    try:
+        # Get board_id filter if provided
+        board_id = request.args.get('board_id')
+        
+        if board_id:
+            # Get files for specific board
+            result = api_request(f'/api/elec/boards/{board_id}/files')
+        else:
+            # Get all boards and aggregate their files
+            boards = api_request('/api/elec/boards')
+            if not boards:
+                return jsonify([])
+            
+            all_files = []
+            for board in boards:
+                board_files = api_request(f'/api/elec/boards/{board["id"]}/files')
+                if board_files:
+                    # Add board info to each file
+                    for file in board_files:
+                        file['board_name'] = board.get('name', 'Unknown')
+                        file['board_version'] = board.get('version', '')
+                    all_files.extend(board_files)
+            
+            result = all_files
+        
+        return jsonify(result) if result is not None else (jsonify({'error': 'Failed to fetch files'}), 500)
+    except Exception as e:
+        current_app.logger.error(f"[Files Proxy] Exception: {e}", exc_info=True)
+        return jsonify({'error': f'Failed to fetch files: {str(e)}'}), 500
 
 @api_bp.route('/files/register', methods=['POST'])
 @login_required
 def api_proxy_register_file():
     """Proxy: Register file"""
-    result = api_request('/api/elec/files', method='POST', data=request.get_json())
+    data = request.get_json()
+    board_id = data.get('board_id')
+    
+    if not board_id:
+        return jsonify({'error': 'board_id is required'}), 400
+    
+    # Remove board_id from data as it's in the URL
+    data_copy = data.copy()
+    data_copy.pop('board_id', None)
+    
+    result = api_request(f'/api/elec/boards/{board_id}/files', method='POST', data=data_copy)
     return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to register file'}), 500)
 
 @api_bp.route('/files/<file_id>', methods=['DELETE'])
 @login_required
 def api_proxy_delete_file(file_id):
-    """Proxy: Delete file"""
-    result = api_request(f'/api/elec/files/{file_id}', method='DELETE')
+    """Proxy: Delete file - requires board_id in query params"""
+    board_id = request.args.get('board_id')
+    
+    if not board_id:
+        return jsonify({'error': 'board_id query parameter is required'}), 400
+    
+    result = api_request(f'/api/elec/boards/{board_id}/files/{file_id}', method='DELETE')
     return jsonify(result) if result else (jsonify({'error': 'Failed to delete file'}), 500)
 
 # ==================== ORDER IMPORTER ====================
