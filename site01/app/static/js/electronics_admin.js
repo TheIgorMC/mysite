@@ -784,7 +784,12 @@ function renderEditBOMTable() {
             <td class="px-4 py-3 text-sm">${item.product_type || '-'}</td>
             <td class="px-4 py-3 text-sm font-medium">${item.value || '-'}</td>
             <td class="px-4 py-3 text-sm">${item.package || '-'}</td>
-            <td class="px-4 py-3 text-sm">${item.quantity || item.qty || 1}</td>
+            <td class="px-4 py-3 text-sm">
+                <input type="number" min="1" value="${item.quantity || item.qty || 1}" 
+                       onchange="updateBOMQuantity(${index}, this.value)"
+                       class="w-16 px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                       title="Edit quantity">
+            </td>
             <td class="px-4 py-3 text-sm text-right">
                 <button onclick="removeBOMItem(${index})" 
                         class="text-red-600 hover:text-red-800 dark:text-red-400"
@@ -799,6 +804,14 @@ function renderEditBOMTable() {
 function removeBOMItem(index) {
     currentBOMItems.splice(index, 1);
     renderEditBOMTable();
+}
+
+function updateBOMQuantity(index, newQuantity) {
+    const qty = parseInt(newQuantity);
+    if (qty > 0) {
+        currentBOMItems[index].quantity = qty;
+        console.log(`[BOM] Updated quantity for item ${index} to ${qty}`);
+    }
 }
 
 document.getElementById('add-bom-item-form')?.addEventListener('submit', async function(e) {
@@ -843,8 +856,9 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
     
     renderEditBOMTable();
     
-    // Reset form
+    // Reset form and hide preview
     document.getElementById('add-bom-item-form').reset();
+    document.getElementById('bom-component-preview').classList.add('hidden');
     showToast('Component added to BOM', 'success');
 });
 
@@ -891,7 +905,7 @@ document.getElementById('bom-component-id')?.addEventListener('input', function(
             <div class="text-green-600 dark:text-green-400 mb-1">
                 <i class="fas fa-check-circle mr-1"></i>Component found
             </div>
-            <div class="text-gray-700 dark:text-gray-300">${details || 'No details available'}</div>
+            <div class="text-gray-700 dark:text-gray-300 text-sm break-words">${details || 'No details available'}</div>
         `;
     }, 500);
 });
@@ -900,10 +914,10 @@ async function saveBOM() {
     if (!currentBoardId) return;
     
     try {
-        // Format data according to API spec: array of {component_id, quantity, designators}
+        // Format data according to API spec: array of {component_id, qty, designators}
         const bomData = currentBOMItems.map(item => ({
             component_id: item.component_id,
-            quantity: item.quantity,
+            qty: item.quantity,
             designators: item.designators
         }));
         
