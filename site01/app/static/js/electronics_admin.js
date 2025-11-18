@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load autocomplete data
     loadAutocompleteData();
     
+    // ALWAYS load components and boards on page load (needed for BOM editor and jobs)
+    console.log('[Electronics] Pre-loading all components and boards...');
+    loadComponents();
+    loadBoards();
+    
     // Add Enter key support for component search
     const componentSearchInput = document.getElementById('component-search');
     if (componentSearchInput) {
@@ -115,14 +120,27 @@ function switchTab(tabName) {
         }
     });
     
-    // Load data for the active tab
-    console.log('[Electronics] Loading data for:', tabName);
+    // Load data for the active tab (only if not already loaded)
+    console.log('[Electronics] Checking data for:', tabName);
     switch(tabName) {
         case 'components':
-            loadComponents();
+            if (allComponents.length === 0) {
+                console.log('[Electronics] Components not loaded, loading now');
+                loadComponents();
+            } else {
+                renderComponentsTable(allComponents);
+            }
             break;
         case 'boards':
-            loadBoards();
+            if (allBoards.length === 0) {
+                console.log('[Electronics] Boards not loaded, loading now');
+                loadBoards();
+            } else {
+                renderBoardsGrid(allBoards);
+            }
+            break;
+        case 'pnp':
+            loadPnPFiles();
             break;
         case 'jobs':
             loadJobs();
@@ -206,26 +224,41 @@ async function loadComponents() {
     }
 }
 
-async function searchComponents() {
-    const search = document.getElementById('component-search').value;
+function searchComponents() {
+    const search = document.getElementById('component-search').value.toLowerCase();
     const type = document.getElementById('component-type-filter').value;
     const pkg = document.getElementById('component-package-filter').value;
     
-    try {
-        let url = `${ELECTRONICS_API_BASE}/components/search?`;
-        if (search) url += `q=${encodeURIComponent(search)}&`;
-        if (type) url += `product_type=${encodeURIComponent(type)}&`;
-        if (pkg) url += `package=${encodeURIComponent(pkg)}`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
-        // API returns array directly
-        allComponents = Array.isArray(data) ? data : [];
-        renderComponentsTable(allComponents);
-    } catch (error) {
-        console.error('Error searching components:', error);
-        showToast('Search failed', 'error');
+    console.log('[Search] Filtering locally:', { search, type, pkg, total: allComponents.length });
+    
+    // Filter the already-loaded allComponents array locally
+    let filtered = allComponents;
+    
+    if (search) {
+        filtered = filtered.filter(comp => {
+            return (
+                (comp.manufacturer && comp.manufacturer.toLowerCase().includes(search)) ||
+                (comp.manufacturer_code && comp.manufacturer_code.toLowerCase().includes(search)) ||
+                (comp.value && comp.value.toLowerCase().includes(search)) ||
+                (comp.package && comp.package.toLowerCase().includes(search)) ||
+                (comp.product_type && comp.product_type.toLowerCase().includes(search)) ||
+                (comp.seller && comp.seller.toLowerCase().includes(search)) ||
+                (comp.seller_code && comp.seller_code.toLowerCase().includes(search)) ||
+                (comp.smd_footprint && comp.smd_footprint.toLowerCase().includes(search))
+            );
+        });
     }
+    
+    if (type) {
+        filtered = filtered.filter(comp => comp.product_type === type);
+    }
+    
+    if (pkg) {
+        filtered = filtered.filter(comp => comp.package === pkg);
+    }
+    
+    console.log('[Search] Filtered to:', filtered.length, 'components');
+    renderComponentsTable(filtered);
 }
 
 function renderComponentsTable(components) {
@@ -270,7 +303,7 @@ function renderComponentsTable(components) {
                 ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0))}
             </td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                €${(comp.price !== undefined ? comp.price : (comp.unit_price !== undefined ? comp.unit_price : 0)).toFixed(4)}
+                €${(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0).toFixed(4)}
             </td>
             <td class="px-3 py-3 text-sm text-right whitespace-nowrap">
                 <button onclick="editComponent(${comp.id})" 
@@ -470,9 +503,14 @@ function renderBoardsGrid(boards) {
         return;
     }
     
+    // Debug first board to see actual structure
+    if (boards.length > 0) {
+        console.log('[Boards Render] Sample board fields:', Object.keys(boards[0]), boards[0]);
+    }
+    
     grid.innerHTML = boards.map(board => {
         // Handle both 'board_name' and 'name' fields
-        const boardName = board.board_name || board.name || 'Unnamed Board';
+        const boardName = board.name || board.board_name || `Board #${board.id}`;
         const version = board.version || 'v1.0';
         const variant = board.variant || '';
         const description = board.description || '';
@@ -773,7 +811,7 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
         return;
     }
     
-    console.log(`[BOM] Adding component ${componentId}:`, component);
+    console.log(`[BOM] Adding component ${componentId}:`, component.value, component.package);
     
     // Add to BOM items (designators now optional)
     currentBOMItems.push({
@@ -2032,6 +2070,302 @@ function cancelOrderImport() {
     document.getElementById('order-results').classList.add('hidden');
     document.getElementById('order-processing-status').classList.add('hidden');
     currentOrderData = null;
+}
+
+// ===== PNP TAB =====
+
+let allPnPFiles = [];
+let currentPnPId = null;
+let currentPnPData = null;
+
+async function loadPnPFiles() {
+    try {
+        const boardFilter = document.getElementById('pnp-board-filter')?.value || '';
+        
+        let url = `${ELECTRONICS_API_BASE}/pnp`;
+        if (boardFilter) url += `?board_id=${boardFilter}`;
+        
+        const response = await fetch(url);
+        
+        if (response.status === 404) {
+            console.warn('[PnP] PnP endpoint not available');
+            const grid = document.getElementById('pnp-files-grid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-info-circle text-4xl text-blue-500 dark:text-blue-400 mb-3"></i>
+                        <p class="text-gray-600 dark:text-gray-400 mb-2">PnP file management not yet available</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500">The PnP API endpoint is not configured</p>
+                    </div>
+                `;
+            }
+            allPnPFiles = [];
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        allPnPFiles = Array.isArray(data) ? data : [];
+        renderPnPFilesGrid(allPnPFiles);
+        
+        // Populate board filter dropdown
+        const boardSelect = document.getElementById('pnp-board-filter');
+        const uploadBoardSelect = document.getElementById('upload-pnp-board-id');
+        if (boardSelect && allBoards.length > 0) {
+            const currentValue = boardSelect.value;
+            boardSelect.innerHTML = '<option value="">All Boards</option>' +
+                allBoards.map(board => `<option value="${board.id}">${board.name || board.board_name} - ${board.version}</option>`).join('');
+            boardSelect.value = currentValue;
+        }
+        if (uploadBoardSelect && allBoards.length > 0) {
+            uploadBoardSelect.innerHTML = '<option value="">Select board...</option>' +
+                allBoards.map(board => `<option value="${board.id}">${board.name || board.board_name} - ${board.version}</option>`).join('');
+        }
+        
+    } catch (error) {
+        console.error('[PnP] Error loading:', error);
+        const grid = document.getElementById('pnp-files-grid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
+                    <p class="text-gray-600 dark:text-gray-400">Failed to load PnP files</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-500">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+}
+
+function renderPnPFilesGrid(files) {
+    const grid = document.getElementById('pnp-files-grid');
+    
+    if (!grid) return;
+    
+    if (files.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <i class="fas fa-robot text-4xl text-gray-400 mb-3"></i>
+                <p class="text-gray-500 dark:text-gray-400">No PnP files found</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Upload a pick and place CSV file to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = files.map(file => {
+        const board = allBoards.find(b => b.id === file.board_id);
+        const boardName = board ? (board.name || board.board_name) : `Board #${file.board_id}`;
+        const componentCount = file.component_count || 0;
+        const createdAt = file.created_at ? new Date(file.created_at).toLocaleDateString() : '';
+        
+        return `
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
+             onclick="viewPnPDetails(${file.id})">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white truncate">${file.filename || 'Unnamed PnP'}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${boardName}</p>
+                </div>
+                <i class="fas fa-robot text-green-500 text-2xl"></i>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span><i class="fas fa-microchip mr-1"></i>${componentCount} components</span>
+                ${createdAt ? `<span><i class="fas fa-calendar mr-1"></i>${createdAt}</span>` : ''}
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function showUploadPnPModal() {
+    document.getElementById('upload-pnp-modal').classList.remove('hidden');
+    document.getElementById('upload-pnp-modal').classList.add('flex');
+    
+    // Populate board dropdown
+    const boardSelect = document.getElementById('upload-pnp-board-id');
+    if (boardSelect && allBoards.length > 0) {
+        boardSelect.innerHTML = '<option value="">Select board...</option>' +
+            allBoards.map(board => `<option value="${board.id}">${board.name || board.board_name} - ${board.version}</option>`).join('');
+    }
+}
+
+function closeUploadPnPModal() {
+    document.getElementById('upload-pnp-modal').classList.add('hidden');
+    document.getElementById('upload-pnp-modal').classList.remove('flex');
+    document.getElementById('upload-pnp-form').reset();
+}
+
+document.getElementById('upload-pnp-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const boardId = document.getElementById('upload-pnp-board-id').value;
+    const filename = document.getElementById('pnp-filename').value;
+    const csvData = document.getElementById('pnp-csv-data').value;
+    
+    if (!boardId || !filename || !csvData) {
+        showToast('Please fill all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/pnp`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                board_id: parseInt(boardId),
+                filename: filename,
+                csv_data: csvData
+            })
+        });
+        
+        if (response.ok) {
+            showToast('PnP file uploaded successfully', 'success');
+            closeUploadPnPModal();
+            loadPnPFiles();
+        } else {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to upload PnP file');
+        }
+    } catch (error) {
+        console.error('[PnP Upload] Error:', error);
+        showToast('Failed to upload: ' + error.message, 'error');
+    }
+});
+
+async function viewPnPDetails(pnpId) {
+    currentPnPId = pnpId;
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/pnp/${pnpId}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch PnP details');
+        }
+        
+        const pnp = await response.json();
+        currentPnPData = pnp;
+        
+        const board = allBoards.find(b => b.id === pnp.board_id);
+        const boardName = board ? `${board.name || board.board_name} - ${board.version}` : `Board #${pnp.board_id}`;
+        
+        document.getElementById('pnp-detail-name').textContent = pnp.filename || 'PnP File';
+        document.getElementById('pnp-detail-board').textContent = boardName;
+        document.getElementById('current-pnp-id').value = pnpId;
+        
+        // Parse and display data
+        const items = pnp.pnp_data || [];
+        
+        // Calculate statistics
+        const total = items.length;
+        const topLayer = items.filter(item => item.layer === 'T' || item.layer === 'Top').length;
+        const bottomLayer = items.filter(item => item.layer === 'B' || item.layer === 'Bottom').length;
+        const uniqueParts = new Set(items.map(item => item.device || item.comment)).size;
+        
+        document.getElementById('pnp-total-count').textContent = total;
+        document.getElementById('pnp-top-count').textContent = topLayer;
+        document.getElementById('pnp-bottom-count').textContent = bottomLayer;
+        document.getElementById('pnp-unique-count').textContent = uniqueParts;
+        
+        // Render table
+        const tbody = document.getElementById('pnp-data-table');
+        tbody.innerHTML = items.map(item => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">${item.designator || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_x || item.x || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_y || item.y || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span class="px-2 py-1 rounded text-xs font-semibold ${item.layer === 'T' || item.layer === 'Top' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}">
+                        ${item.layer || '-'}
+                    </span>
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.rotation || '0'}°</td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.comment || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.device || '-'}</td>
+            </tr>
+        `).join('');
+        
+        document.getElementById('pnp-details-modal').classList.remove('hidden');
+        document.getElementById('pnp-details-modal').classList.add('flex');
+        
+    } catch (error) {
+        console.error('[PnP Details] Error:', error);
+        showToast('Failed to load PnP details', 'error');
+    }
+}
+
+function closePnPDetailsModal() {
+    document.getElementById('pnp-details-modal').classList.add('hidden');
+    document.getElementById('pnp-details-modal').classList.remove('flex');
+    currentPnPId = null;
+    currentPnPData = null;
+}
+
+async function exportPnPFile() {
+    if (!currentPnPId || !currentPnPData) return;
+    
+    try {
+        // Convert to CSV
+        const items = currentPnPData.pnp_data || [];
+        const headers = ['Designator', 'Mid X', 'Mid Y', 'Ref X', 'Ref Y', 'Pad X', 'Pad Y', 'Layer', 'Rotation', 'Comment', 'Device'];
+        
+        let csv = headers.join(',') + '\n';
+        csv += items.map(item => [
+            `"${item.designator || ''}"`,
+            `"${item.mid_x || item.x || ''}"`,
+            `"${item.mid_y || item.y || ''}"`,
+            `"${item.ref_x || ''}"`,
+            `"${item.ref_y || ''}"`,
+            `"${item.pad_x || ''}"`,
+            `"${item.pad_y || ''}"`,
+            `"${item.layer || ''}"`,
+            `"${item.rotation || '0'}"`,
+            `"${item.comment || ''}"`,
+            `"${item.device || ''}"`
+        ].join(',')).join('\n');
+        
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentPnPData.filename || 'pnp'}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showToast('PnP file exported', 'success');
+    } catch (error) {
+        console.error('[PnP Export] Error:', error);
+        showToast('Failed to export PnP file', 'error');
+    }
+}
+
+async function deletePnPFile() {
+    if (!currentPnPId) return;
+    
+    if (!confirm('Are you sure you want to delete this PnP file?')) return;
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/pnp/${currentPnPId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showToast('PnP file deleted', 'success');
+            closePnPDetailsModal();
+            loadPnPFiles();
+        } else {
+            throw new Error('Failed to delete PnP file');
+        }
+    } catch (error) {
+        console.error('[PnP Delete] Error:', error);
+        showToast('Failed to delete PnP file', 'error');
+    }
 }
 
 // ===== UTILITIES =====

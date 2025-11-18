@@ -409,8 +409,29 @@ Update an existing registration (status, note, turno, categoria, classe).
 
 #### `DELETE /api/iscrizioni/{id}`
 
-Remove a registration.
-**Response:** `{"id": 182, "status": "deleted"}`
+Remove or cancel a registration. Behavior depends on current status:
+
+- **Status = 'in attesa' / 'waiting' / 'pending'**: Deletes immediately from database
+- **Status = 'confermato' / 'confirmed'**: Changes status to 'cancellation_requested' (does not delete)
+- **Status = 'cancellation_confirmed'**: Deletes from database (allows new registration)
+- **Other statuses**: Deletes immediately
+
+**Response examples:**
+
+Immediate deletion (waiting status):
+```json
+{"id": 182, "status": "deleted", "action": "immediate_deletion"}
+```
+
+Cancellation request (confirmed status):
+```json
+{"id": 182, "status": "cancellation_requested", "action": "cancellation_request"}
+```
+
+Confirmed cancellation deletion:
+```json
+{"id": 182, "status": "deleted", "action": "confirmed_deletion"}
+```
 
 ---
 
@@ -805,7 +826,12 @@ OR `?board_id={id}&qty=XX`
 
 ## 📁 File Storage Management
 
-**GET `/api/elec/boards/{id}/files`** – list files for a board
+**GET `/api/elec/files`** – list all files across all boards
+Params: `file_type`, `board_id`, `limit`, `offset`
+Returns files with board name and version included
+
+**GET `/api/elec/boards/{id}/files`** – list files for a specific board
+
 **POST `/api/elec/boards/{id}/files`** – register/upload metadata
 Body:
 
@@ -823,7 +849,9 @@ Body:
 ```
 
 **DELETE `/api/elec/boards/{id}/files/{file_id}`** – delete file metadata
+
 **GET `/api/elec/files/{id}/download`** – HTTP 302 redirect to `file_path`
+
 **GET `/api/elec/files/types`** – supported `file_type` list
 
 ---

@@ -40,6 +40,12 @@
                             class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
                         <i class="fas fa-microchip mr-2"></i>Boards & BOMs
                     </button>
+                    <button onclick="switchTab('pnp')" 
+                            id="tab-pnp"
+                            data-tab="pnp"
+                            class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors">
+                        <i class="fas fa-robot mr-2"></i>Pick & Place
+                    </button>
                     <button onclick="switchTab('jobs')" 
                             id="tab-jobs"
                             data-tab="jobs"
@@ -78,6 +84,11 @@
                 <!-- Boards Tab -->
                 <div id="panel-boards" class="tab-panel hidden">
                     {% include 'admin/electronics/boards_tab.html' %}
+                </div>
+
+                <!-- PnP Tab -->
+                <div id="panel-pnp" class="tab-panel hidden">
+                    {% include 'admin/electronics/pnp_tab.html' %}
                 </div>
 
                 <!-- Jobs Tab -->

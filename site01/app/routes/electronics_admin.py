@@ -607,6 +607,34 @@ def api_proxy_check_job_stock(job_id):
     result = api_request(f'/api/elec/jobs/{job_id}/check_stock')
     return jsonify(result) if result else (jsonify({'error': 'Failed to check stock'}), 500)
 
+@api_bp.route('/pnp', methods=['GET'])
+@login_required
+def api_proxy_get_pnp_files():
+    """Proxy: Get PnP files list"""
+    result = api_request('/api/elec/pnp', params=request.args.to_dict())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch PnP files'}), 500)
+
+@api_bp.route('/pnp', methods=['POST'])
+@login_required
+def api_proxy_create_pnp():
+    """Proxy: Upload PnP file"""
+    result = api_request('/api/elec/pnp', method='POST', data=request.get_json())
+    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to upload PnP file'}), 500)
+
+@api_bp.route('/pnp/<pnp_id>', methods=['GET'])
+@login_required
+def api_proxy_get_pnp(pnp_id):
+    """Proxy: Get PnP file details"""
+    result = api_request(f'/api/elec/pnp/{pnp_id}')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch PnP file'}), 500)
+
+@api_bp.route('/pnp/<pnp_id>', methods=['DELETE'])
+@login_required
+def api_proxy_delete_pnp(pnp_id):
+    """Proxy: Delete PnP file"""
+    result = api_request(f'/api/elec/pnp/{pnp_id}', method='DELETE')
+    return jsonify(result) if result else (jsonify({'error': 'Failed to delete PnP file'}), 500)
+
 @api_bp.route('/jobs/<job_id>/reserve_stock', methods=['POST'])
 @login_required
 def api_proxy_reserve_stock(job_id):
