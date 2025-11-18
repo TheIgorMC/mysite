@@ -921,6 +921,8 @@ async function saveBOM() {
             designators: item.designators
         }));
         
+        console.log('[BOM] Saving BOM data:', JSON.stringify(bomData, null, 2));
+        
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -933,10 +935,18 @@ async function saveBOM() {
             loadBoardBOM(currentBoardId);
         } else {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to save BOM');
+            console.error('[BOM] Save failed:', response.status, error);
+            
+            // Show detailed error if validation failed
+            if (error.detail && Array.isArray(error.detail)) {
+                const errorMessages = error.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join(', ');
+                throw new Error(`Validation error: ${errorMessages}`);
+            }
+            
+            throw new Error(error.detail || error.error || 'Failed to save BOM');
         }
     } catch (error) {
-        console.error('Error saving BOM:', error);
+        console.error('[BOM] Error saving:', error);
         showToast('Failed to save BOM: ' + error.message, 'error');
     }
 }
