@@ -495,9 +495,15 @@ def api_proxy_create_component():
 @api_bp.route('/components/<component_id>', methods=['GET'])
 @login_required
 def api_proxy_get_component(component_id):
-    """Proxy: Get single component by ID"""
-    result = api_request(f'/api/elec/components/{component_id}')
-    return jsonify(result) if result else (jsonify({'error': 'Component not found'}), 404)
+    """Proxy: Get single component by ID - fetches from full list"""
+    # The Orion API doesn't have a GET endpoint for single components
+    # So we fetch all and filter
+    result = api_request('/api/elec/components', params={'limit': 10000})
+    if result and isinstance(result, list):
+        component = next((c for c in result if c.get('id') == int(component_id)), None)
+        if component:
+            return jsonify(component)
+    return (jsonify({'error': 'Component not found'}), 404)
 
 @api_bp.route('/components/<component_id>', methods=['PATCH'])
 @login_required
@@ -541,11 +547,22 @@ def api_proxy_get_board_bom(board_id):
     result = api_request(f'/api/elec/boards/{board_id}/bom')
     return jsonify(result) if result else (jsonify({'error': 'Failed to fetch BOM'}), 500)
 
-@api_bp.route('/boards/<board_id>/bom/upload', methods=['POST'])
+@api_bp.route('/boards/<board_id>/bom', methods=['POST'])
 @login_required
 def api_proxy_upload_bom(board_id):
-    """Proxy: Upload BOM CSV"""
+    """Proxy: Upload/Save BOM"""
+    result = api_request(f'/api/elec/boards/{board_id}/bom', method='POST', data=request.get_json())
+    return jsonify(result) if result else (jsonify({'error': 'Failed to save BOM'}), 500)
+
+@api_bp.route('/boards/<board_id>/bom/upload', methods=['POST'])
+@login_required
+def api_proxy_upload_bom_legacy(board_id):
+    """Proxy: Upload BOM CSV (legacy endpoint)"""
+    # Try the /upload endpoint first, fall back to regular /bom endpoint
     result = api_request(f'/api/elec/boards/{board_id}/bom/upload', method='POST', data=request.get_json())
+    if not result:
+        # Try without /upload suffix
+        result = api_request(f'/api/elec/boards/{board_id}/bom', method='POST', data=request.get_json())
     return jsonify(result) if result else (jsonify({'error': 'Failed to upload BOM'}), 500)
 
 @api_bp.route('/jobs', methods=['GET'])

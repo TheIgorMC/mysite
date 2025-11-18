@@ -764,34 +764,16 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
         return;
     }
     
-    // Get component data from allComponents array or fetch if using manual ID
+    // Get component data from allComponents array
     let component = allComponents.find(c => c.id === parseInt(componentId));
     
-    if (!component && manualId) {
-        // Try to fetch component by ID from API
-        try {
-            const response = await fetch(`${ELECTRONICS_API_BASE}/components/${manualId}`);
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error || `Component with ID ${manualId} not found`;
-                console.error(`[BOM] Failed to fetch component ${manualId}:`, response.status, errorMsg);
-                showToast(errorMsg, 'error');
-                return;
-            }
-            component = await response.json();
-            console.log(`[BOM] Successfully fetched component ${manualId}:`, component);
-        } catch (error) {
-            console.error(`[BOM] Network error fetching component ${manualId}:`, error);
-            showToast(`Network error: ${error.message}. Please check your connection and try again.`, 'error');
-            return;
-        }
-    }
-    
     if (!component) {
-        console.error(`[BOM] Component not found: ID ${componentId}`);
-        showToast('Component not found. Please select from the list or verify the ID.', 'error');
+        console.error(`[BOM] Component ID ${componentId} not found in loaded components`);
+        showToast('Component not found. Please make sure components are loaded and the ID is correct.', 'error');
         return;
     }
+    
+    console.log(`[BOM] Adding component ${componentId}:`, component);
     
     // Add to BOM items (designators now optional)
     currentBOMItems.push({
@@ -830,38 +812,31 @@ document.getElementById('bom-component-id')?.addEventListener('input', function(
     previewDiv.innerHTML = '<div class="text-gray-600 dark:text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>Loading...</div>';
     
     // Debounce: wait 500ms after user stops typing
-    componentIdDebounceTimer = setTimeout(async () => {
-        try {
-            const response = await fetch(`${ELECTRONICS_API_BASE}/components/${componentId}`);
-            
-            if (!response.ok) {
-                previewDiv.innerHTML = '<div class="text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>Component not found</div>';
-                return;
-            }
-            
-            const component = await response.json();
-            
-            // Display component details
-            const details = [
-                component.seller_code ? `<strong>Seller:</strong> ${component.seller_code}` : null,
-                component.manufacturer ? `<strong>Mfr:</strong> ${component.manufacturer}` : null,
-                component.manufacturer_code ? `<strong>Mfr Code:</strong> ${component.manufacturer_code}` : null,
-                component.value ? `<strong>Value:</strong> ${component.value}` : null,
-                component.package ? `<strong>Package:</strong> ${component.package}` : null,
-                component.product_type ? `<strong>Type:</strong> ${component.product_type}` : null
-            ].filter(Boolean).join(' • ');
-            
-            previewDiv.innerHTML = `
-                <div class="text-green-600 dark:text-green-400 mb-1">
-                    <i class="fas fa-check-circle mr-1"></i>Component found
-                </div>
-                <div class="text-gray-700 dark:text-gray-300">${details || 'No details available'}</div>
-            `;
-            
-        } catch (error) {
-            console.error('[BOM Preview] Error fetching component:', error);
-            previewDiv.innerHTML = '<div class="text-red-600 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i>Network error</div>';
+    componentIdDebounceTimer = setTimeout(() => {
+        // Find component in already loaded allComponents array
+        const component = allComponents.find(c => c.id === parseInt(componentId));
+        
+        if (!component) {
+            previewDiv.innerHTML = '<div class="text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>Component not found</div>';
+            return;
         }
+        
+        // Display component details
+        const details = [
+            component.seller_code ? `<strong>Seller:</strong> ${component.seller_code}` : null,
+            component.manufacturer ? `<strong>Mfr:</strong> ${component.manufacturer}` : null,
+            component.manufacturer_code ? `<strong>Mfr Code:</strong> ${component.manufacturer_code}` : null,
+            component.value ? `<strong>Value:</strong> ${component.value}` : null,
+            component.package ? `<strong>Package:</strong> ${component.package}` : null,
+            component.product_type ? `<strong>Type:</strong> ${component.product_type}` : null
+        ].filter(Boolean).join(' • ');
+        
+        previewDiv.innerHTML = `
+            <div class="text-green-600 dark:text-green-400 mb-1">
+                <i class="fas fa-check-circle mr-1"></i>Component found
+            </div>
+            <div class="text-gray-700 dark:text-gray-300">${details || 'No details available'}</div>
+        `;
     }, 500);
 });
 
@@ -876,7 +851,7 @@ async function saveBOM() {
             designators: item.designators
         }));
         
-        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom/upload`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(bomData)
@@ -902,7 +877,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
     const csvData = document.getElementById('bom-csv-data').value;
     
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom/upload`, {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({bom_data: csvData})
