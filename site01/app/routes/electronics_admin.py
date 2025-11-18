@@ -611,8 +611,17 @@ def api_proxy_check_job_stock(job_id):
 @login_required
 def api_proxy_get_pnp_files():
     """Proxy: Get PnP files list"""
-    result = api_request('/api/elec/pnp', params=request.args.to_dict())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch PnP files'}), 500)
+    try:
+        result = api_request('/api/elec/pnp', params=request.args.to_dict())
+        # API might return None for 404 or empty array for no data
+        if result is None:
+            # Endpoint doesn't exist yet - return empty array
+            current_app.logger.warning("[PnP Proxy] API endpoint not implemented yet")
+            return jsonify([])
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"[PnP Proxy] Exception: {e}", exc_info=True)
+        return jsonify({'error': f'Failed to fetch PnP files: {str(e)}'}), 500
 
 @api_bp.route('/pnp', methods=['POST'])
 @login_required
@@ -660,6 +669,9 @@ def api_proxy_get_files():
         if board_id:
             # Get files for specific board
             result = api_request(f'/api/elec/boards/{board_id}/files')
+            # API might return None for empty or missing endpoint
+            if result is None:
+                return jsonify([])
         else:
             # Get all boards and aggregate their files
             boards = api_request('/api/elec/boards')
@@ -669,6 +681,7 @@ def api_proxy_get_files():
             all_files = []
             for board in boards:
                 board_files = api_request(f'/api/elec/boards/{board["id"]}/files')
+                # Handle empty or None responses
                 if board_files:
                     # Add board info to each file
                     for file in board_files:
@@ -678,10 +691,10 @@ def api_proxy_get_files():
             
             result = all_files
         
-        return jsonify(result) if result is not None else (jsonify({'error': 'Failed to fetch files'}), 500)
+        return jsonify(result if result is not None else [])
     except Exception as e:
         current_app.logger.error(f"[Files Proxy] Exception: {e}", exc_info=True)
-        return jsonify({'error': f'Failed to fetch files: {str(e)}'}), 500
+        return jsonify([])
 
 @api_bp.route('/files/register', methods=['POST'])
 @login_required

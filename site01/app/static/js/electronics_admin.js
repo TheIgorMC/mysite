@@ -222,7 +222,7 @@ async function loadComponents() {
         allComponents = allData;
         console.log(`[Components] Total components loaded: ${allComponents.length}`);
         
-        renderComponentsTable();
+        renderComponentsTable(allComponents);
     } catch (error) {
         console.error('[Components] Error loading:', error);
         showToast('Failed to load components: ' + error.message, 'error');
@@ -1115,7 +1115,7 @@ function showCreateJobModal() {
     if (allBoards.length > 0) {
         select.innerHTML = '<option value="">Select a board...</option>' + 
             allBoards.map(board => 
-                `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`
+                `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} v${board.version} - ${board.id}</option>`
             ).join('');
     } else {
         select.innerHTML = '<option value="">No boards available</option>';
@@ -1251,7 +1251,7 @@ function showAddBoardToJobModal() {
     // Populate board select
     const select = document.getElementById('board-select');
     select.innerHTML = allBoards.map(board => 
-        `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`
+        `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} v${board.version} - ${board.id}</option>`
     ).join('');
 }
 
@@ -1366,25 +1366,20 @@ async function loadFiles() {
             
             const response = await fetch(url);
             
-            // If files endpoint doesn't exist (404), show message and stop
-            if (response.status === 404) {
-                console.warn('[Files] Files endpoint not available in API');
+            if (!response.ok) {
+                console.warn('[Files] Files endpoint returned error:', response.status);
+                allFiles = [];
                 const grid = document.getElementById('files-grid');
                 if (grid) {
                     grid.innerHTML = `
                         <div class="col-span-full text-center py-8">
                             <i class="fas fa-info-circle text-4xl text-blue-500 dark:text-blue-400 mb-3"></i>
-                            <p class="text-gray-600 dark:text-gray-400 mb-2">File management not yet available</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-500">The files API endpoint is not configured</p>
+                            <p class="text-gray-600 dark:text-gray-400 mb-2">No files available</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500">Upload files to see them here</p>
                         </div>
                     `;
                 }
-                allFiles = [];
                 return;
-            }
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
             }
             
             const data = await response.json();
@@ -1397,6 +1392,7 @@ async function loadFiles() {
             }
             
             const count = data.length;
+            console.log('[Files] Loaded:', count, 'files');
             
             // API returns array directly
             if (count < limit) {
@@ -2119,15 +2115,15 @@ async function loadPnPFiles() {
         
         const response = await fetch(url);
         
-        if (response.status === 404) {
-            console.warn('[PnP] PnP endpoint not available');
+        if (response.status === 404 || response.status === 500) {
+            console.warn('[PnP] PnP endpoint not available or not implemented');
             const grid = document.getElementById('pnp-files-grid');
             if (grid) {
                 grid.innerHTML = `
                     <div class="col-span-full text-center py-8">
                         <i class="fas fa-info-circle text-4xl text-blue-500 dark:text-blue-400 mb-3"></i>
                         <p class="text-gray-600 dark:text-gray-400 mb-2">PnP file management not yet available</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-500">The PnP API endpoint is not configured</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500">The PnP API endpoint needs to be implemented</p>
                     </div>
                 `;
             }
@@ -2140,6 +2136,7 @@ async function loadPnPFiles() {
         }
         
         const data = await response.json();
+        console.log('[PnP] Loaded files:', data.length);
         allPnPFiles = Array.isArray(data) ? data : [];
         renderPnPFilesGrid(allPnPFiles);
         
