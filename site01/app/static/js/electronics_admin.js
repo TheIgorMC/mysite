@@ -607,7 +607,7 @@ async function viewBoardDetails(boardId) {
     if (!board) return;
     
     // Handle both 'board_name' and 'name' fields
-    const boardName = board.board_name || board.name || 'Unnamed Board';
+    const boardName = board.name || board.board_name || 'Unnamed Board';
     const version = board.version || 'v1.0';
     const variant = board.variant || '';
     
@@ -1064,7 +1064,7 @@ function renderJobsGrid(jobs) {
     grid.innerHTML = jobs.map(job => {
         // Find the board for this job
         const board = allBoards.find(b => b.id === job.board_id);
-        const boardName = board ? `${board.board_name} - ${board.version}` : `Board #${job.board_id}`;
+        const boardName = board ? `${board.name || board.board_name || 'Unnamed'} - ${board.version}` : `Board #${job.board_id}`;
         const jobTitle = `Job #${job.job_id || job.id}`;
         const status = job.status || 'created';
         const quantity = job.quantity || 1;
@@ -1115,7 +1115,7 @@ function showCreateJobModal() {
     if (allBoards.length > 0) {
         select.innerHTML = '<option value="">Select a board...</option>' + 
             allBoards.map(board => 
-                `<option value="${board.id}">${board.board_name} - ${board.version}</option>`
+                `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`
             ).join('');
     } else {
         select.innerHTML = '<option value="">No boards available</option>';
@@ -1179,7 +1179,7 @@ async function viewJobDetails(jobId) {
     
     // Find the board for this job
     const board = allBoards.find(b => b.id === job.board_id);
-    const boardName = board ? `${board.board_name} - ${board.version}` : `Board #${job.board_id}`;
+    const boardName = board ? `${board.name || board.board_name || 'Unnamed'} - ${board.version}` : `Board #${job.board_id}`;
     const jobTitle = `Job #${job.job_id || job.id} - ${boardName}`;
     const quantity = job.quantity || 1;
     const pnpJob = job.pnp_job || 0;
@@ -1228,7 +1228,7 @@ async function loadJobBoards(jobId) {
             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h5 class="font-semibold text-gray-900 dark:text-white">${board.board_name}</h5>
+                        <h5 class="font-semibold text-gray-900 dark:text-white">${board.name || board.board_name || 'Unnamed'}</h5>
                         <p class="text-sm text-gray-600 dark:text-gray-400">${board.version}</p>
                     </div>
                     <div class="text-right">
@@ -1251,7 +1251,7 @@ function showAddBoardToJobModal() {
     // Populate board select
     const select = document.getElementById('board-select');
     select.innerHTML = allBoards.map(board => 
-        `<option value="${board.id}">${board.board_name} - ${board.version}</option>`
+        `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`
     ).join('');
 }
 
