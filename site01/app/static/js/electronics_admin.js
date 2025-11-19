@@ -213,10 +213,7 @@ function showManualMappingModal(notFoundItems, alreadyMapped) {
 function closeManualMappingModal() {
     document.getElementById('manual-mapping-modal').classList.add('hidden');
     document.getElementById('manual-mapping-modal').classList.remove('flex');
-    if (resolveManualMapping) {
-        resolveManualMapping(false);
-        resolveManualMapping = null;
-    }
+    // Don't resolve here - let skip/apply do it
 }
 
 function updateManualMapping(idx, componentId) {
