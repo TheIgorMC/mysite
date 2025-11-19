@@ -225,6 +225,7 @@ function updateManualMapping(idx, componentId) {
 }
 
 function skipUnmappedComponents() {
+    console.log('[Manual Mapping] Skipping unmapped, keeping', window._tempBomItems?.length || 0, 'auto-mapped items');
     closeManualMappingModal();
     if (resolveManualMapping) {
         resolveManualMapping(true);
@@ -233,6 +234,7 @@ function skipUnmappedComponents() {
 }
 
 function applyManualMappings() {
+    console.log('[Manual Mapping] Applying', Object.keys(manualMappings).length, 'manual mappings');
     // Add manually mapped items
     Object.entries(manualMappings).forEach(([idx, componentId]) => {
         const item = unmappedComponents[parseInt(idx)];
@@ -244,6 +246,7 @@ function applyManualMappings() {
             });
         }
     });
+    console.log('[Manual Mapping] Total items after mapping:', window._tempBomItems?.length || 0);
     
     closeManualMappingModal();
     if (resolveManualMapping) {
@@ -1473,6 +1476,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
         
         // If some components not found, offer manual mapping
         if (notFound.length > 0) {
+            console.log('[BOM Upload] Found', bomItems.length, 'auto-mapped,', notFound.length, 'unmapped');
             // Store bomItems in global scope for manual mapping
             window._tempBomItems = bomItems;
             const proceed = await showManualMappingModal(notFound, bomItems);
@@ -1481,12 +1485,16 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             const finalBomItems = window._tempBomItems;
             delete window._tempBomItems;
             
+            console.log('[BOM Upload] After mapping - proceed:', proceed, 'items:', finalBomItems?.length);
+            
             if (!proceed) return;
             
             // Replace bomItems with final list
             bomItems.length = 0;
             finalBomItems.forEach(item => bomItems.push(item));
         }
+        
+        console.log('[BOM Upload] Final count:', bomItems.length, 'components');
         
         if (bomItems.length === 0) {
             showToast('No components to upload', 'error');
