@@ -1160,14 +1160,15 @@ def list_storage_directory():
         
         html_content = response.text
         
-        # Parse HTML to extract file links
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html_content, 'html.parser')
+        # Parse HTML to extract file links using regex (no external dependencies)
+        import re
+        
+        # Match href attributes in <a> tags
+        href_pattern = r'<a[^>]+href=["\']([^"\']+)["\']'
+        matches = re.findall(href_pattern, html_content, re.IGNORECASE)
         
         files = []
-        for link in soup.find_all('a'):
-            href = link.get('href', '')
-            
+        for href in matches:
             # Skip parent directory, query strings, and absolute paths
             if not href or href == '../' or href.startswith('?') or href.startswith('/'):
                 continue
@@ -1177,6 +1178,10 @@ def list_storage_directory():
             
             # Skip subdirectories (containing /)
             if '/' in filename:
+                continue
+            
+            # Skip empty or special entries
+            if not filename or filename.startswith('.'):
                 continue
             
             files.append(filename)
