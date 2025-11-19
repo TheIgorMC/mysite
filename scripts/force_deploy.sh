@@ -1,10 +1,18 @@
 #!/bin/bash
-# Force deploy with complete cache clearing
-# Usage: ./force_deploy.sh
+# Fast deploy with selective cache clearing
+# Usage: ./force_deploy.sh [full|quick]
+# - quick (default): Only rebuild app code (fast)
+# - full: Complete rebuild including dependencies (slow)
 
 set -e
 
-echo "🚀 Force Deploy - Complete Cache Clear"
+MODE="${1:-quick}"
+
+if [ "$MODE" == "full" ]; then
+    echo "🚀 Full Deploy - Complete Cache Clear"
+else
+    echo "⚡ Quick Deploy - App Code Only"
+fi
 echo "======================================"
 
 # Check if we're in the right directory
@@ -16,59 +24,45 @@ fi
 
 # Step 1: Pull latest changes
 echo ""
-echo "📥 Step 1: Pulling latest changes from Git..."
-git pull
-if [ $? -ne 0 ]; then
-    echo "⚠️  Warning: Git pull failed or had conflicts"
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+echo "📥 Pulling latest changes from Git..."
+git pull || echo "⚠️  Warning: Git pull had issues, continuing..."
+
+# Step 2: Update CACHE_BUST in docker-compose.yml to force rebuild from COPY step
+echo ""
+echo "🔄 Updating cache bust value..."
+TIMESTAMP=$(date +%s)
+sed -i.bak "s/CACHE_BUST: .*/CACHE_BUST: $TIMESTAMP/" docker-compose.yml
+
+# Step 3: Rebuild
+echo ""
+if [ "$MODE" == "full" ]; then
+    echo "🛑 Stopping containers..."
+    docker compose down
+    
+    echo "🧹 Clearing Docker build cache..."
+    docker builder prune -f
+    
+    echo "🔨 Full rebuild (no cache)..."
+    docker compose build --no-cache --pull
+else
+    echo "🔨 Quick rebuild (reusing dependency cache)..."
+    # This will rebuild from CACHE_BUST onwards, keeping Python deps cached
+    docker compose build
 fi
 
-# Step 2: Stop containers
+# Step 4: Start containers
 echo ""
-echo "🛑 Step 2: Stopping containers..."
-docker compose down
-
-# Step 3: Clear local Docker cache
-echo ""
-echo "🧹 Step 3: Clearing Docker build cache..."
-docker builder prune -f
-
-# Step 4: Rebuild with no cache
-echo ""
-echo "🔨 Step 4: Rebuilding container (no cache)..."
-docker compose build --no-cache --pull --build-arg CACHE_BUST=$(date +%s)
-
-# Step 5: Start containers
-echo ""
-echo "▶️  Step 5: Starting containers..."
+echo "▶️  Starting containers..."
 docker compose up -d
 
-# Step 6: Run database migrations
+# Step 5: Wait for startup
 echo ""
-echo "🔄 Step 6: Running database migrations..."
-docker exec orion-project bash -c "cd /app/site01 && python -m pip install mysql-connector-python python-dotenv 2>/dev/null || true"
+echo "⏳ Waiting for startup (3 seconds)..."
+sleep 3
 
-# Run Python migrations
-docker exec orion-project bash -c "cd /app/site01 && for migration in migrations/*.py; do [ -f \"\$migration\" ] && python \"\$migration\" 2>/dev/null || true; done"
-
-# Run SQL migrations
-echo "   Running SQL migrations..."
-docker exec orion-project bash -c "cd /app/site01 && for migration in migrations/*.sql; do [ -f \"\$migration\" ] && sqlite3 instance/mysite.db < \"\$migration\" 2>/dev/null || true; done"
-
-echo "✓ Migrations completed"
-
-# Step 7: Wait for startup
+# Step 6: Verify
 echo ""
-echo "⏳ Step 7: Waiting for application to stabilize..."
-sleep 5
-
-# Step 8: Verify
-echo ""
-echo "✅ Step 8: Verifying deployment..."
+echo "✅ Verifying deployment..."
 
 # Check if container is running
 if ! docker ps | grep -q orion-project; then
@@ -78,26 +72,19 @@ if ! docker ps | grep -q orion-project; then
     exit 1
 fi
 
-# Check logs for cache clearing
+# Show recent logs
 echo ""
 echo "📋 Recent logs:"
-docker logs orion-project --tail 20
-
-# Check template file timestamp
-echo ""
-echo "📄 Template file info:"
-docker exec orion-project stat /app/site01/app/templates/archery/competitions.html | grep "Modify:"
+docker logs orion-project --tail 15
 
 echo ""
 echo "✅ Deployment complete!"
 echo ""
-echo "🌐 Next steps:"
-echo "   1. Open browser and go to your site"
-echo "   2. Press Ctrl+Shift+R (hard refresh)"
-echo "   3. Clear browser cache if needed"
+echo "🌐 Quick access:"
+echo "   Browser: http://localhost:6080 (Ctrl+Shift+R to hard refresh)"
 echo ""
 echo "📊 Useful commands:"
-echo "   docker logs -f orion-project      # Follow logs"
-echo "   docker compose restart            # Restart container"
-echo "   docker exec -it orion-project bash  # Enter container"
+echo "   docker logs -f orion-project           # Follow logs"
+echo "   docker exec -it orion-project bash     # Enter container"
+echo "   ./scripts/force_deploy.sh full        # Full rebuild with deps"
 echo ""
