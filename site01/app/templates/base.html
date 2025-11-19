@@ -221,10 +221,10 @@
                                class="block px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                 <i class="fas fa-cog mr-2"></i>{{ t('nav.settings') }}
                             </a>
-                            {% if current_user.has_locked_section_access %}
-                            <a href="{{ url_for('main.locked_section') }}" 
-                               class="block px-4 py-3 text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                <i class="fas fa-lock mr-2"></i>{{ t('auth.locked_section_title') }}
+                            {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin.index') }}" 
+                               class="block px-4 py-3 text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <i class="fas fa-shield-alt mr-2"></i>Admin Area
                             </a>
                             {% endif %}
                             <a href="{{ url_for('auth.logout') }}" 
