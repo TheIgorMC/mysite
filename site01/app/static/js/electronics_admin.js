@@ -1482,7 +1482,8 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             const proceed = await showManualMappingModal(notFound, bomItems);
             
             // Restore from global (it will have manually mapped items added)
-            const finalBomItems = window._tempBomItems;
+            // Clone the array to avoid reference issues
+            const finalBomItems = [...window._tempBomItems];
             delete window._tempBomItems;
             
             console.log('[BOM Upload] After mapping - proceed:', proceed, 'items:', finalBomItems?.length);
@@ -1490,8 +1491,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             if (!proceed) return;
             
             // Replace bomItems with final list
-            bomItems.length = 0;
-            finalBomItems.forEach(item => bomItems.push(item));
+            bomItems = finalBomItems;
         }
         
         console.log('[BOM Upload] Final count:', bomItems.length, 'components');
