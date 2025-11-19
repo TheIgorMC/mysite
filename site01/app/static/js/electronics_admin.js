@@ -3207,13 +3207,68 @@ document.getElementById('upload-pnp-form')?.addEventListener('submit', async fun
         
         console.log('[PnP Upload] Uploading to board', boardId, 'with filename:', filename);
         
+        // Parse and validate/map CSV columns
+        const { headers, rows } = parseCSV(csvData);
+        console.log('[PnP Upload] Parsed CSV with headers:', headers);
+        
+        // Map common column name variations to API-expected names
+        const columnMapping = {
+            'Designator': ['Designator', 'Ref', 'Reference', 'RefDes', 'Component'],
+            'Mid X': ['Mid X', 'Center X', 'X', 'PosX', 'LocationX', 'Mid-X'],
+            'Mid Y': ['Mid Y', 'Center Y', 'Y', 'PosY', 'LocationY', 'Mid-Y'],
+            'Layer': ['Layer', 'Side', 'TB'],
+            'Rotation': ['Rotation', 'Rot', 'Angle'],
+            'Comment': ['Comment', 'Value', 'Description', 'Part'],
+        };
+        
+        // Build header mapping
+        const headerMap = {};
+        for (const [apiName, variations] of Object.entries(columnMapping)) {
+            const found = variations.find(v => headers.includes(v));
+            if (found) {
+                headerMap[found] = apiName;
+            }
+        }
+        
+        // Check for required columns
+        const requiredColumns = ['Designator', 'Mid X', 'Mid Y', 'Layer'];
+        const missingColumns = requiredColumns.filter(col => 
+            !Object.values(headerMap).includes(col)
+        );
+        
+        if (missingColumns.length > 0) {
+            console.error('[PnP Upload] Missing required columns:', missingColumns);
+            console.log('[PnP Upload] Available headers:', headers);
+            console.log('[PnP Upload] Header mapping:', headerMap);
+            throw new Error(`Missing required columns: ${missingColumns.join(', ')}. Available: ${headers.join(', ')}`);
+        }
+        
+        // Rebuild CSV with mapped headers
+        const mappedHeaders = headers.map(h => headerMap[h] || h);
+        const mappedCsvLines = [mappedHeaders.join(',')];
+        
+        rows.forEach(row => {
+            const mappedRow = headers.map(h => {
+                let value = row[h] || '';
+                // Quote if contains comma or quote
+                if (value.includes(',') || value.includes('"')) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            });
+            mappedCsvLines.push(mappedRow.join(','));
+        });
+        
+        const mappedCsvData = mappedCsvLines.join('\n');
+        console.log('[PnP Upload] Mapped', rows.length, 'rows with headers:', mappedHeaders);
+        
         const response = await fetch(`${ELECTRONICS_API_BASE}/pnp`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 board_id: parseInt(boardId),
                 filename: filename,
-                csv_data: csvData
+                csv_data: mappedCsvData
             })
         });
         
