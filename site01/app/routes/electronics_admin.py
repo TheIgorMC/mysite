@@ -1126,3 +1126,68 @@ def parse_mouser_csv(file_content):
     
     current_app.logger.info(f"[Mouser CSV] Parsed {len(items)} items")
     return items
+
+# ===== STORAGE DIRECTORY LISTING =====
+
+@api_bp.route('/storage/list', methods=['GET'])
+@admin_required
+def list_storage_directory():
+    """
+    Proxy endpoint to list files in a storage directory
+    Bypasses CORS issues when scanning folders
+    """
+    folder_path = request.args.get('path', '')
+    
+    if not folder_path:
+        return jsonify({'error': 'Path parameter required'}), 400
+    
+    # Get storage URL from config
+    storage_url = current_app.config.get('ELECTRONICS_STORAGE_URL', 'https://elec.orion-project.it')
+    
+    # Clean up path - remove leading/trailing slashes
+    folder_path = folder_path.strip('/')
+    
+    try:
+        # Fetch directory listing
+        url = f"{storage_url}/{folder_path}/"
+        current_app.logger.info(f"[Storage List] Fetching: {url}")
+        
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            current_app.logger.error(f"[Storage List] HTTP {response.status_code} from {url}")
+            return jsonify({'error': f'Storage returned {response.status_code}'}), response.status_code
+        
+        html_content = response.text
+        
+        # Parse HTML to extract file links
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        files = []
+        for link in soup.find_all('a'):
+            href = link.get('href', '')
+            
+            # Skip parent directory, query strings, and absolute paths
+            if not href or href == '../' or href.startswith('?') or href.startswith('/'):
+                continue
+            
+            # Remove trailing slash for directories
+            filename = href.rstrip('/')
+            
+            # Skip subdirectories (containing /)
+            if '/' in filename:
+                continue
+            
+            files.append(filename)
+        
+        current_app.logger.info(f"[Storage List] Found {len(files)} files in {folder_path}")
+        return jsonify({'files': files, 'path': folder_path})
+        
+    except requests.RequestException as e:
+        current_app.logger.error(f"[Storage List] Request failed: {e}")
+        return jsonify({'error': f'Failed to fetch directory: {str(e)}'}), 500
+    except Exception as e:
+        current_app.logger.error(f"[Storage List] Error: {e}")
+        return jsonify({'error': f'Error parsing directory: {str(e)}'}), 500
+

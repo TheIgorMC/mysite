@@ -2228,29 +2228,20 @@ async function scanFolder() {
     document.getElementById('detected-files-container').classList.add('hidden');
     
     try {
-        // Fetch directory listing from storage
-        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${folderPath}/`);
+        // Fetch directory listing via proxy to avoid CORS issues
+        const response = await fetch(`${ELECTRONICS_API_BASE}/storage/list?path=${encodeURIComponent(folderPath)}`);
         
         if (!response.ok) {
-            throw new Error('Folder not found or inaccessible');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Folder not found or inaccessible');
         }
         
-        const html = await response.text();
-        
-        // Parse HTML to extract file links
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const links = doc.querySelectorAll('a');
+        const data = await response.json();
+        const files = data.files || [];
         
         detectedFiles = [];
         
-        links.forEach(link => {
-            const href = link.getAttribute('href');
-            if (!href || href === '../' || href.startsWith('?') || href.startsWith('/')) return;
-            
-            const filename = href.replace(/\/$/, ''); // Remove trailing slash for directories
-            if (filename.includes('/')) return; // Skip subdirectories
-            
+        files.forEach(filename => {
             const fileType = detectFileType(filename);
             if (!fileType) return; // Skip unknown types
             
