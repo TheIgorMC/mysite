@@ -2150,17 +2150,30 @@ function closeAutoDetectModal() {
     detectedFiles = [];
 }
 
+// Map frontend file types to API-compatible types
+function mapFileTypeToAPI(fileType) {
+    const mapping = {
+        'bom_csv': 'bom',
+        'bom_excel': 'bom',
+        'pnp_csv': 'pnp'
+    };
+    return mapping[fileType] || fileType;
+}
+
 function detectFileType(filename) {
     const lower = filename.toLowerCase();
     
-    // BOM detection - API accepts "bom" not "bom_csv"
-    if (lower.startsWith('bom') && (lower.endsWith('.csv') || lower.endsWith('.xlsx') || lower.endsWith('.xls'))) {
-        return 'bom';
+    // BOM detection
+    if (lower.startsWith('bom') && lower.endsWith('.csv')) {
+        return 'bom_csv';
+    }
+    if (lower.startsWith('bom') && (lower.endsWith('.xlsx') || lower.endsWith('.xls'))) {
+        return 'bom_excel';
     }
     
-    // PnP detection - API accepts "pnp" not "pnp_csv"
+    // PnP detection
     if ((lower.startsWith('pnp') || lower.startsWith('pnp_')) && lower.endsWith('.csv')) {
-        return 'pnp';
+        return 'pnp_csv';
     }
     
     // iBOM detection
@@ -2360,7 +2373,7 @@ async function registerDetectedFiles() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     board_id: file.board_id,
-                    file_type: file.file_type,
+                    file_type: mapFileTypeToAPI(file.file_type),
                     file_path: file.file_path,
                     filename: file.filename,
                     display_name: file.display_name || file.filename
@@ -2409,7 +2422,7 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
     // Prepare data for API
     const apiData = {
         board_id: parseInt(data.board_id),
-        file_type: data.file_type,
+        file_type: mapFileTypeToAPI(data.file_type),
         filename: filename,
         file_path: filePath,
         display_name: data.display_name || filename,
