@@ -502,6 +502,27 @@ async function loadBoards() {
             }
         }
         
+        // Load BOM for each board to get accurate component counts and production stats
+        await Promise.all(allBoards.map(async (board) => {
+            try {
+                const bomResponse = await fetch(`${ELECTRONICS_API_BASE}/boards/${board.id}/bom`);
+                if (bomResponse.ok) {
+                    const bom = await bomResponse.json();
+                    board.bom_count = Array.isArray(bom) ? bom.length : 0;
+                } else {
+                    board.bom_count = 0;
+                }
+            } catch (error) {
+                console.error(`Error loading BOM for board ${board.id}:`, error);
+                board.bom_count = 0;
+            }
+            
+            // Calculate production count from completed jobs
+            board.produced_count = allJobs.filter(job => 
+                job.board_id === board.id && job.status === 'completed'
+            ).reduce((sum, job) => sum + (job.quantity || 0), 0);
+        }));
+        
         renderBoardsGrid(allBoards);
     } catch (error) {
         console.error('Error loading boards:', error);
@@ -548,7 +569,7 @@ function renderBoardsGrid(boards) {
             ${description ? `<p class="text-sm text-gray-700 dark:text-gray-300 mb-3">${description}</p>` : ''}
             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span><i class="fas fa-list mr-1"></i>${bomCount} components</span>
-                <span><i class="fas fa-folder mr-1"></i>${filesCount} files</span>
+                <span><i class="fas fa-industry mr-1"></i>${board.produced_count || 0} produced</span>
             </div>
         </div>
     `;
@@ -652,24 +673,28 @@ function switchBoardTab(tabName) {
 }
 
 async function loadBoardBOM(boardId) {
+    const tbody = document.getElementById('board-bom-table');
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading BOM...</td></tr>';
+    
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`);
         const data = await response.json();
         
         console.log('[BOM] Loaded BOM data:', data);
         
-        const tbody = document.getElementById('board-bom-table');
-        
         // Handle both {bom: [...]} and direct array responses
         const bomItems = Array.isArray(data) ? data : (data.bom || []);
         
         if (bomItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No BOM data</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No BOM data</td></tr>';
             return;
         }
         
         tbody.innerHTML = bomItems.map(item => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">#${item.component_id}</td>
                 <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${item.designators || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.product_type || '-'}</td>
                 <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${item.value || '-'}</td>
@@ -680,6 +705,7 @@ async function loadBoardBOM(boardId) {
         `).join('');
     } catch (error) {
         console.error('Error loading BOM:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">Error loading BOM</td></tr>';
     }
 }
 
@@ -780,12 +806,13 @@ function renderEditBOMTable() {
     const tbody = document.getElementById('edit-bom-table');
     
     if (currentBOMItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No components in BOM</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No components in BOM</td></tr>';
         return;
     }
     
     tbody.innerHTML = currentBOMItems.map((item, index) => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">#${item.component_id}</td>
             <td class="px-4 py-3 text-sm font-mono">${item.designators || item.designator || '-'}</td>
             <td class="px-4 py-3 text-sm">${item.product_type || '-'}</td>
             <td class="px-4 py-3 text-sm font-medium">${item.value || '-'}</td>
@@ -866,6 +893,9 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
     document.getElementById('add-bom-item-form').reset();
     document.getElementById('bom-component-preview').classList.add('hidden');
     showToast('Component added to BOM', 'success');
+    
+    // Refocus on component ID field for quick consecutive entries
+    document.getElementById('bom-component-id').focus();
 });
 
 // Auto-fill component details when ID is entered manually
@@ -1248,26 +1278,33 @@ async function loadJobBoards(jobId) {
         const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${jobId}`);
         const data = await response.json();
         
+        console.log('[Job Boards] API response:', data);
+        
         const container = document.getElementById('job-boards-list');
-        if (!data.job.boards || data.job.boards.length === 0) {
-            container.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No boards added to this job</p>';
+        
+        // Job data is in data.job, board info is in job.board_id
+        const job = data.job || data;
+        const board = allBoards.find(b => b.id === job.board_id);
+        
+        if (!board) {
+            container.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">Board not found</p>';
             return;
         }
         
-        container.innerHTML = data.job.boards.map(board => `
+        container.innerHTML = `
             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div class="flex items-center justify-between">
                     <div>
                         <h5 class="font-semibold text-gray-900 dark:text-white">${board.name || board.board_name || 'Unnamed'}</h5>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">${board.version}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">v${board.version} - ID${board.id}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-2xl font-bold text-blue-600">${board.quantity}</p>
+                        <p class="text-2xl font-bold text-blue-600">${job.quantity}</p>
                         <p class="text-xs text-gray-500">units</p>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
     } catch (error) {
         console.error('Error loading job boards:', error);
     }
@@ -1321,29 +1358,53 @@ async function checkJobStock() {
         const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/check_stock`);
         const data = await response.json();
         
+        console.log('[Check Stock] API response:', data);
+        
         document.getElementById('stock-check-results').classList.remove('hidden');
-        document.getElementById('stock-available-count').textContent = data.summary.available_components;
-        document.getElementById('stock-low-count').textContent = data.summary.low_stock_components;
-        document.getElementById('stock-missing-count').textContent = data.summary.missing_components;
+        
+        // Calculate summary from ok/missing arrays
+        const okCount = data.ok ? data.ok.length : 0;
+        const missingCount = data.missing ? data.missing.length : 0;
+        
+        document.getElementById('stock-available-count').textContent = okCount;
+        document.getElementById('stock-low-count').textContent = 0;
+        document.getElementById('stock-missing-count').textContent = missingCount;
         
         const tbody = document.getElementById('stock-check-table');
-        tbody.innerHTML = data.component_details.map(comp => `
+        
+        // Render OK components
+        const okRows = (data.ok || []).map(comp => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    ${comp.product_type} ${comp.value} (${comp.package})
+                    Component #${comp.component_id}
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.required}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.available}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.need}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.have}</td>
                 <td class="px-4 py-3 text-sm">
-                    ${comp.status === 'available' ? 
-                        '<span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">OK</span>' :
-                      comp.status === 'low' ?
-                        '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">Low</span>' :
-                        '<span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">Missing</span>'
-                    }
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">OK</span>
                 </td>
             </tr>
-        `).join('');
+        `);
+        
+        // Render missing components
+        const missingRows = (data.missing || []).map(comp => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                    ${comp.product_type || ''} ${comp.value || ''} (${comp.package || ''})
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.need}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.have}</td>
+                <td class="px-4 py-3 text-sm">
+                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">Missing</span>
+                </td>
+            </tr>
+        `);
+        
+        tbody.innerHTML = [...okRows, ...missingRows].join('');
+        
+        if (okCount === 0 && missingCount === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No BOM data for this board</td></tr>';
+        }
     } catch (error) {
         console.error('Error checking stock:', error);
         showToast('Failed to check stock', 'error');

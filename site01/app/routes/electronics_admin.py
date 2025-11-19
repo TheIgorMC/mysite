@@ -1016,19 +1016,23 @@ def parse_mouser_xls(file_content):
         except (ValueError, TypeError):
             unit_price = 0.0
         
-        # Extract manufacturer name from description if available
-        # Mouser format: "Description goes here" 
-        manufacturer = ''
-        if desc:
-            # Try to extract manufacturer from description (usually first part)
-            desc_parts = str(desc).split(' ')
-            if len(desc_parts) > 0:
-                manufacturer = desc_parts[0]
+        # Get manufacturer name from dedicated field
+        manufacturer = (row_data.get('Manufacturer:') or
+                       row_data.get('Manufacturer') or
+                       row_data.get('Mfr:') or
+                       row_data.get('Mfr') or '')
+        
+        # Get product type/category from dedicated field if available
+        product_type = (row_data.get('Type:') or
+                       row_data.get('Type') or
+                       row_data.get('Category:') or
+                       row_data.get('Category') or '')
         
         items.append({
             'seller_code': str(mouser_no).strip(),
             'manufacturer_code': str(mfr_no).strip() if mfr_no else '',
-            'manufacturer': manufacturer,
+            'manufacturer': str(manufacturer).strip() if manufacturer else '',
+            'product_type': str(product_type).strip() if product_type else '',
             'package': '',  # Mouser order history doesn't include package
             'description': str(desc).strip() if desc else '',
             'quantity': quantity,
