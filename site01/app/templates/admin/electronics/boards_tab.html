@@ -185,9 +185,47 @@
     </div>
 </div>
 
+<!-- Manual Mapping Modal -->
+<div id="manual-mapping-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-link text-orange-600 mr-2"></i>Map Unmapped Components
+                </h3>
+                <button onclick="closeManualMappingModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <p class="text-sm text-orange-800 dark:text-orange-300">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    The following components were not automatically matched. Map them manually or skip them.
+                </p>
+            </div>
+            
+            <div class="space-y-3 mb-6" id="manual-mapping-list">
+                <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onclick="skipUnmappedComponents()"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i class="fas fa-forward mr-2"></i>Skip Unmapped
+                </button>
+                <button onclick="applyManualMappings()"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                    <i class="fas fa-check mr-2"></i>Apply Mappings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Upload BOM Modal -->
 <div id="upload-bom-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
@@ -204,10 +242,10 @@
                     <strong>CSV Format Requirements:</strong>
                 </p>
                 <ul class="text-sm text-blue-800 dark:text-blue-300 ml-6 space-y-1">
-                    <li>• Required column: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Manufacturer Part</code> (maps to component)</li>
-                    <li>• Required column: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Quantity</code> (how many needed)</li>
-                    <li>• Supports both comma and tab-separated files</li>
-                    <li>• Auto-detects delimiter (comma or tab)</li>
+                    <li>• Required: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Manufacturer Part</code> OR <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Supplier Part</code></li>
+                    <li>• Required: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Quantity</code> (how many needed)</li>
+                    <li>• Auto-detects delimiter (comma, tab, semicolon)</li>
+                    <li>• Unmapped components can be manually matched</li>
                 </ul>
             </div>
             

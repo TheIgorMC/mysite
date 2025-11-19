@@ -106,7 +106,7 @@ function parseCSV(text) {
 
 /**
  * Map CSV row to component lookup
- * Returns { manufacturer_code, qty } or null if invalid
+ * Returns { manufacturer_code, supplier_code, qty } or null if invalid
  */
 function mapBOMRow(row) {
     // Find manufacturer part column (case-insensitive)
@@ -114,33 +114,148 @@ function mapBOMRow(row) {
         k.toLowerCase().includes('manufacturer') && k.toLowerCase().includes('part')
     );
     
+    // Find supplier part column
+    const supplierPartKey = Object.keys(row).find(k => 
+        k.toLowerCase().includes('supplier') && k.toLowerCase().includes('part')
+    );
+    
     // Find quantity column
     const qtyKey = Object.keys(row).find(k => 
         k.toLowerCase() === 'quantity' || k.toLowerCase() === 'qty'
     );
     
-    if (!mfrPartKey || !qtyKey) {
-        console.warn('[CSV] Missing required columns in row:', row);
+    if (!qtyKey) {
+        console.warn('[CSV] Missing quantity column in row:', row);
         return null;
     }
     
-    const manufacturer_code = row[mfrPartKey]?.trim();
+    const manufacturer_code = row[mfrPartKey]?.trim() || '';
+    const supplier_code = row[supplierPartKey]?.trim() || '';
     const qty = parseInt(row[qtyKey]);
     
-    if (!manufacturer_code || isNaN(qty) || qty <= 0) {
+    if ((!manufacturer_code && !supplier_code) || isNaN(qty) || qty <= 0) {
         console.warn('[CSV] Invalid data in row:', row);
         return null;
     }
     
     return { 
         manufacturer_code, 
+        supplier_code,
         qty,
-        // Store all row data for preview
+        // Store all row data for manual mapping
         _rawRow: row
     };
 }
 
 // ==================== END CSV UTILITIES ====================
+
+// ==================== MANUAL MAPPING ====================
+
+let unmappedComponents = [];
+let manualMappings = {};
+let resolveManualMapping = null;
+
+function showManualMappingModal(notFoundItems, alreadyMapped) {
+    return new Promise((resolve) => {
+        unmappedComponents = notFoundItems;
+        manualMappings = {};
+        resolveManualMapping = resolve;
+        
+        const list = document.getElementById('manual-mapping-list');
+        list.innerHTML = notFoundItems.map((item, idx) => {
+            const mfrCode = item.manufacturer_code || '-';
+            const supplierCode = item.supplier_code || '-';
+            const qty = item.qty;
+            
+            // Get a sample of other data from raw row
+            const otherData = Object.entries(item._rawRow)
+                .filter(([k]) => !k.toLowerCase().includes('quantity') && !k.toLowerCase().includes('qty'))
+                .slice(0, 3)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ');
+            
+            return `
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="grid grid-cols-12 gap-3 items-center">
+                        <div class="col-span-5">
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Component Info</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">MFR: <span class="font-mono">${mfrCode}</span></p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Supplier: <span class="font-mono">${supplierCode}</span></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${otherData}</p>
+                        </div>
+                        <div class="col-span-1 text-center">
+                            <i class="fas fa-arrow-right text-gray-400"></i>
+                        </div>
+                        <div class="col-span-5">
+                            <select id="manual-map-${idx}" 
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    onchange="updateManualMapping(${idx}, this.value)">
+                                <option value="">-- Select Component --</option>
+                                ${allComponents.map(comp => {
+                                    const label = `${comp.manufacturer_code || comp.seller_code || 'ID:' + comp.id} - ${comp.value || ''} ${comp.package || ''} (${comp.product_type || ''})`;
+                                    return `<option value="${comp.id}">${label}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                        <div class="col-span-1 text-right">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">×${qty}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('manual-mapping-modal').classList.remove('hidden');
+        document.getElementById('manual-mapping-modal').classList.add('flex');
+    });
+}
+
+function closeManualMappingModal() {
+    document.getElementById('manual-mapping-modal').classList.add('hidden');
+    document.getElementById('manual-mapping-modal').classList.remove('flex');
+    if (resolveManualMapping) {
+        resolveManualMapping(false);
+        resolveManualMapping = null;
+    }
+}
+
+function updateManualMapping(idx, componentId) {
+    if (componentId) {
+        manualMappings[idx] = parseInt(componentId);
+    } else {
+        delete manualMappings[idx];
+    }
+}
+
+function skipUnmappedComponents() {
+    closeManualMappingModal();
+    if (resolveManualMapping) {
+        resolveManualMapping(true);
+        resolveManualMapping = null;
+    }
+}
+
+function applyManualMappings() {
+    // Add manually mapped items
+    Object.entries(manualMappings).forEach(([idx, componentId]) => {
+        const item = unmappedComponents[parseInt(idx)];
+        // Store for upload handler
+        if (window._tempBomItems) {
+            window._tempBomItems.push({
+                component_id: componentId,
+                qty: item.qty
+            });
+        }
+    });
+    
+    closeManualMappingModal();
+    if (resolveManualMapping) {
+        resolveManualMapping(true);
+        resolveManualMapping = null;
+    }
+}
+
+// ==================== END MANUAL MAPPING ====================
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -876,10 +991,28 @@ async function loadBoardFiles(boardId) {
                 </div>
                 <div class="flex items-center space-x-2">
                     ${file.file_type === 'ibom' ? `
-                        <button onclick="closeBoardDetailsModal(); openIBOMViewer('${file.file_path}')" 
+                        <button onclick="viewIBOMFromBoard('${file.file_path}')" 
                                 class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded">
                             <i class="fas fa-eye mr-1"></i>View
                         </button>
+                    ` : file.file_type === 'bom_csv' ? `
+                        <button onclick="loadBOMFromFile('${file.file_path}')" 
+                                class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded">
+                            <i class="fas fa-upload mr-1"></i>Load BOM
+                        </button>
+                        <a href="${ELECTRONICS_STORAGE_URL}/${file.file_path}" target="_blank"
+                           class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">
+                            <i class="fas fa-external-link-alt mr-1"></i>Open
+                        </a>
+                    ` : file.file_type === 'pnp_csv' ? `
+                        <button onclick="loadPnPFromFile('${file.file_path}')" 
+                                class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded">
+                            <i class="fas fa-upload mr-1"></i>Load PnP
+                        </button>
+                        <a href="${ELECTRONICS_STORAGE_URL}/${file.file_path}" target="_blank"
+                           class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">
+                            <i class="fas fa-external-link-alt mr-1"></i>Open
+                        </a>
                     ` : `
                         <a href="${ELECTRONICS_STORAGE_URL}/${file.file_path}" target="_blank"
                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">
@@ -897,6 +1030,103 @@ async function loadBoardFiles(boardId) {
         console.error('Error loading files:', error);
         const container = document.getElementById('board-files-list');
         container.innerHTML = '<p class="text-center text-red-500 py-8">Error loading files</p>';
+    }
+}
+
+function viewIBOMFromBoard(filePath) {
+    // Close board details modal
+    closeBoardDetailsModal();
+    // Switch to Files tab
+    switchTab('files');
+    // Open iBOM viewer
+    setTimeout(() => {
+        openIBOMViewer(filePath);
+    }, 100);
+}
+
+async function loadBOMFromFile(filePath) {
+    try {
+        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${filePath}`);
+        if (!response.ok) throw new Error('Failed to fetch BOM file');
+        
+        const text = await response.text();
+        
+        // Parse CSV
+        const { headers, rows } = parseCSV(text);
+        const mapped = rows.map(mapBOMRow).filter(r => r !== null);
+        
+        if (mapped.length === 0) {
+            showToast('No valid BOM data found in file', 'error');
+            return;
+        }
+        
+        parsedCSVData = mapped;
+        
+        // Open upload modal with pre-loaded data
+        document.getElementById('upload-bom-board-id').value = currentBoardId;
+        
+        // Show preview
+        const previewContainer = document.getElementById('bom-preview-container');
+        const headerRow = document.getElementById('bom-preview-header');
+        const bodyRows = document.getElementById('bom-preview-body');
+        const stats = document.getElementById('bom-preview-stats');
+        
+        headerRow.innerHTML = headers.map(h => 
+            `<th class="px-2 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">${h}</th>`
+        ).join('');
+        
+        bodyRows.innerHTML = rows.slice(0, 5).map(row => {
+            return '<tr class="text-xs">' + headers.map(h => 
+                `<td class="px-2 py-1 text-gray-900 dark:text-gray-100">${row[h] || '-'}</td>`
+            ).join('') + '</tr>';
+        }).join('');
+        
+        stats.textContent = `Loaded ${mapped.length} valid components from registered file`;
+        previewContainer.classList.remove('hidden');
+        
+        // Open modal
+        document.getElementById('upload-bom-modal').classList.remove('hidden');
+        document.getElementById('upload-bom-modal').classList.add('flex');
+        
+        showToast(`Loaded ${mapped.length} components from file`, 'success');
+        
+    } catch (error) {
+        console.error('[Load BOM] Error:', error);
+        showToast('Failed to load BOM file: ' + error.message, 'error');
+    }
+}
+
+async function loadPnPFromFile(filePath) {
+    try {
+        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${filePath}`);
+        if (!response.ok) throw new Error('Failed to fetch PnP file');
+        
+        const text = await response.text();
+        
+        // Open PnP upload modal and populate with data
+        showUploadPnPModal();
+        
+        // Set to paste mode and fill textarea
+        const pasteRadio = document.querySelector('input[name="pnp-upload-method"][value="paste"]');
+        if (pasteRadio) {
+            pasteRadio.checked = true;
+            togglePnPUploadMethod();
+        }
+        
+        document.getElementById('pnp-csv-data').value = text;
+        
+        // Auto-fill filename from path
+        const filename = filePath.split('/').pop().replace(/\.[^/.]+$/, '');
+        document.getElementById('pnp-filename').value = filename;
+        
+        // Set board ID to current board
+        document.getElementById('upload-pnp-board-id').value = currentBoardId;
+        
+        showToast('Loaded PnP file data', 'success');
+        
+    } catch (error) {
+        console.error('[Load PnP] Error:', error);
+        showToast('Failed to load PnP file: ' + error.message, 'error');
     }
 }
 
@@ -1203,11 +1433,15 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
     const boardId = document.getElementById('upload-bom-board-id').value;
     
     try {
-        // Build component map: manufacturer_code -> component_id
-        const componentMap = {};
+        // Build component maps: manufacturer_code -> component_id AND seller_code -> component_id
+        const mfrCodeMap = {};
+        const sellerCodeMap = {};
         allComponents.forEach(comp => {
             if (comp.manufacturer_code) {
-                componentMap[comp.manufacturer_code.toLowerCase()] = comp.id;
+                mfrCodeMap[comp.manufacturer_code.toLowerCase()] = comp;
+            }
+            if (comp.seller_code) {
+                sellerCodeMap[comp.seller_code.toLowerCase()] = comp;
             }
         });
         
@@ -1216,33 +1450,48 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
         const notFound = [];
         
         for (const item of parsedCSVData) {
-            const key = item.manufacturer_code.toLowerCase();
-            const componentId = componentMap[key];
+            let component = null;
             
-            if (componentId) {
+            // Try manufacturer code first
+            if (item.manufacturer_code) {
+                component = mfrCodeMap[item.manufacturer_code.toLowerCase()];
+            }
+            
+            // Try supplier code if manufacturer code didn't match
+            if (!component && item.supplier_code) {
+                component = sellerCodeMap[item.supplier_code.toLowerCase()];
+            }
+            
+            if (component) {
                 bomItems.push({
-                    component_id: componentId,
+                    component_id: component.id,
                     qty: item.qty
                 });
             } else {
-                notFound.push(item.manufacturer_code);
+                notFound.push(item);
             }
         }
         
-        if (bomItems.length === 0) {
-            showToast('No matching components found in database', 'error');
-            return;
+        // If some components not found, offer manual mapping
+        if (notFound.length > 0) {
+            // Store bomItems in global scope for manual mapping
+            window._tempBomItems = bomItems;
+            const proceed = await showManualMappingModal(notFound, bomItems);
+            
+            // Restore from global (it will have manually mapped items added)
+            const finalBomItems = window._tempBomItems;
+            delete window._tempBomItems;
+            
+            if (!proceed) return;
+            
+            // Replace bomItems with final list
+            bomItems.length = 0;
+            finalBomItems.forEach(item => bomItems.push(item));
         }
         
-        // Show warning about missing components
-        if (notFound.length > 0) {
-            const proceed = confirm(
-                `Warning: ${notFound.length} component(s) not found in database:\n\n` +
-                notFound.slice(0, 5).join('\n') +
-                (notFound.length > 5 ? `\n...and ${notFound.length - 5} more` : '') +
-                `\n\nProceed with ${bomItems.length} matched component(s)?`
-            );
-            if (!proceed) return;
+        if (bomItems.length === 0) {
+            showToast('No components to upload', 'error');
+            return;
         }
         
         // Batch insert components
@@ -1853,7 +2102,10 @@ function renderFilesGrid(files) {
 function getFileIcon(fileType) {
     const icons = {
         bom: 'fa-file-csv',
+        bom_csv: 'fa-file-csv',
+        bom_excel: 'fa-file-excel',
         pnp: 'fa-map-marker-alt',
+        pnp_csv: 'fa-map-marker-alt',
         gerber: 'fa-layer-group',
         schematic: 'fa-project-diagram',
         pcb_layout: 'fa-microchip',
@@ -2616,19 +2868,56 @@ function closeUploadPnPModal() {
     document.getElementById('upload-pnp-form').reset();
 }
 
+function togglePnPUploadMethod() {
+    const method = document.querySelector('input[name="pnp-upload-method"]:checked')?.value;
+    const fileContainer = document.getElementById('pnp-file-upload-container');
+    const pasteContainer = document.getElementById('pnp-paste-container');
+    const fileInput = document.getElementById('pnp-csv-file');
+    const textArea = document.getElementById('pnp-csv-data');
+    
+    if (method === 'file') {
+        fileContainer.classList.remove('hidden');
+        pasteContainer.classList.add('hidden');
+        fileInput.required = true;
+        textArea.required = false;
+    } else {
+        fileContainer.classList.add('hidden');
+        pasteContainer.classList.remove('hidden');
+        fileInput.required = false;
+        textArea.required = true;
+    }
+}
+
 document.getElementById('upload-pnp-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const boardId = document.getElementById('upload-pnp-board-id').value;
     const filename = document.getElementById('pnp-filename').value;
-    const csvData = document.getElementById('pnp-csv-data').value;
+    const method = document.querySelector('input[name="pnp-upload-method"]:checked')?.value;
     
-    if (!boardId || !filename || !csvData) {
+    if (!boardId || !filename) {
         showToast('Please fill all required fields', 'error');
         return;
     }
     
+    let csvData;
+    
     try {
+        if (method === 'file') {
+            const fileInput = document.getElementById('pnp-csv-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showToast('Please select a CSV file', 'error');
+                return;
+            }
+            csvData = await fileInput.files[0].text();
+        } else {
+            csvData = document.getElementById('pnp-csv-data').value;
+            if (!csvData) {
+                showToast('Please paste CSV data', 'error');
+                return;
+            }
+        }
+        
         const response = await fetch(`${ELECTRONICS_API_BASE}/pnp`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
