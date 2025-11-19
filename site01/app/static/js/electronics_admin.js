@@ -1614,12 +1614,19 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     
+    // Validate board_id
+    if (!data.board_id) {
+        showToast('Please select a board', 'error');
+        return;
+    }
+    
     // Extract filename from file_path
     const filePath = data.file_path || '';
     const filename = filePath.split('/').pop() || filePath;
     
     // Prepare data for API
     const apiData = {
+        board_id: parseInt(data.board_id),
         file_type: data.file_type,
         filename: filename,
         file_path: filePath,
@@ -1643,7 +1650,7 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
         } else {
             const error = await response.json().catch(() => ({}));
             console.error('[File Register] Error response:', error);
-            throw new Error(error.detail || 'Failed to register file');
+            throw new Error(error.error || error.detail || 'Failed to register file');
         }
     } catch (error) {
         console.error('Error registering file:', error);
