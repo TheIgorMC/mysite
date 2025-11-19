@@ -1532,6 +1532,30 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             return;
         }
         
+        // Deduplicate by component_id: merge quantities and designators
+        const componentMap = new Map();
+        for (const item of bomItems) {
+            const key = item.component_id;
+            if (componentMap.has(key)) {
+                const existing = componentMap.get(key);
+                // Sum quantities
+                existing.qty += item.qty;
+                // Merge designators
+                if (item.designators) {
+                    const existingDesignators = existing.designators ? existing.designators.split(',') : [];
+                    const newDesignators = item.designators.split(',');
+                    const allDesignators = [...new Set([...existingDesignators, ...newDesignators])];
+                    existing.designators = allDesignators.join(',');
+                }
+            } else {
+                componentMap.set(key, {...item});
+            }
+        }
+        
+        // Convert back to array
+        bomItems = Array.from(componentMap.values());
+        console.log('[BOM Upload] After deduplication:', bomItems.length, 'unique components');
+        
         // Batch insert components - send all at once as array
         console.log('[BOM Upload] Inserting', bomItems.length, 'components to board', boardId);
         
