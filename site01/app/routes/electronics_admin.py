@@ -1196,3 +1196,42 @@ def list_storage_directory():
         current_app.logger.error(f"[Storage List] Error: {e}")
         return jsonify({'error': f'Error parsing directory: {str(e)}'}), 500
 
+@api_bp.route('/storage/fetch', methods=['GET'])
+@admin_required
+def fetch_storage_file():
+    """
+    Proxy endpoint to fetch file contents from storage
+    Bypasses CORS issues when loading BOM/PnP files
+    """
+    file_path = request.args.get('path', '')
+    
+    if not file_path:
+        return jsonify({'error': 'Path parameter required'}), 400
+    
+    # Get storage URL from config
+    storage_url = current_app.config.get('ELECTRONICS_STORAGE_URL', 'https://elec.orion-project.it')
+    
+    # Clean up path - remove leading/trailing slashes
+    file_path = file_path.strip('/')
+    
+    try:
+        # Fetch file content
+        url = f"{storage_url}/{file_path}"
+        current_app.logger.info(f"[Storage Fetch] Fetching: {url}")
+        
+        response = requests.get(url, timeout=30)
+        
+        if response.status_code != 200:
+            current_app.logger.error(f"[Storage Fetch] HTTP {response.status_code} from {url}")
+            return jsonify({'error': f'Storage returned {response.status_code}'}), response.status_code
+        
+        # Return file content as text (for CSV/text files)
+        return response.text, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+        
+    except requests.RequestException as e:
+        current_app.logger.error(f"[Storage Fetch] Request failed: {e}")
+        return jsonify({'error': f'Failed to fetch file: {str(e)}'}), 500
+    except Exception as e:
+        current_app.logger.error(f"[Storage Fetch] Error: {e}")
+        return jsonify({'error': f'Error fetching file: {str(e)}'}), 500
+

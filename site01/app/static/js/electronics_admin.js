@@ -1046,7 +1046,8 @@ function viewIBOMFromBoard(filePath) {
 
 async function loadBOMFromFile(filePath) {
     try {
-        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${filePath}`);
+        // Use proxy endpoint to bypass CORS
+        const response = await fetch(`${ELECTRONICS_API_BASE}/storage/fetch?path=${encodeURIComponent(filePath)}`);
         if (!response.ok) throw new Error('Failed to fetch BOM file');
         
         const text = await response.text();
@@ -1098,7 +1099,8 @@ async function loadBOMFromFile(filePath) {
 
 async function loadPnPFromFile(filePath) {
     try {
-        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${filePath}`);
+        // Use proxy endpoint to bypass CORS
+        const response = await fetch(`${ELECTRONICS_API_BASE}/storage/fetch?path=${encodeURIComponent(filePath)}`);
         if (!response.ok) throw new Error('Failed to fetch PnP file');
         
         const text = await response.text();
