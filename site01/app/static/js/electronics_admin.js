@@ -1494,38 +1494,28 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             return;
         }
         
-        // Batch insert components
+        // Batch insert components - send all at once as array
         console.log('[BOM Upload] Inserting', bomItems.length, 'components to board', boardId);
-        let successCount = 0;
-        let errorCount = 0;
         
-        for (const item of bomItems) {
-            try {
-                const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(item)
-                });
-                
-                if (response.ok) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    console.error('[BOM Upload] Failed to insert component:', item);
-                }
-            } catch (error) {
-                errorCount++;
-                console.error('[BOM Upload] Error inserting component:', error);
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(bomItems)
+            });
+            
+            if (response.ok) {
+                showToast(`BOM uploaded: ${bomItems.length} components added`, 'success');
+                closeUploadBOMModal();
+                loadBoardBOM(boardId);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[BOM Upload] Failed:', errorData);
+                throw new Error(errorData.error || errorData.detail || 'Failed to upload BOM');
             }
-        }
-        
-        if (successCount > 0) {
-            showToast(`BOM uploaded: ${successCount} components added${errorCount > 0 ? `, ${errorCount} failed` : ''}`, 
-                     errorCount > 0 ? 'warning' : 'success');
-            closeUploadBOMModal();
-            loadBoardBOM(boardId);
-        } else {
-            showToast('Failed to upload BOM', 'error');
+        } catch (error) {
+            console.error('[BOM Upload] Error:', error);
+            showToast('Failed to upload BOM: ' + error.message, 'error');
         }
         
     } catch (error) {
@@ -2133,6 +2123,285 @@ function closeRegisterFileModal() {
     document.getElementById('register-file-modal').classList.remove('flex');
     document.getElementById('register-file-form').reset();
 }
+
+// ==================== AUTO-DETECT FILES ====================
+
+let detectedFiles = [];
+
+function showAutoDetectModal() {
+    document.getElementById('auto-detect-modal').classList.remove('hidden');
+    document.getElementById('auto-detect-modal').classList.add('flex');
+    
+    // Populate board select
+    const select = document.getElementById('auto-detect-board');
+    select.innerHTML = '<option value="">Select a board...</option>' + 
+        allBoards.map(board => `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`).join('');
+    
+    // Reset detection results
+    document.getElementById('detected-files-container').classList.add('hidden');
+    detectedFiles = [];
+}
+
+function closeAutoDetectModal() {
+    document.getElementById('auto-detect-modal').classList.add('hidden');
+    document.getElementById('auto-detect-modal').classList.remove('flex');
+    document.getElementById('auto-detect-folder').value = '';
+    document.getElementById('detected-files-container').classList.add('hidden');
+    detectedFiles = [];
+}
+
+function detectFileType(filename) {
+    const lower = filename.toLowerCase();
+    
+    // BOM detection
+    if (lower.startsWith('bom') && lower.endsWith('.csv')) {
+        return 'bom_csv';
+    }
+    if (lower.startsWith('bom') && (lower.endsWith('.xlsx') || lower.endsWith('.xls'))) {
+        return 'bom_excel';
+    }
+    
+    // PnP detection
+    if ((lower.startsWith('pnp') || lower.startsWith('pnp_')) && lower.endsWith('.csv')) {
+        return 'pnp_csv';
+    }
+    
+    // iBOM detection
+    if (lower.includes('ibom') && lower.endsWith('.html')) {
+        return 'ibom';
+    }
+    
+    // Gerber detection
+    if (lower.endsWith('.gbr') || lower.includes('gerber')) {
+        return 'gerber';
+    }
+    
+    // Schematic detection
+    if (lower.includes('schematic') || lower.includes('sch')) {
+        return 'schematic';
+    }
+    
+    // PCB layout detection
+    if (lower.includes('pcb') || lower.includes('layout')) {
+        return 'pcb_layout';
+    }
+    
+    // Datasheet detection
+    if (lower.includes('datasheet') && lower.endsWith('.pdf')) {
+        return 'datasheet';
+    }
+    
+    // Documentation detection
+    if (lower.endsWith('.pdf') || lower.endsWith('.md') || lower.endsWith('.txt')) {
+        return 'documentation';
+    }
+    
+    // Firmware detection
+    if (lower.endsWith('.hex') || lower.endsWith('.bin') || lower.endsWith('.elf')) {
+        return 'firmware';
+    }
+    
+    // CAD detection
+    if (lower.endsWith('.step') || lower.endsWith('.stl') || lower.endsWith('.stp')) {
+        return 'cad';
+    }
+    
+    return null; // Unknown type
+}
+
+async function scanFolder() {
+    const boardId = document.getElementById('auto-detect-board').value;
+    const folderPath = document.getElementById('auto-detect-folder').value.trim();
+    
+    if (!boardId) {
+        showToast('Please select a board', 'error');
+        return;
+    }
+    
+    if (!folderPath) {
+        showToast('Please enter a folder path', 'error');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('scan-loading').classList.remove('hidden');
+    document.getElementById('detected-files-container').classList.add('hidden');
+    
+    try {
+        // Fetch directory listing from storage
+        const response = await fetch(`${ELECTRONICS_STORAGE_URL}/${folderPath}/`);
+        
+        if (!response.ok) {
+            throw new Error('Folder not found or inaccessible');
+        }
+        
+        const html = await response.text();
+        
+        // Parse HTML to extract file links
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = doc.querySelectorAll('a');
+        
+        detectedFiles = [];
+        
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href || href === '../' || href.startsWith('?') || href.startsWith('/')) return;
+            
+            const filename = href.replace(/\/$/, ''); // Remove trailing slash for directories
+            if (filename.includes('/')) return; // Skip subdirectories
+            
+            const fileType = detectFileType(filename);
+            if (!fileType) return; // Skip unknown types
+            
+            detectedFiles.push({
+                filename: filename,
+                file_path: `${folderPath}/${filename}`,
+                file_type: fileType,
+                display_name: filename.replace(/\.[^/.]+$/, ''), // Remove extension
+                selected: true,
+                board_id: parseInt(boardId)
+            });
+        });
+        
+        if (detectedFiles.length === 0) {
+            showToast('No recognizable files found in folder', 'warning');
+            document.getElementById('scan-loading').classList.add('hidden');
+            return;
+        }
+        
+        renderDetectedFiles();
+        document.getElementById('scan-loading').classList.add('hidden');
+        document.getElementById('detected-files-container').classList.remove('hidden');
+        showToast(`Found ${detectedFiles.length} files`, 'success');
+        
+    } catch (error) {
+        console.error('[Auto-Detect] Error:', error);
+        showToast('Failed to scan folder: ' + error.message, 'error');
+        document.getElementById('scan-loading').classList.add('hidden');
+    }
+}
+
+function renderDetectedFiles() {
+    const tbody = document.getElementById('detected-files-table');
+    
+    tbody.innerHTML = detectedFiles.map((file, idx) => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-3">
+                <input type="checkbox" 
+                       id="detect-check-${idx}" 
+                       onchange="updateDetectedFileSelection(${idx}, this.checked)"
+                       ${file.selected ? 'checked' : ''}
+                       class="rounded text-blue-600 focus:ring-blue-500">
+            </td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
+                ${file.filename}
+            </td>
+            <td class="px-4 py-3">
+                <select id="detect-type-${idx}" 
+                        onchange="updateDetectedFileType(${idx}, this.value)"
+                        class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <option value="bom_csv" ${file.file_type === 'bom_csv' ? 'selected' : ''}>BOM (CSV)</option>
+                    <option value="bom_excel" ${file.file_type === 'bom_excel' ? 'selected' : ''}>BOM (Excel)</option>
+                    <option value="pnp_csv" ${file.file_type === 'pnp_csv' ? 'selected' : ''}>Pick & Place (CSV)</option>
+                    <option value="gerber" ${file.file_type === 'gerber' ? 'selected' : ''}>Gerber Files</option>
+                    <option value="schematic" ${file.file_type === 'schematic' ? 'selected' : ''}>Schematic</option>
+                    <option value="pcb_layout" ${file.file_type === 'pcb_layout' ? 'selected' : ''}>PCB Layout</option>
+                    <option value="ibom" ${file.file_type === 'ibom' ? 'selected' : ''}>Interactive BOM</option>
+                    <option value="datasheet" ${file.file_type === 'datasheet' ? 'selected' : ''}>Datasheet</option>
+                    <option value="documentation" ${file.file_type === 'documentation' ? 'selected' : ''}>Documentation</option>
+                    <option value="firmware" ${file.file_type === 'firmware' ? 'selected' : ''}>Firmware</option>
+                    <option value="cad" ${file.file_type === 'cad' ? 'selected' : ''}>CAD Files</option>
+                </select>
+            </td>
+            <td class="px-4 py-3">
+                <input type="text" 
+                       id="detect-name-${idx}"
+                       value="${file.display_name}"
+                       onchange="updateDetectedFileName(${idx}, this.value)"
+                       class="px-2 py-1 text-sm w-full border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </td>
+        </tr>
+    `).join('');
+    
+    updateSelectedCount();
+}
+
+function updateDetectedFileSelection(idx, selected) {
+    detectedFiles[idx].selected = selected;
+    updateSelectedCount();
+}
+
+function updateDetectedFileType(idx, fileType) {
+    detectedFiles[idx].file_type = fileType;
+}
+
+function updateDetectedFileName(idx, displayName) {
+    detectedFiles[idx].display_name = displayName;
+}
+
+function toggleAllDetected(checked) {
+    detectedFiles.forEach((file, idx) => {
+        file.selected = checked;
+        const checkbox = document.getElementById(`detect-check-${idx}`);
+        if (checkbox) checkbox.checked = checked;
+    });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const count = detectedFiles.filter(f => f.selected).length;
+    document.getElementById('selected-count').textContent = count;
+}
+
+async function registerDetectedFiles() {
+    const selectedFiles = detectedFiles.filter(f => f.selected);
+    
+    if (selectedFiles.length === 0) {
+        showToast('No files selected', 'error');
+        return;
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const file of selectedFiles) {
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/files`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    board_id: file.board_id,
+                    file_type: file.file_type,
+                    file_path: file.file_path,
+                    filename: file.filename,
+                    display_name: file.display_name || file.filename
+                })
+            });
+            
+            if (response.ok) {
+                successCount++;
+            } else {
+                errorCount++;
+                console.error('[Auto-Detect] Failed to register:', file.filename);
+            }
+        } catch (error) {
+            errorCount++;
+            console.error('[Auto-Detect] Error registering:', error);
+        }
+    }
+    
+    if (successCount > 0) {
+        showToast(`Registered ${successCount} file(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`, 
+                 errorCount > 0 ? 'warning' : 'success');
+        closeAutoDetectModal();
+        loadFiles();
+    } else {
+        showToast('Failed to register files', 'error');
+    }
+}
+
+// ==================== END AUTO-DETECT ====================
 
 document.getElementById('register-file-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
