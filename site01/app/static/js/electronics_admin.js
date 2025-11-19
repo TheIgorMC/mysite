@@ -656,20 +656,26 @@ async function loadBoardBOM(boardId) {
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`);
         const data = await response.json();
         
+        console.log('[BOM] Loaded BOM data:', data);
+        
         const tbody = document.getElementById('board-bom-table');
-        if (!data.bom || data.bom.length === 0) {
+        
+        // Handle both {bom: [...]} and direct array responses
+        const bomItems = Array.isArray(data) ? data : (data.bom || []);
+        
+        if (bomItems.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No BOM data</td></tr>';
             return;
         }
         
-        tbody.innerHTML = data.bom.map(item => `
+        tbody.innerHTML = bomItems.map(item => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${item.designator}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.product_type}</td>
-                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${item.value}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.package}</td>
+                <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${item.designators || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.product_type || '-'}</td>
+                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${item.value || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.package || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.qty}</td>
-                <td class="px-4 py-3 text-sm">${item.component_id ? getStockBadge(item.stock_qty || 0) : '<span class="text-xs text-gray-400">Not linked</span>'}</td>
+                <td class="px-4 py-3 text-sm">${item.component_id ? getStockBadge(item.qty_left) : '<span class="text-xs text-gray-400">Not linked</span>'}</td>
             </tr>
         `).join('');
     } catch (error) {
