@@ -248,10 +248,15 @@ function applyManualMappings() {
         const item = unmappedComponents[parseInt(idx)];
         // Store for upload handler
         if (window._tempBomItems) {
-            window._tempBomItems.push({
+            const bomItem = {
                 component_id: componentId,
                 qty: item.qty
-            });
+            };
+            // Include designators if present
+            if (item.designators) {
+                bomItem.designators = item.designators;
+            }
+            window._tempBomItems.push(bomItem);
         }
     });
     console.log('[Manual Mapping] Total items after mapping:', window._tempBomItems?.length || 0);
@@ -1220,7 +1225,10 @@ async function showEditBOMModal() {
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${currentBoardId}/bom`);
         const data = await response.json();
-        currentBOMItems = data.bom || [];
+        // Handle both array and object responses
+        currentBOMItems = Array.isArray(data) ? data : (data.bom || []);
+        
+        console.log('[Edit BOM] Loaded', currentBOMItems.length, 'items');
         
         // Populate component dropdown
         const select = document.getElementById('bom-component-select');
@@ -1257,7 +1265,7 @@ function renderEditBOMTable() {
     
     tbody.innerHTML = currentBOMItems.map((item, index) => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">#${item.component_id}</td>
+            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${item.component_id}</td>
             <td class="px-4 py-3 text-sm font-mono">${item.designators || item.designator || '-'}</td>
             <td class="px-4 py-3 text-sm">${item.product_type || '-'}</td>
             <td class="px-4 py-3 text-sm font-medium">${item.value || '-'}</td>
