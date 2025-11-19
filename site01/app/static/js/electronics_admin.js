@@ -1614,11 +1614,26 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     
+    // Extract filename from file_path
+    const filePath = data.file_path || '';
+    const filename = filePath.split('/').pop() || filePath;
+    
+    // Prepare data for API
+    const apiData = {
+        file_type: data.file_type,
+        filename: filename,
+        file_path: filePath,
+        display_name: data.display_name || filename,
+        description: data.description || ''
+    };
+    
+    console.log('[File Register] Sending data:', apiData);
+    
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/files/register`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: JSON.stringify(apiData)
         });
         
         if (response.ok) {
@@ -1626,11 +1641,13 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
             closeRegisterFileModal();
             loadFiles();
         } else {
-            throw new Error('Failed to register file');
+            const error = await response.json().catch(() => ({}));
+            console.error('[File Register] Error response:', error);
+            throw new Error(error.detail || 'Failed to register file');
         }
     } catch (error) {
         console.error('Error registering file:', error);
-        showToast('Failed to register file', 'error');
+        showToast('Failed to register file: ' + error.message, 'error');
     }
 });
 
