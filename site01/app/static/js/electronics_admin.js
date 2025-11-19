@@ -541,7 +541,7 @@ function renderBoardsGrid(boards) {
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${boardName}</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">${version}${variant ? ` - ${variant}` : ''}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">V${version} - ID${board.id}</p>
                 </div>
                 <i class="fas fa-microchip text-blue-500 text-2xl"></i>
             </div>
