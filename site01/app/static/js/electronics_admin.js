@@ -1448,7 +1448,7 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
         });
         
         // Map CSV data to component IDs
-        const bomItems = [];
+        let bomItems = [];
         const notFound = [];
         
         for (const item of parsedCSVData) {
