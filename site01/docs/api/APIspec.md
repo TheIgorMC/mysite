@@ -776,15 +776,38 @@ Body:
 ## 📦 Board–Component Relations (BOM)
 
 **GET `/api/elec/boards/{id}/bom`** – return BOM (with component info)
+Returns:
+```json
+[
+  {
+    "board_id": 5,
+    "component_id": 123,
+    "qty": 10,
+    "designators": "R1,R2,R3",
+    "product_type": "Resistor",
+    "value": "10k",
+    "package": "0402",
+    "smd_footprint": "RESC1005",
+    "manufacturer_code": "RC0402FR-0710KL",
+    "qty_left": 5000
+  }
+]
+```
+
 **POST `/api/elec/boards/{id}/bom`** – add/update items
 Body:
 
 ```json
 [
-  {"component_id":"abc123...", "qty": 10},
-  {"component_id":"def456...", "qty": 2}
+  {"component_id": 123, "qty": 10, "designators": "R1,R2,R3"},
+  {"component_id": 456, "qty": 2, "designators": "C1,C2"}
 ]
 ```
+
+Notes:
+- `designators` is optional, can contain comma-separated component references
+- If `designators` is provided, it will be stored in the database
+- Used for OpenPnP export to map physical component locations to component IDs
 
 **DELETE `/api/elec/boards/{id}/bom/{comp_id}`** – remove component from BOM
 
