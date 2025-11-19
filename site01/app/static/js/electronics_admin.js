@@ -124,6 +124,12 @@ function mapBOMRow(row) {
         k.toLowerCase() === 'quantity' || k.toLowerCase() === 'qty'
     );
     
+    // Find designator column
+    const designatorKey = Object.keys(row).find(k => 
+        k.toLowerCase() === 'designator' || k.toLowerCase() === 'designators' || 
+        k.toLowerCase() === 'reference' || k.toLowerCase() === 'ref'
+    );
+    
     if (!qtyKey) {
         console.warn('[CSV] Missing quantity column in row:', row);
         return null;
@@ -132,6 +138,7 @@ function mapBOMRow(row) {
     const manufacturer_code = row[mfrPartKey]?.trim() || '';
     const supplier_code = row[supplierPartKey]?.trim() || '';
     const qty = parseInt(row[qtyKey]);
+    const designators = row[designatorKey]?.trim() || ''; // Preserve designators as-is (may contain commas)
     
     if ((!manufacturer_code && !supplier_code) || isNaN(qty) || qty <= 0) {
         console.warn('[CSV] Invalid data in row:', row);
@@ -142,6 +149,7 @@ function mapBOMRow(row) {
         manufacturer_code, 
         supplier_code,
         qty,
+        designators, // Add designators field
         // Store all row data for manual mapping
         _rawRow: row
     };
@@ -943,7 +951,7 @@ async function loadBoardBOM(boardId) {
         
         tbody.innerHTML = bomItems.map(item => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">#${item.component_id}</td>
+                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${item.component_id}</td>
                 <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${item.designators || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.product_type || '-'}</td>
                 <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${item.value || '-'}</td>
@@ -1465,10 +1473,15 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
             }
             
             if (component) {
-                bomItems.push({
+                const bomItem = {
                     component_id: component.id,
                     qty: item.qty
-                });
+                };
+                // Include designators if present
+                if (item.designators) {
+                    bomItem.designators = item.designators;
+                }
+                bomItems.push(bomItem);
             } else {
                 notFound.push(item);
             }
@@ -3445,8 +3458,8 @@ async function showOpenPnPExportModal() {
         const designatorMap = {};
         bomData.forEach(item => {
             if (item.designators) {
-                // Split designators (could be comma-separated like "R1,R2,R3")
-                const designators = item.designators.split(',').map(d => d.trim());
+                // Split designators (could be comma-separated like "R1,R2,R3" or "R1, R2, R3")
+                const designators = item.designators.split(',').map(d => d.trim()).filter(d => d.length > 0);
                 designators.forEach(des => {
                     designatorMap[des] = {
                         component_id: item.component_id,
