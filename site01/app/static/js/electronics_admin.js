@@ -2358,7 +2358,7 @@ async function registerDetectedFiles() {
     
     for (const file of selectedFiles) {
         try {
-            const response = await fetch(`${ELECTRONICS_API_BASE}/files`, {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/files/register`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
