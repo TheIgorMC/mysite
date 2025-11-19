@@ -3421,6 +3421,211 @@ async function deletePnPFile() {
     }
 }
 
+// ===== OPENPNP EXPORT =====
+
+let openPnPMappingData = [];
+
+async function showOpenPnPExportModal() {
+    if (!currentPnPId || !currentPnPData) {
+        showToast('No PnP file selected', 'error');
+        return;
+    }
+    
+    const boardId = currentPnPData.board_id;
+    
+    try {
+        // Fetch BOM for this board
+        const bomResponse = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`);
+        if (!bomResponse.ok) throw new Error('Failed to fetch BOM');
+        const bomData = await bomResponse.json();
+        
+        console.log('[OpenPnP] Loaded BOM with', bomData.length, 'entries');
+        
+        // Build designator -> component map from BOM
+        const designatorMap = {};
+        bomData.forEach(item => {
+            if (item.designators) {
+                // Split designators (could be comma-separated like "R1,R2,R3")
+                const designators = item.designators.split(',').map(d => d.trim());
+                designators.forEach(des => {
+                    designatorMap[des] = {
+                        component_id: item.component_id,
+                        footprint: item.smd_footprint || '',
+                        manufacturer_code: item.manufacturer_code || '',
+                        value: item.value || ''
+                    };
+                });
+            }
+        });
+        
+        console.log('[OpenPnP] Built designator map with', Object.keys(designatorMap).length, 'entries');
+        
+        // Map PnP data with BOM
+        const pnpItems = currentPnPData.pnp_data || [];
+        openPnPMappingData = pnpItems.map(item => {
+            const designator = item.designator || '';
+            const bomMatch = designatorMap[designator];
+            
+            return {
+                designator: designator,
+                x: item.mid_x || item.x || '',
+                y: item.mid_y || item.y || '',
+                layer: item.layer || '',
+                rotation: item.rotation || '0',
+                component_id: bomMatch ? bomMatch.component_id : null,
+                footprint: bomMatch ? bomMatch.footprint : '',
+                manufacturer_code: bomMatch ? bomMatch.manufacturer_code : '',
+                value: bomMatch ? bomMatch.value : '',
+                status: bomMatch ? 'mapped' : 'unmapped',
+                _pnpData: item // Store original PnP data
+            };
+        });
+        
+        // Update statistics
+        const mapped = openPnPMappingData.filter(i => i.status === 'mapped').length;
+        const unmapped = openPnPMappingData.filter(i => i.status === 'unmapped').length;
+        
+        document.getElementById('openpnp-mapped-count').textContent = mapped;
+        document.getElementById('openpnp-unmapped-count').textContent = unmapped;
+        document.getElementById('openpnp-total-count').textContent = openPnPMappingData.length;
+        
+        // Render mapping table
+        renderOpenPnPMappingTable();
+        
+        // Show modal
+        document.getElementById('openpnp-export-modal').classList.remove('hidden');
+        document.getElementById('openpnp-export-modal').classList.add('flex');
+        
+    } catch (error) {
+        console.error('[OpenPnP] Error:', error);
+        showToast('Failed to prepare OpenPnP export: ' + error.message, 'error');
+    }
+}
+
+function renderOpenPnPMappingTable() {
+    const tbody = document.getElementById('openpnp-mapping-table');
+    
+    tbody.innerHTML = openPnPMappingData.map((item, idx) => {
+        const statusBadge = item.status === 'mapped' 
+            ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
+            : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
+        
+        return `
+            <tr class="text-sm ${item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : ''}">
+                <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">${item.designator}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.x}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.y}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.layer}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.rotation}</td>
+                <td class="px-3 py-2">
+                    <input type="number" 
+                           value="${item.component_id || ''}" 
+                           onchange="updateOpenPnPMapping(${idx}, 'component_id', this.value)"
+                           placeholder="Component ID"
+                           class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </td>
+                <td class="px-3 py-2">
+                    <input type="text" 
+                           value="${item.footprint || ''}" 
+                           onchange="updateOpenPnPMapping(${idx}, 'footprint', this.value)"
+                           placeholder="Footprint"
+                           class="w-32 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </td>
+                <td class="px-3 py-2">${statusBadge}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateOpenPnPMapping(idx, field, value) {
+    if (openPnPMappingData[idx]) {
+        openPnPMappingData[idx][field] = value;
+        
+        // Update status based on component_id
+        if (field === 'component_id') {
+            openPnPMappingData[idx].status = value ? 'mapped' : 'unmapped';
+            
+            // Re-render to update status badge
+            renderOpenPnPMappingTable();
+            
+            // Update statistics
+            const mapped = openPnPMappingData.filter(i => i.status === 'mapped').length;
+            const unmapped = openPnPMappingData.filter(i => i.status === 'unmapped').length;
+            document.getElementById('openpnp-mapped-count').textContent = mapped;
+            document.getElementById('openpnp-unmapped-count').textContent = unmapped;
+        }
+    }
+}
+
+function closeOpenPnPExportModal() {
+    document.getElementById('openpnp-export-modal').classList.add('hidden');
+    document.getElementById('openpnp-export-modal').classList.remove('flex');
+    openPnPMappingData = [];
+}
+
+function downloadOpenPnPCSV() {
+    try {
+        // OpenPnP CSV format according to https://github.com/openpnp/openpnp/wiki/Importing-Centroid-Data
+        // Required columns: Designator, X, Y, Rotation, Side (or Layer)
+        // Optional: Value (we use for component ID), Footprint, Comment
+        
+        const headers = ['Designator', 'X', 'Y', 'Rotation', 'Side', 'Value', 'Footprint', 'Comment'];
+        
+        const rows = openPnPMappingData.map(item => {
+            // Clean coordinates - remove units if present
+            const x = (item.x || '').replace(/[^0-9.-]/g, '');
+            const y = (item.y || '').replace(/[^0-9.-]/g, '');
+            
+            // Normalize layer to Top/Bottom
+            let side = item.layer || '';
+            if (side.toUpperCase() === 'T') side = 'Top';
+            else if (side.toUpperCase() === 'B') side = 'Bottom';
+            else if (!side.match(/top|bottom/i)) side = 'Top'; // Default to Top
+            
+            return [
+                item.designator || '',
+                x,
+                y,
+                item.rotation || '0',
+                side,
+                item.component_id || '', // Component ID goes in Value field
+                item.footprint || '',
+                item.manufacturer_code || item.value || '' // Additional info in Comment
+            ];
+        });
+        
+        // Build CSV
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(row => row.map(cell => {
+            // Quote if contains comma or quote
+            const str = String(cell);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }).join(',')).join('\n');
+        
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentPnPData.filename || 'pnp'}_OpenPnP.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('[OpenPnP] Exported', rows.length, 'components');
+        showToast(`OpenPnP CSV exported: ${rows.length} components`, 'success');
+        closeOpenPnPExportModal();
+        
+    } catch (error) {
+        console.error('[OpenPnP Export] Error:', error);
+        showToast('Failed to export OpenPnP CSV: ' + error.message, 'error');
+    }
+}
+
 // ===== UTILITIES =====
 
 function showToast(message, type = 'info') {

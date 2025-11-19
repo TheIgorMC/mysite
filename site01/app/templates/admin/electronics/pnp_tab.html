@@ -132,6 +132,85 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
     </div>
 </div>
 
+<!-- OpenPnP Export Modal -->
+<div id="openpnp-export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[60]">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-file-export text-green-600 mr-2"></i>Export OpenPnP CSV
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Map PnP designators to BOM component IDs for OpenPnP
+                    </p>
+                </div>
+                <button onclick="closeOpenPnPExportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Mapping Process:</strong> Each PnP designator is matched with BOM to find the component ID. 
+                    The component ID goes in the "Value" field, and SMD footprint in "Footprint" field for OpenPnP.
+                </p>
+            </div>
+            
+            <!-- Mapping Statistics -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <div class="text-sm font-medium text-green-800 dark:text-green-300">Auto-Mapped</div>
+                    <p id="openpnp-mapped-count" class="text-2xl font-bold text-green-900 dark:text-green-200 mt-1">0</p>
+                </div>
+                <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                    <div class="text-sm font-medium text-orange-800 dark:text-orange-300">Unmapped</div>
+                    <p id="openpnp-unmapped-count" class="text-2xl font-bold text-orange-900 dark:text-orange-200 mt-1">0</p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <div class="text-sm font-medium text-blue-800 dark:text-blue-300">Total</div>
+                    <p id="openpnp-total-count" class="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-1">0</p>
+                </div>
+            </div>
+            
+            <!-- Mapping Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+                <div class="overflow-x-auto max-h-96">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Designator</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">X</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Y</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Layer</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rotation</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Component ID</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Footprint</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="openpnp-mapping-table" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeOpenPnPExportModal()" 
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Cancel
+                </button>
+                <button onclick="downloadOpenPnPCSV()" 
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                    <i class="fas fa-download mr-2"></i>Download OpenPnP CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- PnP Details Modal -->
 <div id="pnp-details-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -142,9 +221,13 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" id="pnp-detail-board"></p>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <button onclick="showOpenPnPExportModal()" 
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm">
+                        <i class="fas fa-file-export mr-2"></i>Export OpenPnP
+                    </button>
                     <button onclick="exportPnPFile()" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm">
-                        <i class="fas fa-download mr-2"></i>Export CSV
+                        <i class="fas fa-download mr-2"></i>Export Raw CSV
                     </button>
                     <button onclick="deletePnPFile()" 
                             class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm">
