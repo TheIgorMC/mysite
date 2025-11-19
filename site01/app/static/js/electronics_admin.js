@@ -2153,17 +2153,14 @@ function closeAutoDetectModal() {
 function detectFileType(filename) {
     const lower = filename.toLowerCase();
     
-    // BOM detection
-    if (lower.startsWith('bom') && lower.endsWith('.csv')) {
-        return 'bom_csv';
-    }
-    if (lower.startsWith('bom') && (lower.endsWith('.xlsx') || lower.endsWith('.xls'))) {
-        return 'bom_excel';
+    // BOM detection - API accepts "bom" not "bom_csv"
+    if (lower.startsWith('bom') && (lower.endsWith('.csv') || lower.endsWith('.xlsx') || lower.endsWith('.xls'))) {
+        return 'bom';
     }
     
-    // PnP detection
+    // PnP detection - API accepts "pnp" not "pnp_csv"
     if ((lower.startsWith('pnp') || lower.startsWith('pnp_')) && lower.endsWith('.csv')) {
-        return 'pnp_csv';
+        return 'pnp';
     }
     
     // iBOM detection
