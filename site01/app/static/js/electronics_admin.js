@@ -1470,14 +1470,24 @@ document.getElementById('upload-bom-form')?.addEventListener('submit', async fun
         for (const item of parsedCSVData) {
             let component = null;
             
-            // Try manufacturer code first
+            // Try manufacturer code first (if present)
             if (item.manufacturer_code) {
                 component = mfrCodeMap[item.manufacturer_code.toLowerCase()];
+                if (component) {
+                    console.log('[BOM Match] Found by manufacturer_code:', item.manufacturer_code, '→', component.id);
+                }
             }
             
-            // Try supplier code if manufacturer code didn't match
+            // Try supplier code if manufacturer code didn't match (or wasn't present)
             if (!component && item.supplier_code) {
                 component = sellerCodeMap[item.supplier_code.toLowerCase()];
+                if (component) {
+                    console.log('[BOM Match] Found by supplier_code:', item.supplier_code, '→', component.id);
+                }
+            }
+            
+            if (!component) {
+                console.log('[BOM No Match] manufacturer_code:', item.manufacturer_code || 'N/A', 'supplier_code:', item.supplier_code || 'N/A');
             }
             
             if (component) {
