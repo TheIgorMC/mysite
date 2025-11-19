@@ -3532,6 +3532,7 @@ async function showOpenPnPExportModal() {
                 manufacturer_code: bomMatch ? bomMatch.manufacturer_code : '',
                 value: bomMatch ? bomMatch.value : '',
                 status: bomMatch ? 'mapped' : 'unmapped',
+                selected: bomMatch ? true : false, // Auto-select mapped, deselect unmapped
                 _pnpData: item // Store original PnP data
             };
         });
@@ -3539,10 +3540,25 @@ async function showOpenPnPExportModal() {
         // Update statistics
         const mapped = openPnPMappingData.filter(i => i.status === 'mapped').length;
         const unmapped = openPnPMappingData.filter(i => i.status === 'unmapped').length;
+        const selected = openPnPMappingData.filter(i => i.selected).length;
         
         document.getElementById('openpnp-mapped-count').textContent = mapped;
         document.getElementById('openpnp-unmapped-count').textContent = unmapped;
+        document.getElementById('openpnp-selected-count').textContent = selected;
+        document.getElementById('openpnp-download-count').textContent = selected;
         document.getElementById('openpnp-total-count').textContent = openPnPMappingData.length;
+        
+        // Show warning for unmapped designators
+        if (unmapped > 0) {
+            const unmappedDesignators = openPnPMappingData
+                .filter(i => i.status === 'unmapped')
+                .map(i => i.designator)
+                .join(', ');
+            document.getElementById('openpnp-unmapped-list').textContent = unmappedDesignators;
+            document.getElementById('openpnp-unmapped-warning').classList.remove('hidden');
+        } else {
+            document.getElementById('openpnp-unmapped-warning').classList.add('hidden');
+        }
         
         // Render mapping table
         renderOpenPnPMappingTable();
@@ -3567,6 +3583,12 @@ function renderOpenPnPMappingTable() {
         
         return `
             <tr class="text-sm ${item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : ''}">
+                <td class="px-3 py-2 text-center">
+                    <input type="checkbox" 
+                           ${item.selected ? 'checked' : ''}
+                           onchange="toggleOpenPnPComponent(${idx}, this.checked)"
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                </td>
                 <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">${item.designator}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.x}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.y}</td>
@@ -3606,10 +3628,48 @@ function updateOpenPnPMapping(idx, field, value) {
             // Update statistics
             const mapped = openPnPMappingData.filter(i => i.status === 'mapped').length;
             const unmapped = openPnPMappingData.filter(i => i.status === 'unmapped').length;
+            const selected = openPnPMappingData.filter(i => i.selected).length;
             document.getElementById('openpnp-mapped-count').textContent = mapped;
             document.getElementById('openpnp-unmapped-count').textContent = unmapped;
+            document.getElementById('openpnp-selected-count').textContent = selected;
+            document.getElementById('openpnp-download-count').textContent = selected;
         }
     }
+}
+
+function toggleOpenPnPComponent(idx, checked) {
+    if (openPnPMappingData[idx]) {
+        openPnPMappingData[idx].selected = checked;
+        const selected = openPnPMappingData.filter(i => i.selected).length;
+        document.getElementById('openpnp-selected-count').textContent = selected;
+        document.getElementById('openpnp-download-count').textContent = selected;
+    }
+}
+
+function toggleAllOpenPnPComponents(checked) {
+    openPnPMappingData.forEach(item => item.selected = checked);
+    renderOpenPnPMappingTable();
+    const selected = openPnPMappingData.filter(i => i.selected).length;
+    document.getElementById('openpnp-selected-count').textContent = selected;
+    document.getElementById('openpnp-download-count').textContent = selected;
+}
+
+function selectAllOpenPnPComponents() {
+    toggleAllOpenPnPComponents(true);
+}
+
+function deselectAllOpenPnPComponents() {
+    toggleAllOpenPnPComponents(false);
+}
+
+function selectOnlyMappedOpenPnPComponents() {
+    openPnPMappingData.forEach(item => {
+        item.selected = item.status === 'mapped';
+    });
+    renderOpenPnPMappingTable();
+    const selected = openPnPMappingData.filter(i => i.selected).length;
+    document.getElementById('openpnp-selected-count').textContent = selected;
+    document.getElementById('openpnp-download-count').textContent = selected;
 }
 
 function closeOpenPnPExportModal() {
@@ -3620,13 +3680,21 @@ function closeOpenPnPExportModal() {
 
 function downloadOpenPnPCSV() {
     try {
+        // Filter only selected components
+        const selectedComponents = openPnPMappingData.filter(item => item.selected);
+        
+        if (selectedComponents.length === 0) {
+            showToast('No components selected for export', 'warning');
+            return;
+        }
+        
         // OpenPnP CSV format according to https://github.com/openpnp/openpnp/wiki/Importing-Centroid-Data
         // Required columns: Designator, X, Y, Rotation, Side (or Layer)
         // Optional: Value (we use for component ID), Footprint, Comment
         
         const headers = ['Designator', 'X', 'Y', 'Rotation', 'Side', 'Value', 'Footprint', 'Comment'];
         
-        const rows = openPnPMappingData.map(item => {
+        const rows = selectedComponents.map(item => {
             // Clean coordinates - remove units if present
             const x = (item.x || '').replace(/[^0-9.-]/g, '');
             const y = (item.y || '').replace(/[^0-9.-]/g, '');
@@ -3671,8 +3739,8 @@ function downloadOpenPnPCSV() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        console.log('[OpenPnP] Exported', rows.length, 'components');
-        showToast(`OpenPnP CSV exported: ${rows.length} components`, 'success');
+        console.log('[OpenPnP] Exported', rows.length, 'selected components');
+        showToast(`OpenPnP CSV exported: ${rows.length} selected components`, 'success');
         closeOpenPnPExportModal();
         
     } catch (error) {
