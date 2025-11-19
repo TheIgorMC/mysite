@@ -8,6 +8,7 @@ let allComponents = [];
 let allBoards = [];
 let allJobs = [];
 let allFiles = [];
+let parsedCSVData = null;
 
 // Check for required variables
 if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
@@ -20,6 +21,126 @@ if (typeof ELECTRONICS_API_BASE === 'undefined') {
 console.log('[Electronics] Script loaded');
 console.log('[Electronics] Storage URL:', typeof ELECTRONICS_STORAGE_URL !== 'undefined' ? ELECTRONICS_STORAGE_URL : 'UNDEFINED');
 console.log('[Electronics] API Base:', typeof ELECTRONICS_API_BASE !== 'undefined' ? ELECTRONICS_API_BASE : 'UNDEFINED');
+
+// ==================== CSV PARSING UTILITIES ====================
+
+/**
+ * Detect CSV delimiter by analyzing the first few lines
+ */
+function detectDelimiter(text) {
+    const lines = text.trim().split('\n').slice(0, 3);
+    const delimiters = [',', '\t', ';', '|'];
+    const counts = {};
+    
+    delimiters.forEach(delim => {
+        const lineCounts = lines.map(line => (line.match(new RegExp(`\\${delim}`, 'g')) || []).length);
+        // Check if delimiter appears consistently
+        const avgCount = lineCounts.reduce((a, b) => a + b, 0) / lineCounts.length;
+        const consistent = lineCounts.every(count => Math.abs(count - avgCount) <= 1);
+        counts[delim] = consistent ? avgCount : 0;
+    });
+    
+    // Return delimiter with highest consistent count
+    const detected = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    console.log('[CSV] Detected delimiter:', detected === '\t' ? 'TAB' : detected, 'Counts:', counts);
+    return detected;
+}
+
+/**
+ * Parse CSV text with auto-delimiter detection
+ * Handles quoted fields properly
+ */
+function parseCSV(text) {
+    const delimiter = detectDelimiter(text);
+    const lines = text.trim().split('\n');
+    
+    // Parse line respecting quotes
+    function parseLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const nextChar = line[i + 1];
+            
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') {
+                    // Escaped quote
+                    current += '"';
+                    i++;
+                } else {
+                    // Toggle quote mode
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === delimiter && !inQuotes) {
+                // End of field
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
+    
+    const headers = parseLine(lines[0]).map(h => h.replace(/^["']|["']$/g, '').trim());
+    const rows = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const values = parseLine(line);
+        const row = {};
+        headers.forEach((header, idx) => {
+            row[header] = values[idx] || '';
+        });
+        rows.push(row);
+    }
+    
+    console.log('[CSV] Parsed:', rows.length, 'rows with headers:', headers);
+    return { headers, rows };
+}
+
+/**
+ * Map CSV row to component lookup
+ * Returns { manufacturer_code, qty } or null if invalid
+ */
+function mapBOMRow(row) {
+    // Find manufacturer part column (case-insensitive)
+    const mfrPartKey = Object.keys(row).find(k => 
+        k.toLowerCase().includes('manufacturer') && k.toLowerCase().includes('part')
+    );
+    
+    // Find quantity column
+    const qtyKey = Object.keys(row).find(k => 
+        k.toLowerCase() === 'quantity' || k.toLowerCase() === 'qty'
+    );
+    
+    if (!mfrPartKey || !qtyKey) {
+        console.warn('[CSV] Missing required columns in row:', row);
+        return null;
+    }
+    
+    const manufacturer_code = row[mfrPartKey]?.trim();
+    const qty = parseInt(row[qtyKey]);
+    
+    if (!manufacturer_code || isNaN(qty) || qty <= 0) {
+        console.warn('[CSV] Invalid data in row:', row);
+        return null;
+    }
+    
+    return { 
+        manufacturer_code, 
+        qty,
+        // Store all row data for preview
+        _rawRow: row
+    };
+}
+
+// ==================== END CSV UTILITIES ====================
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -502,6 +623,19 @@ async function loadBoards() {
             }
         }
         
+        // Load jobs first if not already loaded (needed for production count)
+        if (allJobs.length === 0) {
+            try {
+                const jobsResponse = await fetch(`${ELECTRONICS_API_BASE}/jobs?limit=1000`);
+                if (jobsResponse.ok) {
+                    const jobsData = await jobsResponse.json();
+                    allJobs = Array.isArray(jobsData) ? jobsData : [];
+                }
+            } catch (error) {
+                console.log('[Boards] Could not load jobs for production count:', error);
+            }
+        }
+        
         // Load BOM for each board to get accurate component counts and production stats
         await Promise.all(allBoards.map(async (board) => {
             try {
@@ -712,26 +846,37 @@ async function loadBoardBOM(boardId) {
 async function loadBoardFiles(boardId) {
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/files?board_id=${boardId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
         
+        console.log('[Board Files] API response:', data);
+        
         const container = document.getElementById('board-files-list');
-        if (!data.files || data.files.length === 0) {
+        
+        // Handle both array response and {files: [...]} response
+        const filesList = Array.isArray(data) ? data : (data.files || []);
+        
+        if (filesList.length === 0) {
             container.innerHTML = '<p class="text-center text-gray-500 py-8">No files registered</p>';
             return;
         }
         
-        container.innerHTML = data.files.map(file => `
+        container.innerHTML = filesList.map(file => `
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <i class="fas ${getFileIcon(file.file_type)} text-2xl text-gray-600 dark:text-gray-400"></i>
                     <div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">${file.display_name || file.file_path}</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">${file.display_name || file.filename || file.file_path}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">${file.file_type}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
                     ${file.file_type === 'ibom' ? `
-                        <button onclick="openIBOMViewer('${file.file_path}')" 
+                        <button onclick="closeBoardDetailsModal(); openIBOMViewer('${file.file_path}')" 
                                 class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded">
                             <i class="fas fa-eye mr-1"></i>View
                         </button>
@@ -750,19 +895,79 @@ async function loadBoardFiles(boardId) {
         `).join('');
     } catch (error) {
         console.error('Error loading files:', error);
+        const container = document.getElementById('board-files-list');
+        container.innerHTML = '<p class="text-center text-red-500 py-8">Error loading files</p>';
     }
 }
 
 function uploadBOM() {
     document.getElementById('upload-bom-board-id').value = currentBoardId;
+    parsedCSVData = null;
+    document.getElementById('bom-preview-container').classList.add('hidden');
     document.getElementById('upload-bom-modal').classList.remove('hidden');
     document.getElementById('upload-bom-modal').classList.add('flex');
+    
+    // Add file change listener
+    const fileInput = document.getElementById('bom-csv-file');
+    if (fileInput && !fileInput.hasAttribute('data-listener')) {
+        fileInput.setAttribute('data-listener', 'true');
+        fileInput.addEventListener('change', handleBOMFileSelect);
+    }
 }
 
 function closeUploadBOMModal() {
     document.getElementById('upload-bom-modal').classList.add('hidden');
     document.getElementById('upload-bom-modal').classList.remove('flex');
     document.getElementById('upload-bom-form').reset();
+    document.getElementById('bom-preview-container').classList.add('hidden');
+    parsedCSVData = null;
+}
+
+async function handleBOMFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        const { headers, rows } = parseCSV(text);
+        
+        // Map rows to BOM format
+        const mapped = rows.map(mapBOMRow).filter(r => r !== null);
+        
+        if (mapped.length === 0) {
+            showToast('No valid BOM data found. Check CSV format.', 'error');
+            return;
+        }
+        
+        parsedCSVData = mapped;
+        
+        // Show preview
+        const previewContainer = document.getElementById('bom-preview-container');
+        const headerRow = document.getElementById('bom-preview-header');
+        const bodyRows = document.getElementById('bom-preview-body');
+        const stats = document.getElementById('bom-preview-stats');
+        
+        // Render header
+        headerRow.innerHTML = headers.map(h => 
+            `<th class="px-2 py-1 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">${h}</th>`
+        ).join('');
+        
+        // Render first 5 rows
+        bodyRows.innerHTML = rows.slice(0, 5).map(row => {
+            return '<tr class="text-xs">' + headers.map(h => 
+                `<td class="px-2 py-1 text-gray-900 dark:text-gray-100">${row[h] || '-'}</td>`
+            ).join('') + '</tr>';
+        }).join('');
+        
+        stats.textContent = `Detected ${mapped.length} valid components from ${rows.length} total rows`;
+        previewContainer.classList.remove('hidden');
+        
+        console.log('[CSV] Preview ready:', mapped.length, 'components');
+        
+    } catch (error) {
+        console.error('[CSV] Parse error:', error);
+        showToast('Failed to parse CSV file: ' + error.message, 'error');
+    }
 }
 
 // Edit BOM Modal
@@ -989,26 +1194,94 @@ async function saveBOM() {
 
 document.getElementById('upload-bom-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    if (!parsedCSVData || parsedCSVData.length === 0) {
+        showToast('Please select a valid CSV file first', 'error');
+        return;
+    }
+    
     const boardId = document.getElementById('upload-bom-board-id').value;
-    const csvData = document.getElementById('bom-csv-data').value;
     
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({bom_data: csvData})
+        // Build component map: manufacturer_code -> component_id
+        const componentMap = {};
+        allComponents.forEach(comp => {
+            if (comp.manufacturer_code) {
+                componentMap[comp.manufacturer_code.toLowerCase()] = comp.id;
+            }
         });
         
-        if (response.ok) {
-            showToast('BOM uploaded successfully', 'success');
+        // Map CSV data to component IDs
+        const bomItems = [];
+        const notFound = [];
+        
+        for (const item of parsedCSVData) {
+            const key = item.manufacturer_code.toLowerCase();
+            const componentId = componentMap[key];
+            
+            if (componentId) {
+                bomItems.push({
+                    component_id: componentId,
+                    qty: item.qty
+                });
+            } else {
+                notFound.push(item.manufacturer_code);
+            }
+        }
+        
+        if (bomItems.length === 0) {
+            showToast('No matching components found in database', 'error');
+            return;
+        }
+        
+        // Show warning about missing components
+        if (notFound.length > 0) {
+            const proceed = confirm(
+                `Warning: ${notFound.length} component(s) not found in database:\n\n` +
+                notFound.slice(0, 5).join('\n') +
+                (notFound.length > 5 ? `\n...and ${notFound.length - 5} more` : '') +
+                `\n\nProceed with ${bomItems.length} matched component(s)?`
+            );
+            if (!proceed) return;
+        }
+        
+        // Batch insert components
+        console.log('[BOM Upload] Inserting', bomItems.length, 'components to board', boardId);
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const item of bomItems) {
+            try {
+                const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(item)
+                });
+                
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    console.error('[BOM Upload] Failed to insert component:', item);
+                }
+            } catch (error) {
+                errorCount++;
+                console.error('[BOM Upload] Error inserting component:', error);
+            }
+        }
+        
+        if (successCount > 0) {
+            showToast(`BOM uploaded: ${successCount} components added${errorCount > 0 ? `, ${errorCount} failed` : ''}`, 
+                     errorCount > 0 ? 'warning' : 'success');
             closeUploadBOMModal();
             loadBoardBOM(boardId);
         } else {
-            throw new Error('Failed to upload BOM');
+            showToast('Failed to upload BOM', 'error');
         }
+        
     } catch (error) {
-        console.error('Error uploading BOM:', error);
-        showToast('Failed to upload BOM', 'error');
+        console.error('[BOM Upload] Error:', error);
+        showToast('Failed to upload BOM: ' + error.message, 'error');
     }
 });
 
