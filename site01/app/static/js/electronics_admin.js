@@ -3169,11 +3169,11 @@ document.getElementById('upload-pnp-form')?.addEventListener('submit', async fun
     e.preventDefault();
     
     const boardId = document.getElementById('upload-pnp-board-id').value;
-    const filename = document.getElementById('pnp-filename').value;
+    let filename = document.getElementById('pnp-filename').value;
     const method = document.querySelector('input[name="pnp-upload-method"]:checked')?.value;
     
-    if (!boardId || !filename) {
-        showToast('Please fill all required fields', 'error');
+    if (!boardId) {
+        showToast('Please select a board', 'error');
         return;
     }
     
@@ -3187,13 +3187,25 @@ document.getElementById('upload-pnp-form')?.addEventListener('submit', async fun
                 return;
             }
             csvData = await fileInput.files[0].text();
+            
+            // Auto-generate filename from uploaded file if not provided
+            if (!filename) {
+                filename = fileInput.files[0].name.replace(/\.[^/.]+$/, '');
+            }
         } else {
             csvData = document.getElementById('pnp-csv-data').value;
             if (!csvData) {
                 showToast('Please paste CSV data', 'error');
                 return;
             }
+            
+            // If no filename provided in paste mode, use a default
+            if (!filename) {
+                filename = `PnP_Board${boardId}_${Date.now()}`;
+            }
         }
+        
+        console.log('[PnP Upload] Uploading to board', boardId, 'with filename:', filename);
         
         const response = await fetch(`${ELECTRONICS_API_BASE}/pnp`, {
             method: 'POST',
@@ -3206,12 +3218,15 @@ document.getElementById('upload-pnp-form')?.addEventListener('submit', async fun
         });
         
         if (response.ok) {
+            const result = await response.json();
+            console.log('[PnP Upload] Success:', result);
             showToast('PnP file uploaded successfully', 'success');
             closeUploadPnPModal();
             loadPnPFiles();
         } else {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.error || 'Failed to upload PnP file');
+            console.error('[PnP Upload] Failed with status', response.status, ':', error);
+            throw new Error(error.error || error.detail || 'Failed to upload PnP file');
         }
     } catch (error) {
         console.error('[PnP Upload] Error:', error);
