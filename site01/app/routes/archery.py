@@ -69,6 +69,22 @@ def get_competition_details(codice_gara, client):
         current_app.logger.error(f"Error fetching competition details for {codice_gara}: {e}")
         return None
 
+def format_time(time_value):
+    """Format time value - handle both string ("08:45:00") and number (seconds since midnight)"""
+    if not time_value:
+        return ''
+    
+    if isinstance(time_value, str):
+        # Already a string like "08:45:00" - trim to HH:MM
+        return time_value[:5] if len(time_value) >= 5 else time_value
+    elif isinstance(time_value, (int, float)):
+        # Seconds since midnight - convert to HH:MM
+        hours = int(time_value // 3600)
+        minutes = int((time_value % 3600) // 60)
+        return f"{hours:02d}:{minutes:02d}"
+    else:
+        return str(time_value)
+
 def get_turn_details(codice_gara, turno, client):
     """Fetch turn schedule details from Orion API"""
     try:
@@ -84,9 +100,9 @@ def get_turn_details(codice_gara, turno, client):
                     if giorno:
                         parts.append(giorno)
                     if ora_ritrovo:
-                        parts.append(f"Ritrovo: {ora_ritrovo}")
+                        parts.append(f"Ritrovo: {format_time(ora_ritrovo)}")
                     if ora_inizio:
-                        parts.append(f"Inizio: {ora_inizio}")
+                        parts.append(f"Inizio: {format_time(ora_inizio)}")
                     
                     return " - ".join(parts) if parts else None
         return None
