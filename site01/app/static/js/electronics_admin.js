@@ -1098,6 +1098,18 @@ async function loadBOMFromFile(filePath) {
         stats.textContent = `Loaded ${mapped.length} valid components from registered file`;
         previewContainer.classList.remove('hidden');
         
+        // Hide file upload input since we already loaded a file
+        const fileInputContainer = document.querySelector('#upload-bom-form > div:first-of-type');
+        if (fileInputContainer) {
+            fileInputContainer.style.display = 'none';
+        }
+        
+        // Change modal title to indicate we're loading from existing file
+        const modalTitle = document.querySelector('#upload-bom-modal h3');
+        if (modalTitle) {
+            modalTitle.innerHTML = '<i class="fas fa-file-import text-blue-600 mr-2"></i>Load BOM from File';
+        }
+        
         // Open modal
         document.getElementById('upload-bom-modal').classList.remove('hidden');
         document.getElementById('upload-bom-modal').classList.add('flex');
@@ -1166,6 +1178,18 @@ function closeUploadBOMModal() {
     document.getElementById('upload-bom-form').reset();
     document.getElementById('bom-preview-container').classList.add('hidden');
     parsedCSVData = null;
+    
+    // Reset file input visibility (in case it was hidden when loading from file)
+    const fileInputContainer = document.querySelector('#upload-bom-form > div:first-of-type');
+    if (fileInputContainer) {
+        fileInputContainer.style.display = '';
+    }
+    
+    // Reset modal title
+    const modalTitle = document.querySelector('#upload-bom-modal h3');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-upload text-blue-600 mr-2"></i>Upload BOM';
+    }
 }
 
 async function handleBOMFileSelect(event) {
