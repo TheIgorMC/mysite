@@ -2214,9 +2214,9 @@ function closeAutoDetectModal() {
 
 // Map frontend file types to API-compatible types
 function mapFileTypeToAPI(fileType) {
+    // API supports: bom_csv, bom_excel, pnp, gerber, schematic, pcb_layout, ibom, datasheet, documentation, firmware, cad
+    // Most types pass through directly, but pnp_csv needs to be mapped to pnp
     const mapping = {
-        'bom_csv': 'bom',
-        'bom_excel': 'bom',
         'pnp_csv': 'pnp'
     };
     return mapping[fileType] || fileType;
@@ -2491,6 +2491,8 @@ document.getElementById('register-file-form')?.addEventListener('submit', async 
         description: data.description || ''
     };
     
+    console.log('[File Register] Original file_type:', data.file_type);
+    console.log('[File Register] Mapped file_type:', mapFileTypeToAPI(data.file_type));
     console.log('[File Register] Sending data:', apiData);
     
     try {
