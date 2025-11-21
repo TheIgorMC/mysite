@@ -83,7 +83,7 @@
 
 <!-- Board Details Modal -->
 <div id="board-details-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
             <div class="flex items-center justify-between mb-6">
                 <div>
@@ -144,6 +144,9 @@
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Component
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                        Seller Code
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                         Value
@@ -310,11 +313,14 @@
                     <!-- Top Row: Main inputs -->
                     <div class="grid grid-cols-12 gap-3">
                         <div class="col-span-4">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Component *</label>
-                            <select id="bom-component-select"
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
-                                <option value="">Select from list...</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Component *</label>
+                            <div class="relative">
+                                <input type="text" id="bom-component-search" placeholder="Search by name, code, value..."
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+                                <div id="bom-component-results" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <!-- Search results populated by JavaScript -->
+                                </div>
+                            </div>
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Or Component ID</label>

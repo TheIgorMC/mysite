@@ -938,7 +938,7 @@ async function loadBoardBOM(boardId) {
     const tbody = document.getElementById('board-bom-table');
     
     // Show loading state
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading BOM...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading BOM...</td></tr>';
     
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/boards/${boardId}/bom`);
@@ -950,7 +950,7 @@ async function loadBoardBOM(boardId) {
         const bomItems = Array.isArray(data) ? data : (data.bom || []);
         
         if (bomItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No BOM data</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">No BOM data</td></tr>';
             return;
         }
         
@@ -959,6 +959,7 @@ async function loadBoardBOM(boardId) {
                 <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${item.component_id}</td>
                 <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${item.designators || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.product_type || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 font-mono">${item.seller_code || '-'}</td>
                 <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${item.value || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.package || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${item.qty}</td>
@@ -967,7 +968,7 @@ async function loadBoardBOM(boardId) {
         `).join('');
     } catch (error) {
         console.error('Error loading BOM:', error);
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">Error loading BOM</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error loading BOM</td></tr>';
     }
 }
 
@@ -1254,13 +1255,14 @@ async function showEditBOMModal() {
         
         console.log('[Edit BOM] Loaded', currentBOMItems.length, 'items');
         
-        // Populate component dropdown
-        const select = document.getElementById('bom-component-select');
-        select.innerHTML = '<option value="">Select component...</option>' + 
-            allComponents.map(comp => {
-                const label = `${comp.value || comp.manufacturer_code || comp.mpn || 'Unknown'} - ${comp.package || ''} (${comp.product_type || ''})`;
-                return `<option value="${comp.id}">${label}</option>`;
-            }).join('');
+        // Clear search input
+        const searchInput = document.getElementById('bom-component-search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Setup search listeners if not already set
+        setupBOMComponentSearch();
         
         renderEditBOMTable();
         
@@ -1270,6 +1272,79 @@ async function showEditBOMModal() {
         console.error('Error loading BOM for edit:', error);
         showToast('Failed to load BOM', 'error');
     }
+}
+
+let selectedBOMComponent = null;
+
+function setupBOMComponentSearch() {
+    const searchInput = document.getElementById('bom-component-search');
+    const resultsDiv = document.getElementById('bom-component-results');
+    
+    if (!searchInput || searchInput.dataset.initialized) return;
+    searchInput.dataset.initialized = 'true';
+    
+    let searchDebounce;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounce);
+        const query = this.value.trim().toLowerCase();
+        
+        if (query.length < 2) {
+            resultsDiv.classList.add('hidden');
+            return;
+        }
+        
+        searchDebounce = setTimeout(() => {
+            // Search components
+            const matches = allComponents.filter(comp => {
+                const searchStr = `${comp.value || ''} ${comp.manufacturer_code || ''} ${comp.mpn || ''} ${comp.seller_code || ''} ${comp.product_type || ''} ${comp.package || ''}`.toLowerCase();
+                return searchStr.includes(query);
+            }).slice(0, 20); // Limit to 20 results
+            
+            if (matches.length === 0) {
+                resultsDiv.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">No components found</div>';
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
+            
+            resultsDiv.innerHTML = matches.map(comp => {
+                const label = `${comp.value || comp.manufacturer_code || 'Unknown'} - ${comp.package || ''} (${comp.product_type || ''})`;
+                const sellerCode = comp.seller_code ? `<span class="text-xs text-gray-500 ml-2">${comp.seller_code}</span>` : '';
+                return `
+                    <div class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0" 
+                         onclick="selectBOMComponent(${comp.id}, '${label.replace(/'/g, "\\'")}')">
+                        <div class="text-sm text-gray-900 dark:text-gray-100">${label}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">ID: ${comp.id}${sellerCode}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsDiv.classList.remove('hidden');
+        }, 300);
+    });
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.classList.add('hidden');
+        }
+    });
+}
+
+function selectBOMComponent(componentId, label) {
+    selectedBOMComponent = componentId;
+    const searchInput = document.getElementById('bom-component-search');
+    const resultsDiv = document.getElementById('bom-component-results');
+    
+    searchInput.value = label;
+    resultsDiv.classList.add('hidden');
+    
+    // Auto-fill component ID field
+    document.getElementById('bom-component-id').value = componentId;
+    
+    // Trigger component preview
+    const event = new Event('input', { bubbles: true });
+    document.getElementById('bom-component-id').dispatchEvent(event);
 }
 
 function closeEditBOMModal() {
@@ -1327,12 +1402,11 @@ function updateBOMQuantity(index, newQuantity) {
 document.getElementById('add-bom-item-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    // Get component ID from either dropdown or direct ID input
-    let componentId = document.getElementById('bom-component-select').value;
-    const manualId = document.getElementById('bom-component-id').value;
+    // Get component ID from either search selection or direct ID input
+    let componentId = selectedBOMComponent || document.getElementById('bom-component-id').value;
     
-    if (manualId) {
-        componentId = manualId;
+    if (!componentId) {
+        componentId = document.getElementById('bom-component-id').value;
     }
     
     const designators = document.getElementById('bom-designators').value.trim();
@@ -1369,10 +1443,12 @@ document.getElementById('add-bom-item-form')?.addEventListener('submit', async f
     // Reset form and hide preview
     document.getElementById('add-bom-item-form').reset();
     document.getElementById('bom-component-preview').classList.add('hidden');
+    document.getElementById('bom-component-search').value = '';
+    selectedBOMComponent = null;
     showToast('Component added to BOM', 'success');
     
-    // Refocus on component ID field for quick consecutive entries
-    document.getElementById('bom-component-id').focus();
+    // Refocus on search field for quick consecutive entries
+    document.getElementById('bom-component-search').focus();
 });
 
 // Auto-fill component details when ID is entered manually
