@@ -308,6 +308,35 @@
     </div>
 </div>
 
+<!-- Selection Modal for Edit -->
+<div id="selection-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeSelectionModal()"></div>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 id="selection-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-edit mr-2"></i>Seleziona quale modificare
+                        </h3>
+                        
+                        <div id="selection-list" class="space-y-2 max-h-96 overflow-y-auto">
+                            <!-- Items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeSelectionModal()"
+                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:w-auto sm:text-sm">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Subscription Modal (User) -->
 <div id="edit-user-subscription-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -2585,45 +2614,62 @@ function closeEditUserInterestModal() {
 
 // Show selection menu for multiple subscriptions/interests
 function showSubscriptionSelectionForEdit(subscriptions, codiceGara) {
-    const items = subscriptions.map(sub => {
+    document.getElementById('selection-modal-title').innerHTML = '<i class="fas fa-edit mr-2"></i>Seleziona quale iscrizione modificare';
+    
+    const listHtml = subscriptions.map(sub => {
         const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
         const athleteName = athlete ? `${athlete.cognome} ${athlete.nome}` : sub.tessera_atleta;
-        return `${athleteName} - ${sub.categoria || ''} ${sub.classe || ''} (Turno ${sub.turno})`;
-    });
+        
+        return `
+            <button onclick="editUserSubscription(${sub.id}, '${codiceGara}'); closeSelectionModal();" 
+                    class="w-full text-left px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">${athleteName}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            ${sub.categoria || '-'} ${sub.classe || '-'} • Turno ${sub.turno}
+                        </p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </button>
+        `;
+    }).join('');
     
-    const selection = prompt(
-        'Seleziona quale iscrizione modificare:\n\n' + 
-        subscriptions.map((sub, i) => `${i + 1}. ${items[i]}`).join('\n') +
-        '\n\nInserisci il numero:'
-    );
-    
-    if (selection) {
-        const index = parseInt(selection) - 1;
-        if (index >= 0 && index < subscriptions.length) {
-            editUserSubscription(subscriptions[index].id, codiceGara);
-        }
-    }
+    document.getElementById('selection-list').innerHTML = listHtml;
+    document.getElementById('selection-modal').classList.remove('hidden');
 }
 
 function showInterestSelectionForEdit(interests, codiceGara) {
-    const items = interests.map(interest => {
+    document.getElementById('selection-modal-title').innerHTML = '<i class="fas fa-edit mr-2"></i>Seleziona quale interesse modificare';
+    
+    const listHtml = interests.map(interest => {
         const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
         const athleteName = athlete ? `${athlete.cognome} ${athlete.nome}` : interest.tessera_atleta;
-        return `${athleteName} - ${interest.categoria || ''} ${interest.classe || ''}`;
-    });
+        
+        return `
+            <button onclick="editUserInterest(${interest.id}, '${codiceGara}'); closeSelectionModal();" 
+                    class="w-full text-left px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">${athleteName}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            ${interest.categoria || '-'} ${interest.classe || '-'}
+                        </p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </button>
+        `;
+    }).join('');
     
-    const selection = prompt(
-        'Seleziona quale interesse modificare:\n\n' + 
-        interests.map((int, i) => `${i + 1}. ${items[i]}`).join('\n') +
-        '\n\nInserisci il numero:'
-    );
-    
-    if (selection) {
-        const index = parseInt(selection) - 1;
-        if (index >= 0 && index < interests.length) {
-            editUserInterest(interests[index].id, codiceGara);
-        }
-    }
+    document.getElementById('selection-list').innerHTML = listHtml;
+    document.getElementById('selection-modal').classList.remove('hidden');
+}
+
+function closeSelectionModal() {
+    document.getElementById('selection-modal').classList.add('hidden');
+    document.getElementById('selection-list').innerHTML = '';
 }
 
 /**
