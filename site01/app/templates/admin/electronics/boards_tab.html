@@ -208,6 +208,25 @@
                 </p>
             </div>
             
+            <!-- Filter Controls -->
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                        <span>Show:</span>
+                        <select id="mapping-filter" onchange="filterManualMappings()" 
+                                class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="all">All Components</option>
+                            <option value="unmapped" selected>Unmapped Only</option>
+                            <option value="mapped">Mapped Only</option>
+                            <option value="ignored">Ignored Only</option>
+                        </select>
+                    </label>
+                    <span id="mapping-stats" class="text-sm text-gray-600 dark:text-gray-400">
+                        <!-- Stats populated by JavaScript -->
+                    </span>
+                </div>
+            </div>
+            
             <div class="space-y-3 mb-6" id="manual-mapping-list">
                 <!-- Populated by JavaScript -->
             </div>
@@ -215,11 +234,11 @@
             <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button type="button" onclick="skipUnmappedComponents()"
                         class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <i class="fas fa-forward mr-2"></i>Skip Unmapped
+                    <i class="fas fa-forward mr-2"></i>Skip All Unmapped
                 </button>
                 <button onclick="applyManualMappings()"
                         class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    <i class="fas fa-check mr-2"></i>Apply Mappings
+                    <i class="fas fa-check mr-2"></i>Apply Mappings (<span id="mapped-count">0</span>)
                 </button>
             </div>
         </div>
@@ -242,12 +261,13 @@
             <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p class="text-sm text-blue-800 dark:text-blue-300 mb-2">
                     <i class="fas fa-info-circle mr-2"></i>
-                    <strong>CSV Format Requirements:</strong>
+                    <strong>File Format Requirements:</strong>
                 </p>
                 <ul class="text-sm text-blue-800 dark:text-blue-300 ml-6 space-y-1">
+                    <li>• Supports CSV and Excel (.xlsx, .xls) files</li>
                     <li>• Required: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Manufacturer Part</code> OR <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Supplier Part</code></li>
                     <li>• Required: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Quantity</code> (how many needed)</li>
-                    <li>• Auto-detects delimiter (comma, tab, semicolon)</li>
+                    <li>• CSV: Auto-detects delimiter (comma, tab, semicolon)</li>
                     <li>• Unmapped components can be manually matched</li>
                 </ul>
             </div>
@@ -256,11 +276,11 @@
                 <input type="hidden" id="upload-bom-board-id">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Upload CSV File
+                        Upload BOM File (CSV or Excel)
                     </label>
-                    <input type="file" id="bom-csv-file" accept=".csv,.txt" required
+                    <input type="file" id="bom-csv-file" accept=".csv,.txt,.xlsx,.xls" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select a CSV file with BOM data</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select a CSV or Excel file with BOM data</p>
                 </div>
                 <div id="bom-preview-container" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -163,59 +163,160 @@ let unmappedComponents = [];
 let manualMappings = {};
 let resolveManualMapping = null;
 
+let ignoredComponents = new Set();
+
 function showManualMappingModal(notFoundItems, alreadyMapped) {
     return new Promise((resolve) => {
         unmappedComponents = notFoundItems;
         manualMappings = {};
+        ignoredComponents = new Set();
         resolveManualMapping = resolve;
         
-        const list = document.getElementById('manual-mapping-list');
-        list.innerHTML = notFoundItems.map((item, idx) => {
-            const mfrCode = item.manufacturer_code || '-';
-            const supplierCode = item.supplier_code || '-';
-            const qty = item.qty;
-            
-            // Get a sample of other data from raw row
-            const otherData = Object.entries(item._rawRow)
-                .filter(([k]) => !k.toLowerCase().includes('quantity') && !k.toLowerCase().includes('qty'))
-                .slice(0, 3)
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(', ');
-            
-            return `
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div class="grid grid-cols-12 gap-3 items-center">
-                        <div class="col-span-5">
-                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Component Info</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">MFR: <span class="font-mono">${mfrCode}</span></p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Supplier: <span class="font-mono">${supplierCode}</span></p>
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${otherData}</p>
-                        </div>
-                        <div class="col-span-1 text-center">
-                            <i class="fas fa-arrow-right text-gray-400"></i>
-                        </div>
-                        <div class="col-span-5">
-                            <select id="manual-map-${idx}" 
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                    onchange="updateManualMapping(${idx}, this.value)">
-                                <option value="">-- Select Component --</option>
-                                ${allComponents.map(comp => {
-                                    const label = `${comp.manufacturer_code || comp.seller_code || 'ID:' + comp.id} - ${comp.value || ''} ${comp.package || ''} (${comp.product_type || ''})`;
-                                    return `<option value="${comp.id}">${label}</option>`;
-                                }).join('')}
-                            </select>
-                        </div>
-                        <div class="col-span-1 text-right">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">×${qty}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Reset filter to unmapped
+        const filterDropdown = document.getElementById('mapping-filter');
+        if (filterDropdown) {
+            filterDropdown.value = 'unmapped';
+            // Add event listener for filter changes
+            filterDropdown.onchange = filterManualMappings;
+        }
+        
+        renderManualMappingList();
+        updateMappingStats();
         
         document.getElementById('manual-mapping-modal').classList.remove('hidden');
         document.getElementById('manual-mapping-modal').classList.add('flex');
     });
+}
+
+function renderManualMappingList() {
+    const list = document.getElementById('manual-mapping-list');
+    const filter = document.getElementById('mapping-filter')?.value || 'all';
+    
+    const filteredItems = unmappedComponents.filter((item, idx) => {
+        const isMapped = manualMappings[idx] !== undefined;
+        const isIgnored = ignoredComponents.has(idx);
+        
+        if (filter === 'unmapped') return !isMapped && !isIgnored;
+        if (filter === 'mapped') return isMapped;
+        if (filter === 'ignored') return isIgnored;
+        return true; // 'all'
+    });
+    
+    if (filteredItems.length === 0) {
+        list.innerHTML = '<div class="text-center py-8 text-gray-500 dark:text-gray-400">No components match the current filter</div>';
+        return;
+    }
+    
+    list.innerHTML = unmappedComponents.map((item, idx) => {
+        const isMapped = manualMappings[idx] !== undefined;
+        const isIgnored = ignoredComponents.has(idx);
+        
+        // Apply filter
+        if (filter === 'unmapped' && (isMapped || isIgnored)) return '';
+        if (filter === 'mapped' && !isMapped) return '';
+        if (filter === 'ignored' && !isIgnored) return '';
+        
+        const mfrCode = item.manufacturer_code || '-';
+        const supplierCode = item.supplier_code || '-';
+        const qty = item.qty;
+        
+        // Get a sample of other data from raw row
+        const otherData = Object.entries(item._rawRow)
+            .filter(([k]) => !k.toLowerCase().includes('quantity') && !k.toLowerCase().includes('qty'))
+            .slice(0, 3)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ');
+        
+        const statusBadge = isIgnored 
+            ? '<span class="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">Ignored</span>'
+            : isMapped 
+            ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
+            : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
+        
+        return `
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4" data-mapping-idx="${idx}">
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-5">
+                        <div class="flex items-center justify-between mb-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Component Info</p>
+                            ${statusBadge}
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">MFR: <span class="font-mono">${mfrCode}</span></p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Supplier: <span class="font-mono">${supplierCode}</span></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${otherData}</p>
+                    </div>
+                    <div class="col-span-1 text-center">
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    </div>
+                    <div class="col-span-4">
+                        <select id="manual-map-${idx}" 
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                onchange="updateManualMapping(${idx}, this.value)"
+                                ${isIgnored ? 'disabled' : ''}>
+                            <option value="">-- Select Component --</option>
+                            <option value="IGNORE" class="text-gray-500">🚫 Ignore this component</option>
+                            ${allComponents.map(comp => {
+                                const label = `${comp.manufacturer_code || comp.seller_code || 'ID:' + comp.id} - ${comp.value || ''} ${comp.package || ''} (${comp.product_type || ''})`;
+                                const selected = manualMappings[idx] === comp.id ? 'selected' : '';
+                                return `<option value="${comp.id}" ${selected}>${label}</option>`;
+                            }).join('')}
+                        </select>
+                    </div>
+                    <div class="col-span-2 text-right flex items-center justify-end space-x-2">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">×${qty}</span>
+                        ${isIgnored ? `
+                            <button onclick="unignoreComponent(${idx})" 
+                                    class="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded"
+                                    title="Unignore">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).filter(html => html).join('');
+    
+    updateMappingStats();
+}
+
+function filterManualMappings() {
+    renderManualMappingList();
+}
+
+function updateMappingStats() {
+    let mappedCount = 0;
+    let ignoredCount = 0;
+    let unmappedCount = 0;
+    
+    unmappedComponents.forEach((item, idx) => {
+        if (ignoredComponents.has(idx)) {
+            ignoredCount++;
+        } else if (manualMappings[idx]) {
+            mappedCount++;
+        } else {
+            unmappedCount++;
+        }
+    });
+    
+    const statsEl = document.getElementById('mapping-stats');
+    if (statsEl) {
+        statsEl.innerHTML = `
+            <span class="text-green-600 dark:text-green-400">${mappedCount} mapped</span> · 
+            <span class="text-orange-600 dark:text-orange-400">${unmappedCount} unmapped</span> · 
+            <span class="text-gray-600 dark:text-gray-400">${ignoredCount} ignored</span>
+        `;
+    }
+    
+    const mappedCountEl = document.getElementById('mapped-count');
+    if (mappedCountEl) {
+        mappedCountEl.textContent = mappedCount;
+    }
+}
+
+function unignoreComponent(idx) {
+    ignoredComponents.delete(idx);
+    renderManualMappingList();
 }
 
 function closeManualMappingModal() {
@@ -225,15 +326,24 @@ function closeManualMappingModal() {
 }
 
 function updateManualMapping(idx, componentId) {
-    if (componentId) {
+    if (componentId === 'IGNORE') {
+        // Mark as ignored
+        ignoredComponents.add(idx);
+        delete manualMappings[idx]; // Remove any existing mapping
+        renderManualMappingList(); // Re-render to show ignored state
+    } else if (componentId) {
         manualMappings[idx] = parseInt(componentId);
+        updateMappingStats();
     } else {
         delete manualMappings[idx];
+        updateMappingStats();
     }
 }
 
 function skipUnmappedComponents() {
-    console.log('[Manual Mapping] Skipping unmapped, keeping', window._tempBomItems?.length || 0, 'auto-mapped items');
+    const ignoredCount = ignoredComponents.size;
+    const mappedCount = Object.keys(manualMappings).length;
+    console.log(`[Manual Mapping] Skipping unmapped. Ignored: ${ignoredCount}, Mapped: ${mappedCount}, Auto-mapped: ${window._tempBomItems?.length || 0}`);
     closeManualMappingModal();
     if (resolveManualMapping) {
         resolveManualMapping(true);
@@ -242,10 +352,19 @@ function skipUnmappedComponents() {
 }
 
 function applyManualMappings() {
-    console.log('[Manual Mapping] Applying', Object.keys(manualMappings).length, 'manual mappings');
-    // Add manually mapped items
+    const mappedCount = Object.keys(manualMappings).length;
+    const ignoredCount = ignoredComponents.size;
+    console.log(`[Manual Mapping] Applying ${mappedCount} manual mappings, ignoring ${ignoredCount} components`);
+    
+    // Add manually mapped items (skip ignored ones)
     Object.entries(manualMappings).forEach(([idx, componentId]) => {
-        const item = unmappedComponents[parseInt(idx)];
+        const idxNum = parseInt(idx);
+        if (ignoredComponents.has(idxNum)) {
+            console.log('[Manual Mapping] Skipping ignored component at index', idxNum);
+            return; // Skip ignored components
+        }
+        
+        const item = unmappedComponents[idxNum];
         // Store for upload handler
         if (window._tempBomItems) {
             const bomItem = {
@@ -1064,10 +1183,50 @@ async function loadBOMFromFile(filePath) {
         const response = await fetch(`${ELECTRONICS_API_BASE}/storage/fetch?path=${encodeURIComponent(filePath)}`);
         if (!response.ok) throw new Error('Failed to fetch BOM file');
         
-        const text = await response.text();
+        let headers, rows;
         
-        // Parse CSV
-        const { headers, rows } = parseCSV(text);
+        // Check file extension
+        const fileName = filePath.toLowerCase();
+        const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+        
+        if (isExcel) {
+            // Parse Excel file
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            
+            // Get first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convert to JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            
+            if (jsonData.length < 2) {
+                showToast('Excel file must have at least a header row and one data row', 'error');
+                return;
+            }
+            
+            // First row is headers
+            headers = jsonData[0].map(h => String(h).trim());
+            
+            // Remaining rows are data
+            rows = jsonData.slice(1).map(row => {
+                const obj = {};
+                headers.forEach((header, idx) => {
+                    obj[header] = row[idx] != null ? String(row[idx]).trim() : '';
+                });
+                return obj;
+            }).filter(row => Object.values(row).some(v => v));
+            
+            console.log('[Excel] Loaded', rows.length, 'rows from server file');
+        } else {
+            // Parse CSV
+            const text = await response.text();
+            const parsed = parseCSV(text);
+            headers = parsed.headers;
+            rows = parsed.rows;
+        }
+        
         const mapped = rows.map(mapBOMRow).filter(r => r !== null);
         
         if (mapped.length === 0) {
@@ -1198,14 +1357,55 @@ async function handleBOMFileSelect(event) {
     if (!file) return;
     
     try {
-        const text = await file.text();
-        const { headers, rows } = parseCSV(text);
+        let headers, rows;
+        
+        // Check file extension to determine parsing method
+        const fileName = file.name.toLowerCase();
+        const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+        
+        if (isExcel) {
+            // Parse Excel file
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Get first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convert to JSON (array of objects)
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            
+            if (jsonData.length < 2) {
+                showToast('Excel file must have at least a header row and one data row', 'error');
+                return;
+            }
+            
+            // First row is headers
+            headers = jsonData[0].map(h => String(h).trim());
+            
+            // Remaining rows are data - convert back to object format
+            rows = jsonData.slice(1).map(row => {
+                const obj = {};
+                headers.forEach((header, idx) => {
+                    obj[header] = row[idx] != null ? String(row[idx]).trim() : '';
+                });
+                return obj;
+            }).filter(row => Object.values(row).some(v => v)); // Filter out completely empty rows
+            
+            console.log('[Excel] Parsed', rows.length, 'rows from', firstSheetName);
+        } else {
+            // Parse CSV file
+            const text = await file.text();
+            const parsed = parseCSV(text);
+            headers = parsed.headers;
+            rows = parsed.rows;
+        }
         
         // Map rows to BOM format
         const mapped = rows.map(mapBOMRow).filter(r => r !== null);
         
         if (mapped.length === 0) {
-            showToast('No valid BOM data found. Check CSV format.', 'error');
+            showToast('No valid BOM data found. Check file format.', 'error');
             return;
         }
         
