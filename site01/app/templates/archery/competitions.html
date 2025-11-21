@@ -1202,6 +1202,8 @@ function renderCompetitions(competitions) {
                     statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Confermato</span>';
                 } else if (sub.stato === 'in attesa') {
                     statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">In attesa</span>';
+                } else if (sub.stato === 'cancellazione richiesta') {
+                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Cancellazione richiesta</span>';
                 } else if (sub.stato === 'richiesta_effettuata') {
                     statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Richiesta</span>';
                 }
@@ -1852,6 +1854,8 @@ function showDeleteSubscriptionModal(subscriptions, competition) {
             statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Confermato</span>';
         } else if (sub.stato === 'in attesa') {
             statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">In attesa</span>';
+        } else if (sub.stato === 'cancellazione richiesta') {
+            statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Cancellazione richiesta</span>';
         } else if (sub.stato === 'richiesta_effettuata') {
             statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Richiesta</span>';
         }
@@ -1891,15 +1895,47 @@ async function confirmDeleteSelected() {
     }
     
     const competitionCode = modal.dataset.competitionCode;
+    const subscriptions = userSubscriptions.get(competitionCode) || [];
+    
+    // Separate confirmed from non-confirmed subscriptions
+    const confirmedIds = [];
+    const nonConfirmedIds = [];
+    
+    idsToDelete.forEach(id => {
+        const sub = subscriptions.find(s => s.id === id);
+        if (sub && sub.stato === 'confermato') {
+            confirmedIds.push(id);
+        } else {
+            nonConfirmedIds.push(id);
+        }
+    });
     
     try {
-        // Delete all selected subscriptions
-        await Promise.all(idsToDelete.map(id => deleteSubscriptionInternal(id)));
+        // Delete non-confirmed subscriptions directly
+        if (nonConfirmedIds.length > 0) {
+            await Promise.all(nonConfirmedIds.map(id => deleteSubscriptionInternal(id)));
+        }
         
-        // Update local cache - remove deleted subscriptions
+        // Request cancellation for confirmed subscriptions
+        if (confirmedIds.length > 0) {
+            await Promise.all(confirmedIds.map(id => requestCancellationInternal(id)));
+        }
+        
+        // Update local cache
         if (userSubscriptions.has(competitionCode)) {
-            const remaining = userSubscriptions.get(competitionCode)
-                .filter(sub => !idsToDelete.includes(sub.id));
+            const subs = userSubscriptions.get(competitionCode);
+            
+            // Remove deleted (non-confirmed) subscriptions
+            const remaining = subs.filter(sub => !nonConfirmedIds.includes(sub.id));
+            
+            // Update status for confirmed subscriptions
+            confirmedIds.forEach(id => {
+                const sub = remaining.find(s => s.id === id);
+                if (sub) {
+                    sub.stato = 'cancellazione richiesta';
+                }
+            });
+            
             if (remaining.length > 0) {
                 userSubscriptions.set(competitionCode, remaining);
             } else {
@@ -1908,16 +1944,33 @@ async function confirmDeleteSelected() {
         }
         
         closeDeleteModal();
-        showNotification(
-            idsToDelete.length === 1 ? 
-                'Iscrizione eliminata con successo' : 
-                `${idsToDelete.length} iscrizioni eliminate con successo`, 
-            'success'
-        );
+        
+        // Show appropriate message
+        if (confirmedIds.length > 0 && nonConfirmedIds.length > 0) {
+            showNotification(
+                `${nonConfirmedIds.length} iscrizioni eliminate, ${confirmedIds.length} richieste di cancellazione inviate`,
+                'success'
+            );
+        } else if (confirmedIds.length > 0) {
+            showNotification(
+                confirmedIds.length === 1 ? 
+                    'Richiesta di cancellazione inviata con successo' : 
+                    `${confirmedIds.length} richieste di cancellazione inviate con successo`,
+                'success'
+            );
+        } else {
+            showNotification(
+                nonConfirmedIds.length === 1 ? 
+                    'Iscrizione eliminata con successo' : 
+                    `${nonConfirmedIds.length} iscrizioni eliminate con successo`,
+                'success'
+            );
+        }
+        
         filterCompetitions(currentFilter);
     } catch (error) {
         console.error('Error deleting subscriptions:', error);
-        showNotification('Errore durante l\'eliminazione delle iscrizioni', 'error');
+        showNotification('Errore durante l\'operazione: ' + error.message, 'error');
     }
 }
 
@@ -1934,8 +1987,47 @@ async function deleteSubscriptionInternal(subscriptionId) {
     return response.json();
 }
 
+async function requestCancellationInternal(subscriptionId) {
+    const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stato: 'cancellazione richiesta' })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to request cancellation');
+    }
+    
+    return response.json();
+}
+
 async function deleteSubscription(subscription, competition) {
-    // Confirm before deleting
+    // Check if subscription is confirmed
+    if (subscription.stato === 'confermato') {
+        const confirmMsg = 'Questa iscrizione è confermata. Vuoi richiedere la cancellazione?';
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        try {
+            await requestCancellationInternal(subscription.id);
+            
+            // Update local cache
+            subscription.stato = 'cancellazione richiesta';
+            
+            showNotification('Richiesta di cancellazione inviata con successo', 'success');
+            filterCompetitions(currentFilter);
+        } catch (error) {
+            console.error('Error requesting cancellation:', error);
+            showNotification('Errore durante la richiesta di cancellazione: ' + error.message, 'error');
+        }
+        
+        return;
+    }
+    
+    // For non-confirmed subscriptions, delete directly
     const confirmMsg = window.translations.competitions?.confirm_delete || 
         `Are you sure you want to delete your subscription to ${competition.nome}?`;
     
