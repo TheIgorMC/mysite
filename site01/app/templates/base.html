@@ -222,7 +222,7 @@
                                 <i class="fas fa-cog mr-2"></i>{{ t('nav.settings') }}
                             </a>
                             {% if current_user.is_admin %}
-                            <a href="{{ url_for('admin.index') }}" 
+                            <a href="{{ url_for('main.admin') }}" 
                                class="block px-4 py-3 text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                 <i class="fas fa-shield-alt mr-2"></i>Admin Area
                             </a>
