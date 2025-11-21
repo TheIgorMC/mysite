@@ -140,8 +140,9 @@ function mapBOMRow(row) {
     const qty = parseInt(row[qtyKey]);
     const designators = row[designatorKey]?.trim() || ''; // Preserve designators as-is (may contain commas)
     
-    if ((!manufacturer_code && !supplier_code) || isNaN(qty) || qty <= 0) {
-        console.warn('[CSV] Invalid data in row:', row);
+    // Only reject if qty is invalid - allow empty codes (will go to manual mapping)
+    if (isNaN(qty) || qty <= 0) {
+        console.warn('[CSV] Invalid quantity in row:', row);
         return null;
     }
     
@@ -1065,6 +1066,11 @@ async function loadBoardBOM(boardId) {
         
         console.log('[BOM] Loaded BOM data:', data);
         
+        // Check for error in response
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
         // Handle both {bom: [...]} and direct array responses
         const bomItems = Array.isArray(data) ? data : (data.bom || []);
         
@@ -1260,8 +1266,12 @@ async function loadBOMFromFile(filePath) {
         
         // Hide file upload input since we already loaded a file
         const fileInputContainer = document.querySelector('#upload-bom-form > div:first-of-type');
+        const fileInput = document.getElementById('bom-csv-file');
         if (fileInputContainer) {
             fileInputContainer.style.display = 'none';
+        }
+        if (fileInput) {
+            fileInput.removeAttribute('required'); // Remove required to prevent form validation error
         }
         
         // Change modal title to indicate we're loading from existing file
@@ -1341,8 +1351,12 @@ function closeUploadBOMModal() {
     
     // Reset file input visibility (in case it was hidden when loading from file)
     const fileInputContainer = document.querySelector('#upload-bom-form > div:first-of-type');
+    const fileInput = document.getElementById('bom-csv-file');
     if (fileInputContainer) {
         fileInputContainer.style.display = '';
+    }
+    if (fileInput) {
+        fileInput.setAttribute('required', ''); // Restore required attribute for normal uploads
     }
     
     // Reset modal title
