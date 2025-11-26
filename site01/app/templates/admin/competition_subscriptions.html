@@ -14,8 +14,9 @@
         </div>
         
         <h1 class="text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-            <i class="fas fa-clipboard-list text-primary mr-3"></i>Competition Subscriptions
+            <i class="fas fa-clipboard-list text-primary mr-3"></i>{{ t('admin.subscriptions.page_title') }}
         </h1>
+        <p class="text-center text-gray-600 dark:text-gray-400 mb-8">{{ t('admin.subscriptions.page_subtitle') }}</p>
 
         <!-- Tab Navigation -->
         <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
@@ -23,12 +24,12 @@
                 <button id="tab-subscriptions" 
                         onclick="switchTab('subscriptions')"
                         class="tab-button active px-6 py-3 text-sm font-medium border-b-2 border-primary text-primary">
-                    <i class="fas fa-users mr-2"></i>Subscriptions
+                    <i class="fas fa-users mr-2"></i>{{ t('admin.subscriptions.tab_subscriptions') }}
                 </button>
                 <button id="tab-interest" 
                         onclick="switchTab('interest')"
                         class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300">
-                    <i class="fas fa-star mr-2"></i>Interest Expressions
+                    <i class="fas fa-star mr-2"></i>{{ t('admin.subscriptions.tab_interests') }}
                 </button>
             </nav>
         </div>
@@ -38,7 +39,7 @@
             <!-- Loading State -->
             <div id="subscriptions-loading" class="text-center py-12">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading subscriptions...</p>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
             </div>
 
             <!-- Subscriptions List -->
@@ -49,7 +50,7 @@
             <!-- Empty State -->
             <div id="subscriptions-empty" class="hidden text-center py-12">
                 <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400">No subscriptions found</p>
+                <p class="text-gray-600 dark:text-gray-400">{{ t('admin.subscriptions.no_subscriptions') }}</p>
             </div>
         </div>
 
@@ -58,7 +59,7 @@
             <!-- Loading State -->
             <div id="interest-loading" class="text-center py-12">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading interest expressions...</p>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
             </div>
 
             <!-- Interest List -->
@@ -69,7 +70,7 @@
             <!-- Empty State -->
             <div id="interest-empty" class="hidden text-center py-12">
                 <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400">No interest expressions found</p>
+                <p class="text-gray-600 dark:text-gray-400">{{ t('admin.subscriptions.no_interests') }}</p>
             </div>
         </div>
     </div>
@@ -80,7 +81,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-edit mr-2"></i>Modifica Iscrizione
+                        <i class="fas fa-edit mr-2"></i>{{ t('admin.subscriptions.edit_subscription') }}
                     </h3>
                     <button onclick="closeEditSubscriptionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <i class="fas fa-times text-2xl"></i>
@@ -92,13 +93,13 @@
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.athlete_id') }}</label>
                             <input type="text" id="edit-sub-tessera" readonly
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turno</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.turn') }}</label>
                             <input type="number" id="edit-sub-turno" required min="1"
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
@@ -106,45 +107,45 @@
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.category') }}</label>
                             <input type="text" id="edit-sub-categoria" required
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.bow_class') }}</label>
                             <input type="text" id="edit-sub-classe"
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.notes') }}</label>
                         <textarea id="edit-sub-note" rows="3"
                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.status') }}</label>
                         <select id="edit-sub-stato" required
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="in attesa">In attesa</option>
-                            <option value="confermato">Confermato</option>
-                            <option value="lista d'attesa">Lista d'attesa</option>
+                            <option value="in attesa">{{ t('admin.subscriptions.status_pending') }}</option>
+                            <option value="confermato">{{ t('admin.subscriptions.status_confirmed') }}</option>
+                            <option value="lista d'attesa">{{ t('admin.subscriptions.status_waitlist') }}</option>
                             <option value="attesa cancellazione">Attesa cancellazione</option>
                             <option value="modifica richiesta">Modifica richiesta</option>
-                            <option value="cancellato">Cancellato</option>
+                            <option value="cancellato">{{ t('admin.subscriptions.status_cancelled') }}</option>
                         </select>
                     </div>
                     
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" onclick="closeEditSubscriptionModal()"
                                 class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
-                            Annulla
+                            {{ t('admin.subscriptions.cancel') }}
                         </button>
                         <button type="submit"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                            <i class="fas fa-save mr-2"></i>Salva Modifiche
+                            <i class="fas fa-save mr-2"></i>{{ t('admin.subscriptions.save_changes') }}
                         </button>
                     </div>
                 </form>
@@ -158,7 +159,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-edit mr-2"></i>Modifica Espressione di Interesse
+                        <i class="fas fa-edit mr-2"></i>{{ t('admin.subscriptions.edit_interest') }}
                     </h3>
                     <button onclick="closeEditInterestModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <i class="fas fa-times text-2xl"></i>
@@ -169,27 +170,27 @@
                     <input type="hidden" id="edit-int-id">
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.athlete_id') }}</label>
                         <input type="text" id="edit-int-tessera" readonly
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.category') }}</label>
                             <input type="text" id="edit-int-categoria" required
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.bow_class') }}</label>
                             <input type="text" id="edit-int-classe"
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.notes') }}</label>
                         <textarea id="edit-int-note" rows="3"
                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
                     </div>
@@ -197,11 +198,11 @@
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" onclick="closeEditInterestModal()"
                                 class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
-                            Annulla
+                            {{ t('admin.subscriptions.cancel') }}
                         </button>
                         <button type="submit"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                            <i class="fas fa-save mr-2"></i>Salva Modifiche
+                            <i class="fas fa-save mr-2"></i>{{ t('admin.subscriptions.save_changes') }}
                         </button>
                     </div>
                 </form>
@@ -215,7 +216,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                        <i class="fas fa-plus mr-2"></i>{{ t('admin.subscriptions.add_subscription') }}
                     </h3>
                     <button onclick="closeAddSubscriptionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <i class="fas fa-times text-2xl"></i>
@@ -226,71 +227,72 @@
                     <input type="hidden" id="add-sub-codice-gara">
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera Atleta</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.athlete_id') }}</label>
                         <input type="text" id="add-sub-tessera" required
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                               placeholder="Inserisci numero tessera">
+                               placeholder="{{ t('admin.subscriptions.select_athlete') }}">
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turno</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.turn') }}</label>
                             <input type="number" id="add-sub-turno" required min="1"
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                    value="1">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.status') }}</label>
                             <select id="add-sub-stato" required
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="in attesa">In attesa</option>
-                                <option value="confermato" selected>Confermato</option>
-                                <option value="lista d'attesa">Lista d'attesa</option>
+                                <option value="in attesa">{{ t('admin.subscriptions.status_pending') }}</option>
+                                <option value="confermato" selected>{{ t('admin.subscriptions.status_confirmed') }}</option>
+                                <option value="lista d'attesa">{{ t('admin.subscriptions.status_waitlist') }}</option>
                             </select>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.category') }}</label>
                             <input type="text" id="add-sub-categoria" required
                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                    placeholder="es. SM, SF, RM, etc.">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.bow_class') }}</label>
                             <select id="add-sub-classe" required
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="CO">CO - Compound</option>
-                                <option value="OL">OL - Olympic Recurve</option>
-                                <option value="AN">AN - Barebow</option>
+                                <option value="CO">{{ t('admin.subscriptions.bow_class_compound') }}</option>
+                                <option value="OL">{{ t('admin.subscriptions.bow_class_olympic_recurve') }}</option>
+                                <option value="AN">{{ t('admin.subscriptions.bow_class_barebow') }}</option>
+                                <option value="VI">{{ t('admin.subscriptions.bow_class_vis_impaired') }}</option>
                             </select>
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note (opzionale)</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.notes') }} ({{ t('common.optional') }})</label>
                         <textarea id="add-sub-note" rows="3"
                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Note aggiuntive..."></textarea>
+                                  placeholder="{{ t('admin.subscriptions.notes_placeholder') }}"></textarea>
                     </div>
                     
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                         <p class="text-sm text-blue-800 dark:text-blue-300">
-                            <i class="fas fa-info-circle mr-2"></i>Questa iscrizione sarà aggiunta anche se le iscrizioni sono chiuse.
+                            <i class="fas fa-info-circle mr-2"></i>{{ t('admin.subscriptions.registration_closed_warning') }}
                         </p>
                     </div>
                     
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" onclick="closeAddSubscriptionModal()"
                                 class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
-                            Annulla
+                            {{ t('admin.subscriptions.cancel') }}
                         </button>
                         <button type="submit"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                            <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                            <i class="fas fa-plus mr-2"></i>{{ t('admin.subscriptions.add_subscription') }}
                         </button>
                     </div>
                 </form>
@@ -312,7 +314,7 @@
                             </div>
                             <div class="ml-4">
                                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="invite-modal-title">
-                                    Invito Gara
+                                    {{ t('admin.subscriptions.invite_modal_title') }}
                                 </h3>
                                 <p class="text-sm text-gray-500 dark:text-gray-400" id="invite-modal-subtitle"></p>
                             </div>
@@ -324,7 +326,7 @@
 
                     <div id="invite-loading" class="text-center py-8">
                         <i class="fas fa-spinner fa-spin text-3xl text-blue-600 dark:text-blue-400 mb-2"></i>
-                        <p class="text-gray-600 dark:text-gray-400">Caricamento invito...</p>
+                        <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
                     </div>
 
                     <div id="invite-error" class="hidden text-center py-8">
@@ -350,7 +352,7 @@
                             </div>
                             <div id="invite-youth-only" class="hidden mt-3 pt-3 border-t border-blue-300 dark:border-gray-500">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                                    <i class="fas fa-child mr-1"></i> Solo Giovanile
+                                    <i class="fas fa-child mr-1"></i> {{ t('admin.subscriptions.youth_only') }}
                                 </span>
                             </div>
                         </div>
@@ -363,7 +365,7 @@
                 <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                     <button type="button" onclick="closeInviteModal()"
                             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
-                        <i class="fas fa-check mr-2"></i> Chiudi
+                        <i class="fas fa-check mr-2"></i> {{ t('admin.subscriptions.close') }}
                     </button>
                 </div>
             </div>
@@ -540,7 +542,7 @@ function renderSubscriptions() {
             
             return `
                 <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-4 py-3">Turno ${sub.turno}</td>
+                    <td class="px-4 py-3">${t('admin.subscriptions.turn')} ${sub.turno}</td>
                     <td class="px-4 py-3">${sub.tessera_atleta}</td>
                     <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
                     <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
@@ -554,23 +556,23 @@ function renderSubscriptions() {
                     <td class="px-4 py-3">
                         <select onchange="updateSubscriptionStatus(${sub.id}, this.value)" 
                                 class="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="in attesa" ${sub.stato === 'in attesa' ? 'selected' : ''}>In attesa</option>
-                            <option value="confermato" ${sub.stato === 'confermato' ? 'selected' : ''}>Confermato</option>
-                            <option value="lista d'attesa" ${sub.stato === "lista d'attesa" ? 'selected' : ''}>Lista d'attesa</option>
+                            <option value="in attesa" ${sub.stato === 'in attesa' ? 'selected' : ''}>${t('admin.subscriptions.status_pending')}</option>
+                            <option value="confermato" ${sub.stato === 'confermato' ? 'selected' : ''}>${t('admin.subscriptions.status_confirmed')}</option>
+                            <option value="lista d'attesa" ${sub.stato === "lista d'attesa" ? 'selected' : ''}>${t('admin.subscriptions.status_waitlist')}</option>
                             <option value="attesa cancellazione" ${sub.stato === 'attesa cancellazione' ? 'selected' : ''}>Attesa cancellazione</option>
                             <option value="modifica richiesta" ${sub.stato === 'modifica richiesta' ? 'selected' : ''}>Modifica richiesta</option>
-                            <option value="cancellato" ${sub.stato === 'cancellato' ? 'selected' : ''}>Cancellato</option>
+                            <option value="cancellato" ${sub.stato === 'cancellato' ? 'selected' : ''}>${t('admin.subscriptions.status_cancelled')}</option>
                         </select>
                     </td>
                     <td class="px-4 py-3 text-right space-x-2">
                         <button onclick="editSubscription(${sub.id})" 
                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                title="Modifica iscrizione">
+                                title="${t('admin.subscriptions.edit_subscription')}">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="deleteSubscription(${sub.id})" 
                                 class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                                title="Elimina iscrizione">
+                                title="${t('admin.subscriptions.delete')}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -583,26 +585,26 @@ function renderSubscriptions() {
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> iscrizioni
+                        <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> ${t('admin.subscriptions.tab_subscriptions').toLowerCase()}
                     </p>
                     <button onclick="showAddSubscriptionModal('${codiceGara}')" 
                             class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                        <i class="fas fa-plus mr-2"></i>${t('admin.subscriptions.add_subscription')}
                     </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             <tr>
-                                <th class="px-4 py-2">Turno</th>
-                                <th class="px-4 py-2">Tessera</th>
-                                <th class="px-4 py-2">Atleta</th>
-                                <th class="px-4 py-2">Categoria</th>
-                                <th class="px-4 py-2">Classe</th>
-                                <th class="px-4 py-2">Stato</th>
-                                <th class="px-4 py-2">Note</th>
-                                <th class="px-4 py-2">Azioni</th>
-                                <th class="px-4 py-2 text-right">Modifica</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.turn')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.athlete_id')}</th>
+                                <th class="px-4 py-2">${t('archery.athlete')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.category')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.bow_class')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.status')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.notes')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.bulk_actions')}</th>
+                                <th class="px-4 py-2 text-right">${t('common.edit')}</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-900 dark:text-gray-300">
@@ -713,12 +715,12 @@ function renderInterest() {
                 <td class="px-4 py-3 text-right space-x-2">
                     <button onclick="editInterest(${sub.id})" 
                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Modifica espressione di interesse">
+                            title="${t('admin.subscriptions.edit_interest')}">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button onclick="deleteInterest(${sub.id})" 
                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Elimina espressione di interesse">
+                            title="${t('admin.subscriptions.delete')}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -730,18 +732,18 @@ function renderInterest() {
             <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> espressioni di interesse
+                        <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> ${t('admin.subscriptions.tab_interests').toLowerCase()}
                     </p>
                     <div class="flex gap-2">
                         <button onclick="deleteSelectedInterests('${codiceGara}')"
                                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
                             <i class="fas fa-trash-alt"></i>
-                            Elimina Selezionati
+                            ${t('admin.subscriptions.delete')}
                         </button>
                         <button onclick="convertSelectedInterests('${codiceGara}')"
                                 class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
                             <i class="fas fa-exchange-alt"></i>
-                            Converti Selezionati
+                            ${t('admin.subscriptions.convert_to_subscriptions')}
                         </button>
                     </div>
                 </div>
@@ -754,12 +756,12 @@ function renderInterest() {
                                            class="select-all-checkbox w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
                                            onchange="toggleAllInterests('${codiceGara}', this.checked)">
                                 </th>
-                                <th class="px-4 py-2">Tessera</th>
-                                <th class="px-4 py-2">Atleta</th>
-                                <th class="px-4 py-2">Categoria</th>
-                                <th class="px-4 py-2">Classe</th>
-                                <th class="px-4 py-2">Note</th>
-                                <th class="px-4 py-2 text-right">Azioni</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.athlete_id')}</th>
+                                <th class="px-4 py-2">${t('archery.athlete')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.category')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.bow_class')}</th>
+                                <th class="px-4 py-2">${t('admin.subscriptions.notes')}</th>
+                                <th class="px-4 py-2 text-right">${t('admin.subscriptions.bulk_actions')}</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-900 dark:text-gray-300">
@@ -786,13 +788,13 @@ async function deleteSubscription(subscriptionId) {
     const subscription = allSubscriptions.find(s => s.id === subscriptionId);
     
     if (!subscription) {
-        alert('Iscrizione non trovata');
+        alert(t('admin.subscriptions.error_loading_subscriptions'));
         return;
     }
     
     const athleteName = subscription.nome_atleta || subscription.tessera_atleta;
     
-    if (!confirm(`Confermi l'eliminazione definitiva dell'iscrizione di ${athleteName}?\n\nQuesta operazione non può essere annullata.`)) {
+    if (!confirm(t('admin.subscriptions.confirm_delete_subscription'))) {
         return;
     }
     
@@ -810,14 +812,14 @@ async function deleteSubscription(subscriptionId) {
             
             // Re-render
             renderSubscriptions();
-            showNotification('Iscrizione eliminata con successo', 'success');
+            showNotification(t('admin.subscriptions.subscription_deleted'), 'success');
         } else {
             const error = await response.json();
-            throw new Error(error.error || 'Errore durante l\'eliminazione');
+            throw new Error(error.error || t('admin.subscriptions.error_deleting_subscription'));
         }
     } catch (error) {
         console.error('Error deleting subscription:', error);
-        showNotification('Errore durante l\'eliminazione: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_deleting_subscription') + ': ' + error.message, 'error');
     }
 }
 
@@ -825,13 +827,13 @@ async function deleteInterest(interestId) {
     const interest = allInterests.find(i => i.id === interestId);
     
     if (!interest) {
-        alert('Espressione di interesse non trovata');
+        alert(t('admin.subscriptions.error_loading_interests'));
         return;
     }
     
     const athleteName = interest.nome_atleta || interest.tessera_atleta;
     
-    if (!confirm(`Confermi l'eliminazione dell'espressione di interesse di ${athleteName}?`)) {
+    if (!confirm(t('admin.subscriptions.confirm_delete_interest'))) {
         return;
     }
     
@@ -849,14 +851,14 @@ async function deleteInterest(interestId) {
             
             // Re-render
             renderInterest();
-            showNotification('Espressione di interesse eliminata con successo', 'success');
+            showNotification(t('admin.subscriptions.interest_deleted'), 'success');
         } else {
             const error = await response.json();
-            throw new Error(error.error || 'Errore durante l\'eliminazione');
+            throw new Error(error.error || t('admin.subscriptions.error_deleting_interest'));
         }
     } catch (error) {
         console.error('Error deleting interest:', error);
-        showNotification('Errore durante l\'eliminazione: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_deleting_interest') + ': ' + error.message, 'error');
     }
 }
 
@@ -864,11 +866,11 @@ async function convertSelectedInterests(codiceGara) {
     const checkboxes = document.querySelectorAll(`.interest-checkbox[data-competition-code="${codiceGara}"]:checked`);
     
     if (checkboxes.length === 0) {
-        alert('Seleziona almeno un\'espressione di interesse da convertire');
+        alert(t('admin.subscriptions.select_at_least_one'));
         return;
     }
     
-    if (!confirm(`Confermi la conversione di ${checkboxes.length} espressioni di interesse in iscrizioni?`)) {
+    if (!confirm(t('admin.subscriptions.confirm_convert_interests').replace('{count}', checkboxes.length))) {
         return;
     }
     
@@ -933,11 +935,11 @@ async function convertSelectedInterests(codiceGara) {
     
     // Show results
     if (successCount > 0) {
-        alert(`✅ Convertiti con successo: ${successCount}\n${errorCount > 0 ? `⚠️ Errori: ${errorCount}` : ''}`);
+        showNotification(t('admin.subscriptions.interests_converted'), 'success');
         // Reload data
         await loadData();
     } else {
-        alert(`❌ Nessuna conversione riuscita. Errori: ${errorCount}`);
+        showNotification(t('admin.subscriptions.error_converting_interests'), 'error');
     }
 }
 
@@ -969,7 +971,7 @@ async function updateSubscriptionStatus(subscriptionId, newStatus) {
             sub.stato = newStatus;
             
             // Show notification
-            showNotification('Stato aggiornato con successo', 'success');
+            showNotification(t('admin.subscriptions.subscription_updated'), 'success');
             
             // Re-render
             renderSubscriptions();
@@ -984,7 +986,7 @@ async function updateSubscriptionStatus(subscriptionId, newStatus) {
         }
     } catch (error) {
         console.error('Error updating status:', error);
-        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_updating_subscription') + ': ' + error.message, 'error');
     }
 }
 
@@ -1095,7 +1097,7 @@ document.getElementById('edit-subscription-form')?.addEventListener('submit', as
             // Update local data
             Object.assign(sub, newData);
             
-            showNotification('Iscrizione aggiornata con successo', 'success');
+            showNotification(t('admin.subscriptions.subscription_updated'), 'success');
             closeEditSubscriptionModal();
             renderSubscriptions();
         } else {
@@ -1104,7 +1106,7 @@ document.getElementById('edit-subscription-form')?.addEventListener('submit', as
         }
     } catch (error) {
         console.error('Error updating subscription:', error);
-        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_updating_subscription') + ': ' + error.message, 'error');
     }
 });
 
@@ -1154,7 +1156,7 @@ document.getElementById('add-subscription-form')?.addEventListener('submit', asy
             // Add to local array
             allSubscriptions.push(newSub);
             
-            showNotification('Iscrizione aggiunta con successo', 'success');
+            showNotification(t('admin.subscriptions.subscription_created'), 'success');
             closeAddSubscriptionModal();
             renderSubscriptions();
         } else {
@@ -1163,7 +1165,7 @@ document.getElementById('add-subscription-form')?.addEventListener('submit', asy
         }
     } catch (error) {
         console.error('Error adding subscription:', error);
-        showNotification('Errore durante l\'aggiunta: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_creating_subscription') + ': ' + error.message, 'error');
     }
 });
 
@@ -1212,7 +1214,7 @@ document.getElementById('edit-interest-form')?.addEventListener('submit', async 
                 Object.assign(interest, updateData);
             }
             
-            showNotification('Espressione di interesse aggiornata con successo', 'success');
+            showNotification(t('admin.subscriptions.interest_updated'), 'success');
             closeEditInterestModal();
             renderInterest();
         } else {
@@ -1221,7 +1223,7 @@ document.getElementById('edit-interest-form')?.addEventListener('submit', async 
         }
     } catch (error) {
         console.error('Error updating interest:', error);
-        showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+        showNotification(t('admin.subscriptions.error_updating_interest') + ': ' + error.message, 'error');
     }
 });
 
