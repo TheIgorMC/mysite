@@ -125,6 +125,18 @@
                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
                     </div>
                     
+                    <!-- Tripla Toggle (only for OL division) -->
+                    <div id="edit-tripla-container" class="hidden">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" id="edit-sub-tripla"
+                                   class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <div>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tripla (3-spot target)</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Available only for Olympic Recurve (OL)</p>
+                            </div>
+                        </label>
+                    </div>
+                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.status') }}</label>
                         <select id="edit-sub-stato" required
@@ -277,6 +289,18 @@
                         <textarea id="add-sub-note" rows="3"
                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                   placeholder="{{ t('admin.subscriptions.notes_placeholder') }}"></textarea>
+                    </div>
+                    
+                    <!-- Tripla Toggle (only for OL division) -->
+                    <div id="add-tripla-container" class="hidden">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" id="add-sub-tripla"
+                                   class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <div>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tripla (3-spot target)</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Available only for Olympic Recurve (OL)</p>
+                            </div>
+                        </label>
                     </div>
                     
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
@@ -540,13 +564,17 @@ function renderSubscriptions() {
                 statusIcon = 'clock';
             }
             
+            // Check if tripla is in notes
+            const hasTripla = sub.classe === 'OL' && (sub.note || '').toLowerCase().includes('tripla');
+            const triplaIcon = hasTripla ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot target">3⊙</span>' : '';
+            
             return `
                 <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td class="px-4 py-3">${t('admin.subscriptions.turn')} ${sub.turno}</td>
                     <td class="px-4 py-3">${sub.tessera_atleta}</td>
                     <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
                     <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
-                    <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
+                    <td class="px-4 py-3">${sub.classe || 'N/A'}${triplaIcon}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-100 text-${statusColor}-800 dark:bg-${statusColor}-900/30 dark:text-${statusColor}-300">
                             <i class="fas fa-${statusIcon} mr-1"></i>${sub.stato}
@@ -1049,6 +1077,18 @@ function editSubscription(subscriptionId) {
     document.getElementById('edit-sub-note').value = sub.note || '';
     document.getElementById('edit-sub-stato').value = sub.stato;
     
+    // Handle Tripla toggle based on bow class
+    toggleTriplaVisibility('edit', sub.classe);
+    
+    // Check if "tripla" is in notes
+    const hasTripla = (sub.note || '').toLowerCase().includes('tripla');
+    document.getElementById('edit-sub-tripla').checked = hasTripla;
+    
+    // Add listener for bow class changes
+    document.getElementById('edit-sub-classe').addEventListener('change', function() {
+        toggleTriplaVisibility('edit', this.value);
+    });
+    
     document.getElementById('edit-subscription-modal').classList.remove('hidden');
     document.getElementById('edit-subscription-modal').classList.add('flex');
 }
@@ -1082,6 +1122,12 @@ document.getElementById('edit-subscription-form')?.addEventListener('submit', as
     
     // Get new notes (admin can edit freely, changes are tracked separately if needed)
     let newNotes = document.getElementById('edit-sub-note').value || '';
+    
+    // Handle Tripla in notes for OL division
+    if (newData.classe === 'OL') {
+        const triplaChecked = document.getElementById('edit-sub-tripla').checked;
+        newNotes = manageTriplaInNotes(newNotes, triplaChecked);
+    }
     
     // Add note field to update data
     newData.note = newNotes;
@@ -1120,6 +1166,14 @@ function showAddSubscriptionModal(codiceGara) {
     document.getElementById('add-sub-stato').value = 'confermato';
     document.getElementById('add-sub-classe').value = 'CO';
     
+    // Handle Tripla toggle visibility
+    toggleTriplaVisibility('add', 'CO');
+    
+    // Add listener for bow class changes
+    document.getElementById('add-sub-classe').addEventListener('change', function() {
+        toggleTriplaVisibility('add', this.value);
+    });
+    
     document.getElementById('add-subscription-modal').classList.remove('hidden');
     document.getElementById('add-subscription-modal').classList.add('flex');
 }
@@ -1133,14 +1187,23 @@ function closeAddSubscriptionModal() {
 document.getElementById('add-subscription-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const bowClass = document.getElementById('add-sub-classe').value;
+    let notes = document.getElementById('add-sub-note').value || '';
+    
+    // Handle Tripla in notes for OL division
+    if (bowClass === 'OL') {
+        const triplaChecked = document.getElementById('add-sub-tripla').checked;
+        notes = manageTriplaInNotes(notes, triplaChecked);
+    }
+    
     const subscriptionData = {
         codice_gara: document.getElementById('add-sub-codice-gara').value,
         tessera_atleta: document.getElementById('add-sub-tessera').value,
         turno: parseInt(document.getElementById('add-sub-turno').value),
         categoria: document.getElementById('add-sub-categoria').value,
-        classe: document.getElementById('add-sub-classe').value,
+        classe: bowClass,
         stato: document.getElementById('add-sub-stato').value,
-        note: document.getElementById('add-sub-note').value || ''
+        note: notes
     };
     
     try {
@@ -1347,6 +1410,39 @@ function applyChangesToNotes(originalNotes, changes) {
     
     // Otherwise append to existing notes
     return (originalNotes || '').trim() + (originalNotes ? '\n\n' : '') + changeText;
+}
+
+// Toggle Tripla visibility based on bow class
+function toggleTriplaVisibility(modalType, bowClass) {
+    const container = document.getElementById(`${modalType}-tripla-container`);
+    if (!container) return;
+    
+    if (bowClass === 'OL') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        // Uncheck if hidden
+        document.getElementById(`${modalType}-sub-tripla`).checked = false;
+    }
+}
+
+// Manage "tripla" in notes
+function manageTriplaInNotes(notes, shouldHaveTripla) {
+    // Remove any existing "tripla" mentions (case-insensitive)
+    let cleanNotes = notes.replace(/\btripla\b/gi, '').trim();
+    // Clean up extra whitespace
+    cleanNotes = cleanNotes.replace(/\s+/g, ' ').trim();
+    
+    // Add "tripla" if checked
+    if (shouldHaveTripla) {
+        if (cleanNotes) {
+            return cleanNotes + ' tripla';
+        } else {
+            return 'tripla';
+        }
+    }
+    
+    return cleanNotes;
 }
 
 // Show competition invite modal
