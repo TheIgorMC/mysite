@@ -209,6 +209,95 @@
         </div>
     </div>
     
+    <!-- Add Subscription Modal -->
+    <div id="add-subscription-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                    </h3>
+                    <button onclick="closeAddSubscriptionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <form id="add-subscription-form" class="space-y-4">
+                    <input type="hidden" id="add-sub-codice-gara">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tessera Atleta</label>
+                        <input type="text" id="add-sub-tessera" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="Inserisci numero tessera">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turno</label>
+                            <input type="number" id="add-sub-turno" required min="1"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                   value="1">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label>
+                            <select id="add-sub-stato" required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="in attesa">In attesa</option>
+                                <option value="confermato" selected>Confermato</option>
+                                <option value="lista d'attesa">Lista d'attesa</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
+                            <input type="text" id="add-sub-categoria" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                   placeholder="es. SM, SF, RM, etc.">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Classe</label>
+                            <select id="add-sub-classe" required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="CO">CO - Compound</option>
+                                <option value="OL">OL - Olympic Recurve</option>
+                                <option value="AN">AN - Barebow</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note (opzionale)</label>
+                        <textarea id="add-sub-note" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Note aggiuntive..."></textarea>
+                    </div>
+                    
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-sm text-blue-800 dark:text-blue-300">
+                            <i class="fas fa-info-circle mr-2"></i>Questa iscrizione sarà aggiunta anche se le iscrizioni sono chiuse.
+                        </p>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeAddSubscriptionModal()"
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg">
+                            Annulla
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <!-- Competition Invite Modal -->
     <div id="invite-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -492,9 +581,15 @@ function renderSubscriptions() {
         competitionCard.innerHTML = `
             ${competitionInfo}
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> iscrizioni
-                </p>
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> iscrizioni
+                    </p>
+                    <button onclick="showAddSubscriptionModal('${codiceGara}')" 
+                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Aggiungi Iscrizione
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -1010,6 +1105,65 @@ document.getElementById('edit-subscription-form')?.addEventListener('submit', as
     } catch (error) {
         console.error('Error updating subscription:', error);
         showNotification('Errore durante l\'aggiornamento: ' + error.message, 'error');
+    }
+});
+
+// Add Subscription
+function showAddSubscriptionModal(codiceGara) {
+    document.getElementById('add-sub-codice-gara').value = codiceGara;
+    document.getElementById('add-subscription-form').reset();
+    
+    // Set default values
+    document.getElementById('add-sub-turno').value = '1';
+    document.getElementById('add-sub-stato').value = 'confermato';
+    document.getElementById('add-sub-classe').value = 'CO';
+    
+    document.getElementById('add-subscription-modal').classList.remove('hidden');
+    document.getElementById('add-subscription-modal').classList.add('flex');
+}
+
+function closeAddSubscriptionModal() {
+    document.getElementById('add-subscription-modal').classList.add('hidden');
+    document.getElementById('add-subscription-modal').classList.remove('flex');
+    document.getElementById('add-subscription-form').reset();
+}
+
+document.getElementById('add-subscription-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const subscriptionData = {
+        codice_gara: document.getElementById('add-sub-codice-gara').value,
+        tessera_atleta: document.getElementById('add-sub-tessera').value,
+        turno: parseInt(document.getElementById('add-sub-turno').value),
+        categoria: document.getElementById('add-sub-categoria').value,
+        classe: document.getElementById('add-sub-classe').value,
+        stato: document.getElementById('add-sub-stato').value,
+        note: document.getElementById('add-sub-note').value || ''
+    };
+    
+    try {
+        const response = await fetch('/archery/api/iscrizioni', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(subscriptionData)
+        });
+        
+        if (response.ok) {
+            const newSub = await response.json();
+            
+            // Add to local array
+            allSubscriptions.push(newSub);
+            
+            showNotification('Iscrizione aggiunta con successo', 'success');
+            closeAddSubscriptionModal();
+            renderSubscriptions();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add subscription');
+        }
+    } catch (error) {
+        console.error('Error adding subscription:', error);
+        showNotification('Errore durante l\'aggiunta: ' + error.message, 'error');
     }
 });
 
