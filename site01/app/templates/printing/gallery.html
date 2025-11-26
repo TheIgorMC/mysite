@@ -11,7 +11,7 @@
             {% for item in items %}
             <a href="{{ url_for('printing.item_detail', item_id=item.id) }}" 
                class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 block">
-                <img src="{{ url_for('static', filename='uploads/' + (item.main_image or '')) if item.main_image else url_for('static', filename='media/3dprinting.jpg') }}" 
+                <img src="{{ url_for('static', filename='uploads/gallery/' + (item.main_image or '')) if item.main_image else url_for('static', filename='media/3dprinting.jpg') }}" 
                      alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
                      class="w-full h-64 object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300">

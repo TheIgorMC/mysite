@@ -15,7 +15,7 @@
             <!-- Image -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                 {% if item.main_image %}
-                <img src="{{ url_for('static', filename='uploads/' + item.main_image) }}" 
+                <img src="{{ url_for('static', filename='uploads/gallery/' + item.main_image) }}" 
                      alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
                      class="w-full h-auto object-cover">
                 {% else %}

@@ -200,7 +200,7 @@ def add_gallery_item():
         ext = filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{uuid.uuid4().hex}.{ext}"
         
-        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
         os.makedirs(upload_folder, exist_ok=True)
         
         image.save(os.path.join(upload_folder, unique_filename))
@@ -295,7 +295,7 @@ def add_product():
             filename = secure_filename(file.filename)
             unique_filename = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{filename}"
             
-            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+            upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
             os.makedirs(upload_folder, exist_ok=True)
             
             file.save(os.path.join(upload_folder, unique_filename))

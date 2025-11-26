@@ -39,7 +39,7 @@
                 <!-- Product Image -->
                 <div class="relative h-72 bg-gray-800 overflow-hidden">
                     {% if product.main_image %}
-                    <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                    <img src="{{ url_for('static', filename='uploads/gallery/' + product.main_image) }}" 
                          alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
                          class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500">
                     {% else %}

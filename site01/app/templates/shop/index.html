@@ -55,7 +55,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <a href="{{ url_for('shop.product_detail', product_id=product.id) }}" class="block overflow-hidden">
                     <div class="relative h-48 bg-gray-200 dark:bg-gray-700">
-                        <img src="{{ url_for('static', filename='uploads/' + (product.main_image or 'placeholder.jpg')) }}" 
+                        <img src="{{ url_for('static', filename='uploads/gallery/' + (product.main_image or 'placeholder.jpg')) }}" 
                              alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
                              class="absolute inset-0 w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-300">
                     </div>
@@ -92,7 +92,7 @@
                                     data-product-id="{{ product.id }}"
                                     data-product-name="{{ product.name_it if session.get('language') == 'it' else product.name_en }}"
                                     data-product-price="{{ product.price }}"
-                                    data-product-image="/static/uploads/shop/{{ product.main_image }}"
+                                    data-product-image="/static/uploads/gallery/{{ product.main_image }}"
                                     data-product-desc="{{ (product.description_it if session.get('language') == 'it' else product.description_en)|truncate(100) }}"
                                     onclick="addToCartFromButton(this)"
                                     class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">

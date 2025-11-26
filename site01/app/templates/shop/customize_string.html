@@ -22,7 +22,7 @@
         <div class="mb-8">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-md mx-auto">
                 <div class="relative h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                    <img src="{{ url_for('static', filename='uploads/gallery/' + product.main_image) }}" 
                          alt="{{ product.name_it if session.get('language') == 'it' else product.name_en }}" 
                          class="absolute inset-0 w-full h-full object-contain p-2">
                 </div>

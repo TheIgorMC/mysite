@@ -109,7 +109,7 @@ def update_profile():
         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
         unique_filename = f"avatar_{current_user.id}_{uuid.uuid4().hex}.{ext}"
         
-        upload_folder = os.path.join(current_app.root_path, 'static', 'media')
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
         os.makedirs(upload_folder, exist_ok=True)
         
         # Delete old avatar if not default

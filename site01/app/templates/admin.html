@@ -131,7 +131,7 @@
                             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td class="py-3 px-4">
                                     <div class="flex items-center">
-                                        <img src="{{ url_for('static', filename='media/' + user.avatar) }}" 
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + user.avatar) }}" 
                                              alt="{{ user.username }}" 
                                              class="h-10 w-10 rounded-full object-cover mr-3">
                                         <span class="font-medium text-gray-900 dark:text-white">{{ user.username }}</span>
@@ -347,7 +347,7 @@
                     {% for item in gallery_items %}
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         {% if item.main_image %}
-                        <img src="{{ url_for('static', filename='uploads/' + item.main_image) }}" 
+                        <img src="{{ url_for('static', filename='uploads/gallery/' + item.main_image) }}" 
                              alt="{{ item.title_en }}" 
                              class="w-full h-48 object-cover">
                         {% else %}
@@ -596,7 +596,7 @@
                     {% for product in products %}
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         {% if product.main_image %}
-                        <img src="{{ url_for('static', filename='uploads/' + product.main_image) }}" 
+                        <img src="{{ url_for('static', filename='uploads/gallery/' + product.main_image) }}" 
                              alt="{{ product.name_en }}" 
                              class="w-full h-48 object-cover">
                         {% else %}

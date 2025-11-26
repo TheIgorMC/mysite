@@ -30,7 +30,7 @@
                 <!-- Image -->
                 <div class="relative h-64 bg-gray-800 overflow-hidden">
                     {% if item.main_image %}
-                    <img src="{{ url_for('static', filename='uploads/' + item.main_image) }}" 
+                    <img src="{{ url_for('static', filename='uploads/gallery/' + item.main_image) }}" 
                          alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     {% else %}
