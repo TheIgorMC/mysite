@@ -231,6 +231,18 @@
                                     </select>
                                 </div>
                                 
+                                <!-- Tripla Toggle (only for OL division) -->
+                                <div id="tripla-container" class="hidden mb-4">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" id="sub-tripla"
+                                               class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tripla (3-spot target)</span>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Disponibile solo per Olimpico (OL)</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                
                                 <div id="turn-selection-container" class="mb-4">
                                     <label for="turn" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Seleziona Turno
@@ -1660,6 +1672,8 @@ function populateAthleteDropdown(filteredAthletes = null) {
 function closeSubscriptionModal() {
     document.getElementById('subscription-modal').classList.add('hidden');
     document.getElementById('subscription-form').reset();
+    // Reset tripla visibility
+    toggleTriplaVisibility('');
 }
 
 async function submitSubscription() {
