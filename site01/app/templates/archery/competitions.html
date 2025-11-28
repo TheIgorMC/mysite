@@ -2928,6 +2928,20 @@ function closeInviteModal() {
     //     });
 }
 
+// Toggle Tripla visibility based on bow class (for subscription modal)
+function toggleTriplaVisibility(bowClass) {
+    const container = document.getElementById('tripla-container');
+    if (!container) return;
+    
+    if (bowClass === 'OL') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        // Uncheck if hidden
+        document.getElementById('sub-tripla').checked = false;
+    }
+}
+
 // Toggle Tripla visibility based on bow class (for user edit modal)
 function toggleUserTriplaVisibility(bowClass) {
     const container = document.getElementById('edit-user-tripla-container');
