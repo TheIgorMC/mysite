@@ -1317,12 +1317,17 @@ function renderCompetitions(competitions) {
             }
         });
         
-        // Info button - show competition invite (API backend to be implemented)
+        // Info button - show competition invite (hide if no invite available)
         const infoBtn = card.querySelector('.btn-info');
-        infoBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showCompetitionInfo(competition);
-        });
+        if (competitionStatus.status === 'attesa_invito') {
+            // Hide info button if competition has no invite
+            infoBtn.classList.add('hidden');
+        } else {
+            infoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCompetitionInfo(competition);
+            });
+        }
         
         grid.appendChild(card);
     });
@@ -1562,6 +1567,17 @@ function populateAthleteDropdown(filteredAthletes = null) {
     select.addEventListener('change', function(e) {
         const selectedOption = e.target.selectedOptions[0];
         if (selectedOption && selectedOption.value) {
+            // Add listener for bow type changes to show/hide Tripla
+            setTimeout(() => {
+                const bowTypeSelect = document.getElementById('bow-type');
+                if (bowTypeSelect) {
+                    bowTypeSelect.addEventListener('change', function() {
+                        toggleTriplaVisibility(this.value);
+                    });
+                    // Trigger initial check
+                    toggleTriplaVisibility(bowTypeSelect.value);
+                }
+            }, 100);
             console.log('Athlete selected:', { 
                 value: selectedOption.value, 
                 ageCategory: selectedOption.dataset.ageCategory, 
@@ -1636,7 +1652,13 @@ async function submitSubscription() {
     const tessera = document.getElementById('selected-athlete')?.value;
     const ageCategory = document.getElementById('age-category').value;
     const bowType = document.getElementById('bow-type').value;
-    const notes = document.getElementById('notes').value;
+    let notes = document.getElementById('notes').value;
+    
+    // Handle Tripla for OL division
+    if (bowType === 'OL') {
+        const triplaChecked = document.getElementById('sub-tripla').checked;
+        notes = manageTriplaInNotes(notes, triplaChecked);
+    }
     
     // Check if turn selection is visible (normal subscription) or hidden (express interest)
     const turnContainer = document.getElementById('turn-selection-container');
@@ -2254,14 +2276,14 @@ function toggleAthleteList(element) {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'TBA';
-    const date = new Date(dateStr);
+    // Parse as local date to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const locale = window.translations._lang === 'it' ? 'it-IT' : 'en-US';
     
     if (locale === 'it-IT') {
         // Italian format: 17-Ott-2025
-        const day = date.getDate();
         const monthShort = date.toLocaleDateString('it-IT', { month: 'short' });
-        const year = date.getFullYear();
         return `${day}-${monthShort.charAt(0).toUpperCase() + monthShort.slice(1)}-${year}`;
     }
     
@@ -2274,14 +2296,18 @@ function formatDate(dateStr) {
 
 function formatDateRange(startStr, endStr) {
     if (!startStr) return 'TBA';
-    const start = new Date(startStr);
-    const end = endStr ? new Date(endStr) : null;
+    // Parse as local dates to avoid timezone issues
+    const [startYear, startMonth, startDay] = startStr.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = endStr ? (() => {
+        const [y, m, d] = endStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    })() : null;
     
     const locale = window.translations._lang === 'it' ? 'it-IT' : 'en-US';
     
     if (locale === 'it-IT') {
         // Italian format: 17-Ott or 17-18 Ott or 17 Ott - 20 Nov
-        const startDay = start.getDate();
         const startMonthShort = start.toLocaleDateString('it-IT', { month: 'short' });
         const startMonth = startMonthShort.charAt(0).toUpperCase() + startMonthShort.slice(1);
         
