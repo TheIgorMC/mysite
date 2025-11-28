@@ -1543,6 +1543,8 @@ function populateAthleteDropdown(filteredAthletes = null) {
             if (bowTypeEl) {
                 bowTypeEl.value = athlete.classe;
                 console.log('Set bow-type to:', athlete.classe);
+                // Trigger Tripla visibility check
+                toggleTriplaVisibility(athlete.classe);
             }
         }
         return;
@@ -1615,6 +1617,8 @@ function populateAthleteDropdown(filteredAthletes = null) {
             if (selectedOption.dataset.bowType && bowTypeEl) {
                 bowTypeEl.value = selectedOption.dataset.bowType;
                 console.log('Set bow-type to:', selectedOption.dataset.bowType);
+                // Trigger Tripla visibility check
+                toggleTriplaVisibility(selectedOption.dataset.bowType);
             }
         } else {
             // Reset fields if no athlete selected
@@ -1634,8 +1638,20 @@ function populateAthleteDropdown(filteredAthletes = null) {
                 <option value="MF">MF - Master Femminile</option>
             `;
             document.getElementById('bow-type').value = '';
+            // Hide Tripla when no athlete selected
+            toggleTriplaVisibility('');
         }
     });
+    
+    // Add change listener to bow-type field for manual changes
+    setTimeout(() => {
+        const bowTypeEl = document.getElementById('bow-type');
+        if (bowTypeEl) {
+            bowTypeEl.addEventListener('change', function() {
+                toggleTriplaVisibility(this.value);
+            });
+        }
+    }, 100);
     
     container.innerHTML = '';
     container.appendChild(select);
