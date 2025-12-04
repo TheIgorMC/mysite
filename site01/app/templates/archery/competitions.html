@@ -1123,35 +1123,43 @@ function renderCompetitions(competitions) {
             athleteListContainer.innerHTML = unsubscribedInterests.map(interest => {
                 const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
                 const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+                
+                // Show convert button only if invite is published (canSubscribe = true)
+                const canConvert = competitionStatus.canSubscribe;
+                const convertBtn = canConvert ? 
+                    `<button onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event)" 
+                             class="ml-2 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
+                             title="Converti in iscrizione">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>` : '';
+                
                 return `
-                    <div class="text-xs text-yellow-800 dark:text-yellow-300 flex items-center justify-between">
+                    <div class="text-xs text-yellow-800 dark:text-yellow-300 flex items-center justify-between py-2">
                         <span>
                             <i class="fas fa-user mr-2"></i>${athleteName}
                             ${interest.categoria ? ` - ${interest.categoria}` : ''}
                             ${interest.classe ? ` - ${interest.classe}` : ''}
                         </span>
+                        <span class="flex items-center gap-1">
+                            <button onclick="editUserInterest(${interest.id}, '${competition.codice}', event)" 
+                                    class="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
+                                    title="Modifica">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${convertBtn}
+                            <button onclick="deleteSingleInterest(${interest.id}, '${competition.codice}', event)" 
+                                    class="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors" 
+                                    title="Elimina">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </span>
                     </div>
                 `;
             }).join('');
             
-            // Wire up delete button (pass only unsubscribed interests)
-            interestDeleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showDeleteInterestModal(unsubscribedInterests, competition);
-            });
-            
-            // Wire up edit button for interests
-            const interestEditBtn = card.querySelector('.btn-edit-interests');
-            if (interestEditBtn) {
-                interestEditBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Show selection if multiple interests
-                    if (unsubscribedInterests.length === 1) {
-                        editUserInterest(unsubscribedInterests[0].id, competition.codice);
-                    } else {
-                        showInterestSelectionForEdit(unsubscribedInterests, competition.codice);
-                    }
-                });
+            // Hide the global delete button since we now have per-row buttons
+            if (interestDeleteBtn) {
+                interestDeleteBtn.classList.add('hidden');
             }
         }
         
@@ -1225,13 +1233,25 @@ function renderCompetitions(competitions) {
                 const triplaIcon = hasTripla ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot target">3⊙</span>' : '';
                 
                 return `
-                    <div class="text-xs ${textColor} flex items-center justify-between">
+                    <div class="text-xs ${textColor} flex items-center justify-between py-2">
                         <span>
                             <i class="fas fa-user mr-2"></i>${athleteName}
                             ${sub.categoria ? ` - ${sub.categoria}` : ''}${triplaIcon}
                             ${sub.classe ? ` - ${sub.classe}` : ''}
                             ${sub.turno ? ` - Turno ${sub.turno}` : ''}
                             ${statusBadge}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <button onclick="editUserSubscription(${sub.id}, '${competition.codice}', event)" 
+                                    class="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
+                                    title="Modifica">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSingleSubscription(${sub.id}, '${competition.codice}', event)" 
+                                    class="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors" 
+                                    title="Elimina">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </span>
                     </div>
                 `;
@@ -1240,8 +1260,10 @@ function renderCompetitions(competitions) {
             // Allow subscribing additional athletes if:
             // 1. User has multiple authorized athletes
             // 2. Not all athletes are subscribed (active subscriptions < total athletes)
+            // 3. Competition subscriptions are still open (not past deadline)
             const canSubscribeMore = authorizedAthletes.length > 1 && 
-                                      subSummary.activeSubs.length < authorizedAthletes.length;
+                                      subSummary.activeSubs.length < authorizedAthletes.length &&
+                                      competitionStatus.canSubscribe;
             
             if (canSubscribeMore) {
                 subscribeBtn.disabled = false;
@@ -1252,24 +1274,9 @@ function renderCompetitions(competitions) {
                 subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
             
-            // Wire up delete button - show list of subscribed athletes to delete
-            unsubscribeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showDeleteSubscriptionModal(subSummary.subscriptions, competition);
-            });
-            
-            // Wire up edit button for subscriptions
-            const editSubscriptionsBtn = card.querySelector('.btn-edit-subscriptions');
-            if (editSubscriptionsBtn) {
-                editSubscriptionsBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Show selection if multiple subscriptions
-                    if (subSummary.activeSubs.length === 1) {
-                        editUserSubscription(subSummary.activeSubs[0].id, competition.codice);
-                    } else {
-                        showSubscriptionSelectionForEdit(subSummary.activeSubs, competition.codice);
-                    }
-                });
+            // Hide the global delete button since we now have per-row buttons
+            if (unsubscribeBtn) {
+                unsubscribeBtn.classList.add('hidden');
             }
         } else if (subSummary.allCancelled) {
             // All subscriptions cancelled - allow resubscription
@@ -2454,7 +2461,11 @@ function applyChangesToNotes(originalNotes, changes) {
 // Edit user subscription
 let editingSubscription = null;
 
-async function editUserSubscription(subscriptionId, codiceGara) {
+async function editUserSubscription(subscriptionId, codiceGara, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     // Find subscription
     const subs = userSubscriptions.get(codiceGara) || [];
     const sub = subs.find(s => s.id === subscriptionId);
@@ -2690,7 +2701,11 @@ function closeEditUserSubscriptionModal() {
 // Edit user interest
 let editingInterest = null;
 
-function editUserInterest(interestId, codiceGara) {
+function editUserInterest(interestId, codiceGara, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     // Find interest
     const interests = userInterests.get(codiceGara) || [];
     const interest = interests.find(i => i.id === interestId);
@@ -2783,6 +2798,192 @@ function closeEditUserInterestModal() {
     document.getElementById('edit-user-interest-modal').classList.add('hidden');
     document.getElementById('edit-user-interest-form').reset();
     editingInterest = null;
+}
+
+// Single subscription delete (per-row action)
+async function deleteSingleSubscription(subscriptionId, codiceGara, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    const subs = userSubscriptions.get(codiceGara) || [];
+    const sub = subs.find(s => s.id === subscriptionId);
+    if (!sub) return;
+    
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    if (!competition) return;
+    
+    // Check if subscription is confirmed
+    if (sub.stato === 'confermato') {
+        const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+        const athleteName = athlete ? athlete.display : sub.tessera_atleta;
+        const confirmMsg = `L'iscrizione di ${athleteName} è confermata. Vuoi richiedere la cancellazione?`;
+        
+        if (!confirm(confirmMsg)) return;
+        
+        try {
+            await requestCancellationInternal(subscriptionId);
+            showNotification('Richiesta di cancellazione inviata', 'success');
+            await loadInitialData();
+        } catch (error) {
+            console.error('Error requesting cancellation:', error);
+            showNotification('Errore: ' + error.message, 'error');
+        }
+        return;
+    }
+    
+    // For non-confirmed subscriptions, delete directly
+    const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+    const athleteName = athlete ? athlete.display : sub.tessera_atleta;
+    const confirmMsg = `Eliminare l'iscrizione di ${athleteName}?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    try {
+        await deleteSubscriptionInternal(subscriptionId);
+        showNotification('Iscrizione eliminata con successo', 'success');
+        await loadInitialData();
+    } catch (error) {
+        console.error('Error deleting subscription:', error);
+        showNotification('Errore: ' + error.message, 'error');
+    }
+}
+
+// Single interest delete (per-row action)
+async function deleteSingleInterest(interestId, codiceGara, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    const interests = userInterests.get(codiceGara) || [];
+    const interest = interests.find(i => i.id === interestId);
+    if (!interest) return;
+    
+    const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+    const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+    const confirmMsg = `Rimuovere l'interesse di ${athleteName}?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    try {
+        await deleteInterestInternal(interestId);
+        showNotification('Interesse rimosso con successo', 'success');
+        await loadInitialData();
+    } catch (error) {
+        console.error('Error deleting interest:', error);
+        showNotification('Errore: ' + error.message, 'error');
+    }
+}
+
+// Convert interest to subscription
+async function convertInterestToSubscription(interestId, codiceGara, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    const interests = userInterests.get(codiceGara) || [];
+    const interest = interests.find(i => i.id === interestId);
+    if (!interest) return;
+    
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    if (!competition) return;
+    
+    // Check if turns are available
+    if (!allTurni[codiceGara]) {
+        try {
+            const turnsResp = await fetch(`/archery/api/turni?codice_gara=${codiceGara}`);
+            if (turnsResp.ok) {
+                allTurni[codiceGara] = await turnsResp.json();
+            } else {
+                allTurni[codiceGara] = [];
+            }
+        } catch (error) {
+            console.error('Error loading turns:', error);
+            showNotification('Errore nel caricamento dei turni', 'error');
+            return;
+        }
+    }
+    
+    const turni = allTurni[codiceGara] || [];
+    if (turni.length === 0) {
+        showNotification('Nessun turno disponibile per questa gara', 'warning');
+        return;
+    }
+    
+    // Prompt user to select a turn
+    const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+    const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+    
+    let turnOptions = turni.map((t, idx) => {
+        const parts = [];
+        if (t.giorno) parts.push(t.giorno);
+        if (t.fase) parts.push(t.fase);
+        if (t.ora_ritrovo) {
+            let timeFormatted;
+            if (typeof t.ora_ritrovo === 'string') {
+                timeFormatted = t.ora_ritrovo.substring(0, 5);
+            } else if (typeof t.ora_ritrovo === 'number') {
+                const hours = Math.floor(t.ora_ritrovo / 3600);
+                const minutes = Math.floor((t.ora_ritrovo % 3600) / 60);
+                timeFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            } else {
+                timeFormatted = String(t.ora_ritrovo);
+            }
+            parts.push(timeFormatted);
+        }
+        const displayText = parts.length > 0 ? parts.join(' - ') : `Turno ${t.numero_turno || t.turno}`;
+        return `${idx + 1}. ${displayText}`;
+    }).join('\\n');
+    
+    const selectedIndex = prompt(
+        `Converti l'interesse di ${athleteName} in iscrizione.\\n\\nScegli il turno (inserisci il numero):\\n${turnOptions}`
+    );
+    
+    if (!selectedIndex) return;
+    
+    const turnIndex = parseInt(selectedIndex) - 1;
+    if (isNaN(turnIndex) || turnIndex < 0 || turnIndex >= turni.length) {
+        showNotification('Numero turno non valido', 'warning');
+        return;
+    }
+    
+    const selectedTurn = turni[turnIndex];
+    
+    try {
+        // Create subscription
+        const subscriptionData = {
+            codice_gara: codiceGara,
+            tessera_atleta: interest.tessera_atleta,
+            turno: selectedTurn.numero_turno || selectedTurn.turno,
+            categoria: interest.categoria,  // bow type
+            classe: interest.classe,        // age category
+            note: interest.note || '',
+            stato: 'richiesta_effettuata'
+        };
+        
+        const response = await fetch('/archery/api/iscrizioni', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(subscriptionData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Errore nella conversione');
+        }
+        
+        // Delete the interest
+        await deleteInterestInternal(interestId);
+        
+        showNotification('Interesse convertito in iscrizione con successo!', 'success');
+        await loadInitialData();
+    } catch (error) {
+        console.error('Error converting interest:', error);
+        showNotification('Errore nella conversione: ' + error.message, 'error');
+    }
 }
 
 // Show selection menu for multiple subscriptions/interests
