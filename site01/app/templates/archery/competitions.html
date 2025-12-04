@@ -2931,20 +2931,36 @@ async function convertInterestToSubscription(interestId, codiceGara, event) {
     const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
     const athleteName = athlete ? athlete.display : interest.tessera_atleta;
     
-    showTurnSelectionModal(turni, athleteName, async (selectedTurn) => {
-        await performInterestConversion(interestId, codiceGara, interest, selectedTurn);
+    // Check if OL division - need to ask about Tripla
+    const isOL = interest.categoria === 'OL';
+    
+    showTurnSelectionModal(turni, athleteName, isOL, async (selectedTurn, useTripla) => {
+        await performInterestConversion(interestId, codiceGara, interest, selectedTurn, useTripla);
     });
 }
 
 // Helper function to show turn selection modal
-function showTurnSelectionModal(turni, athleteName, onSelectCallback) {
+function showTurnSelectionModal(turni, athleteName, isOL, onSelectCallback) {
     const modal = document.getElementById('selection-modal');
     const modalTitle = document.getElementById('selection-modal-title');
     const selectionList = document.getElementById('selection-list');
     
     modalTitle.innerHTML = `<i class="fas fa-exchange-alt mr-2"></i>Seleziona turno per ${athleteName}`;
     
-    selectionList.innerHTML = turni.map(t => {
+    // Add Tripla toggle if OL division
+    const triplaToggleHtml = isOL ? `
+        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="convert-tripla-toggle" class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700">
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-bullseye mr-1 text-blue-600"></i>
+                    Tripla (3-spot target)
+                </span>
+            </label>
+        </div>
+    ` : '';
+    
+    selectionList.innerHTML = triplaToggleHtml + turni.map(t => {
         const parts = [];
         if (t.giorno) parts.push(t.giorno);
         if (t.fase) parts.push(t.fase);
@@ -2995,9 +3011,13 @@ function showTurnSelectionModal(turni, athleteName, onSelectCallback) {
                 );
                 
                 if (selectedTurn) {
+                    // Check if Tripla is selected (for OL athletes)
+                    const triplaToggle = document.getElementById('convert-tripla-toggle');
+                    const useTripla = triplaToggle ? triplaToggle.checked : false;
+                    
                     closeSelectionModal();
                     if (window._turnSelectionCallback) {
-                        window._turnSelectionCallback(selectedTurn);
+                        window._turnSelectionCallback(selectedTurn, useTripla);
                         window._turnSelectionCallback = null;
                         window._availableTurns = null;
                     }
@@ -3010,9 +3030,15 @@ function showTurnSelectionModal(turni, athleteName, onSelectCallback) {
 }
 
 // Helper function to perform the actual conversion
-async function performInterestConversion(interestId, codiceGara, interest, selectedTurn) {
+async function performInterestConversion(interestId, codiceGara, interest, selectedTurn, useTripla) {
     
     try {
+        // Prepare notes with Tripla if needed
+        let notes = interest.note || '';
+        if (useTripla && interest.categoria === 'OL') {
+            notes = manageTriplaInNotes(notes, true);
+        }
+        
         // Create subscription
         const subscriptionData = {
             codice_gara: codiceGara,
@@ -3020,7 +3046,7 @@ async function performInterestConversion(interestId, codiceGara, interest, selec
             turno: selectedTurn.numero_turno || selectedTurn.turno,
             categoria: interest.categoria,  // bow type
             classe: interest.classe,        // age category
-            note: interest.note || '',
+            note: notes,
             stato: 'richiesta_effettuata'
         };
         
