@@ -2927,11 +2927,24 @@ async function convertInterestToSubscription(interestId, codiceGara, event) {
         return;
     }
     
-    // Prompt user to select a turn
+    // Show modal to select a turn
     const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
     const athleteName = athlete ? athlete.display : interest.tessera_atleta;
     
-    let turnOptions = turni.map((t, idx) => {
+    showTurnSelectionModal(turni, athleteName, async (selectedTurn) => {
+        await performInterestConversion(interestId, codiceGara, interest, selectedTurn);
+    });
+}
+
+// Helper function to show turn selection modal
+function showTurnSelectionModal(turni, athleteName, onSelectCallback) {
+    const modal = document.getElementById('selection-modal');
+    const modalTitle = document.getElementById('selection-modal-title');
+    const selectionList = document.getElementById('selection-list');
+    
+    modalTitle.innerHTML = `<i class="fas fa-exchange-alt mr-2"></i>Seleziona turno per ${athleteName}`;
+    
+    selectionList.innerHTML = turni.map(t => {
         const parts = [];
         if (t.giorno) parts.push(t.giorno);
         if (t.fase) parts.push(t.fase);
@@ -2949,22 +2962,55 @@ async function convertInterestToSubscription(interestId, codiceGara, event) {
             parts.push(timeFormatted);
         }
         const displayText = parts.length > 0 ? parts.join(' - ') : `Turno ${t.numero_turno || t.turno}`;
-        return `${idx + 1}. ${displayText}`;
-    }).join('\\n');
+        const turnId = t.numero_turno || t.turno;
+        
+        return `
+            <button data-turn-id="${turnId}" class="turn-selection-btn w-full text-left p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">
+                            <i class="fas fa-clock mr-2 text-blue-600"></i>${displayText}
+                        </div>
+                        ${t.note ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${t.note}</div>` : ''}
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </button>
+        `;
+    }).join('');
     
-    const selectedIndex = prompt(
-        `Converti l'interesse di ${athleteName} in iscrizione.\\n\\nScegli il turno (inserisci il numero):\\n${turnOptions}`
-    );
+    // Store turns for later lookup and add click handlers
+    window._availableTurns = turni;
     
-    if (!selectedIndex) return;
+    // Store callback for later use
+    window._turnSelectionCallback = onSelectCallback;
     
-    const turnIndex = parseInt(selectedIndex) - 1;
-    if (isNaN(turnIndex) || turnIndex < 0 || turnIndex >= turni.length) {
-        showNotification('Numero turno non valido', 'warning');
-        return;
-    }
+    // Add click handlers to all turn buttons
+    setTimeout(() => {
+        document.querySelectorAll('.turn-selection-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const turnId = parseInt(this.dataset.turnId);
+                const selectedTurn = window._availableTurns.find(t => 
+                    (t.numero_turno || t.turno) === turnId
+                );
+                
+                if (selectedTurn) {
+                    closeSelectionModal();
+                    if (window._turnSelectionCallback) {
+                        window._turnSelectionCallback(selectedTurn);
+                        window._turnSelectionCallback = null;
+                        window._availableTurns = null;
+                    }
+                }
+            });
+        });
+    }, 100);
     
-    const selectedTurn = turni[turnIndex];
+    modal.classList.remove('hidden');
+}
+
+// Helper function to perform the actual conversion
+async function performInterestConversion(interestId, codiceGara, interest, selectedTurn) {
     
     try {
         // Create subscription
