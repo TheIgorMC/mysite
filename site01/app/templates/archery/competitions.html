@@ -1145,6 +1145,13 @@ function renderCompetitions(competitions) {
                         <i class="fas fa-exchange-alt"></i>
                     </button>` : '';
                 
+                const convertOption = canConvert ? `
+                    <a href="#" onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event); return false;" 
+                       class="block px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-exchange-alt mr-2"></i>Converti
+                    </a>
+                ` : '';
+                
                 return `
                     <div class="text-xs text-yellow-800 dark:text-yellow-300 flex items-center justify-between py-2">
                         <span>
@@ -1152,19 +1159,26 @@ function renderCompetitions(competitions) {
                             ${interest.categoria ? ` - ${interest.categoria}` : ''}
                             ${interest.classe ? ` - ${interest.classe}` : ''}
                         </span>
-                        <span class="flex items-center gap-1">
-                            <button onclick="editUserInterest(${interest.id}, '${competition.codice}', event)" 
-                                    class="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
-                                    title="Modifica">
-                                <i class="fas fa-edit"></i>
+                        <div class="relative inline-block text-left">
+                            <button onclick="toggleDropdown(event, 'int-${interest.id}')" 
+                                    class="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors" 
+                                    title="Azioni">
+                                <i class="fas fa-ellipsis-v"></i>
                             </button>
-                            ${convertBtn}
-                            <button onclick="deleteSingleInterest(${interest.id}, '${competition.codice}', event)" 
-                                    class="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors" 
-                                    title="Elimina">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </span>
+                            <div id="dropdown-int-${interest.id}" class="hidden absolute right-0 mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <a href="#" onclick="editUserInterest(${interest.id}, '${competition.codice}', event); return false;" 
+                                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-edit mr-2"></i>Modifica
+                                    </a>
+                                    ${convertOption}
+                                    <a href="#" onclick="deleteSingleInterest(${interest.id}, '${competition.codice}', event); return false;" 
+                                       class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-trash mr-2"></i>Elimina
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1253,18 +1267,25 @@ function renderCompetitions(competitions) {
                             ${sub.turno ? ` - Turno ${sub.turno}` : ''}
                             ${statusBadge}
                         </span>
-                        <span class="flex items-center gap-1">
-                            <button onclick="editUserSubscription(${sub.id}, '${competition.codice}', event)" 
-                                    class="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
-                                    title="Modifica">
-                                <i class="fas fa-edit"></i>
+                        <div class="relative inline-block text-left">
+                            <button onclick="toggleDropdown(event, 'sub-${sub.id}')" 
+                                    class="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors" 
+                                    title="Azioni">
+                                <i class="fas fa-ellipsis-v"></i>
                             </button>
-                            <button onclick="deleteSingleSubscription(${sub.id}, '${competition.codice}', event)" 
-                                    class="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors" 
-                                    title="Elimina">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </span>
+                            <div id="dropdown-sub-${sub.id}" class="hidden absolute right-0 mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <a href="#" onclick="editUserSubscription(${sub.id}, '${competition.codice}', event); return false;" 
+                                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-edit mr-2"></i>Modifica
+                                    </a>
+                                    <a href="#" onclick="deleteSingleSubscription(${sub.id}, '${competition.codice}', event); return false;" 
+                                       class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-trash mr-2"></i>Elimina
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -3230,6 +3251,34 @@ function closeInviteModal() {
     //         displayInviteModal(data.invite_url);
     //     });
 }
+
+// Toggle dropdown menu
+function toggleDropdown(event, dropdownId) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const dropdown = document.getElementById(`dropdown-${dropdownId}`);
+    if (!dropdown) return;
+    
+    // Close all other dropdowns
+    document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+        if (d.id !== `dropdown-${dropdownId}`) {
+            d.classList.add('hidden');
+        }
+    });
+    
+    // Toggle this dropdown
+    dropdown.classList.toggle('hidden');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[onclick*="toggleDropdown"]')) {
+        document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+            d.classList.add('hidden');
+        });
+    }
+});
 
 // Toggle Tripla visibility based on bow class (for subscription modal)
 function toggleTriplaVisibility(bowClass) {
