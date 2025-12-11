@@ -864,7 +864,7 @@ async function loadPersonalResults() {
     loadingDiv.classList.remove('hidden');
     
     try {
-        const response = await fetch(`/archery/api/athlete/${athleteCode}/results`);
+        const response = await fetch(`/api/athlete/${athleteCode}/results`);
         
         if (!response.ok) {
             throw new Error('Failed to load results');
@@ -917,7 +917,7 @@ async function loadRankings() {
         const rankings = await response.json();
         
         const select = document.getElementById('ranking-select');
-        select.innerHTML = '<option value="">Select Ranking</option>';
+        select.innerHTML = `<option value="">${t('archery.select_ranking')}</option>`;
         
         rankings.forEach(ranking => {
             const option = document.createElement('option');
