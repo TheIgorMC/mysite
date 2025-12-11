@@ -875,27 +875,28 @@ async function loadPersonalResults() {
         // Hide loading
         loadingDiv.classList.add('hidden');
         
-        if (!data.results || data.results.length === 0) {
+        // API returns array directly, not wrapped in object
+        if (!data || data.length === 0) {
             emptyDiv.classList.remove('hidden');
             return;
         }
         
         // Set athlete name
         document.getElementById('results-athlete-name').textContent = 
-            `${t('archery.results_for')}: ${data.results[0].atleta || athleteCode}`;
+            `${t('archery.results_for')}: ${data[0].athlete || athleteCode}`;
         
         // Populate table
         tableBody.innerHTML = '';
-        data.results.forEach(result => {
+        data.forEach(result => {
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
             row.innerHTML = `
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.codice_gara || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.nome_gara || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.data_gara || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.luogo_gara || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.punteggio || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.posizione || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_type || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.date || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.organizer_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.score || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.position || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
         });
