@@ -202,6 +202,28 @@ class OrionAPIClient:
         """Get full invite details including raw HTML text"""
         return self._make_request('GET', f'/api/inviti/{codice}/text')
     
+    def get_qualifiche(self):
+        """Get list of qualification periods (qualifiche) for rankings"""
+        return self._make_request('GET', '/api/qualifiche')
+    
+    def get_ranking_official(self, code, class_name, division):
+        """Get official FITARCO ranking data
+        
+        Args:
+            code: Qualification code from ARC_qualifiche (e.g., "RegionaleIndoor2026Veneto")
+            class_name: Exact class name (e.g., "Senior Maschile", "Junior Femminile")
+            division: Division/category (e.g., "Compound", "Arco Nudo") - supports partial match
+            
+        Returns:
+            List of ranking entries with position, athlete, scores, etc.
+        """
+        params = {
+            'code': code,
+            'class_name': class_name,
+            'division': division
+        }
+        return self._make_request('GET', '/api/ranking/official', params=params)
+    
     def get_subscriptions(self, tessera_atleta):
         """Get subscriptions (iscrizioni) for an athlete"""
         return self._make_request('GET', '/api/iscrizioni', params={'tessera_atleta': tessera_atleta})

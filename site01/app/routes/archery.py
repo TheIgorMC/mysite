@@ -1165,3 +1165,38 @@ def manage_interesse(interest_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/api/ranking')
+def get_rankings():
+    """Get list of available rankings (qualifiche)"""
+    try:
+        client = OrionAPIClient()
+        rankings = client.get_qualifiche()
+        return jsonify(rankings)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching rankings: {e}")
+        return jsonify({'error': 'Failed to fetch rankings', 'details': str(e)}), 500
+
+@bp.route('/api/ranking/official')
+def get_official_ranking():
+    """Get official FITARCO ranking data
+    
+    Required query parameters:
+        code: Qualification code from ARC_qualifiche
+        class_name: Exact class name (e.g., "Senior Maschile", "Junior Femminile")
+        division: Division/category (e.g., "Compound", "Arco Nudo")
+    """
+    try:
+        code = request.args.get('code')
+        class_name = request.args.get('class_name')
+        division = request.args.get('division')
+        
+        if not code or not class_name or not division:
+            return jsonify({'error': 'Missing required parameters: code, class_name, division'}), 400
+        
+        client = OrionAPIClient()
+        ranking_data = client.get_ranking_official(code, class_name, division)
+        return jsonify(ranking_data)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching official ranking: {e}")
+        return jsonify({'error': 'Failed to fetch official ranking', 'details': str(e)}), 500

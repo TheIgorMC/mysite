@@ -7,6 +7,29 @@
     <div class="container mx-auto px-4 max-w-7xl">
         <h1 class="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">{{ t('archery.analysis') }}</h1>
         
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px">
+                <button id="tab-stats" 
+                        onclick="switchTab('stats')"
+                        class="tab-button active px-6 py-3 text-sm font-medium border-b-2 border-primary text-primary">
+                    <i class="fas fa-chart-line mr-2"></i>{{ t('archery.stats_graphs') }}
+                </button>
+                <button id="tab-results" 
+                        onclick="switchTab('results')"
+                        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300">
+                    <i class="fas fa-trophy mr-2"></i>{{ t('archery.personal_results') }}
+                </button>
+                <button id="tab-rankings" 
+                        onclick="switchTab('rankings')"
+                        class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300">
+                    <i class="fas fa-list-ol mr-2"></i>{{ t('archery.rankings') }}
+                </button>
+            </nav>
+        </div>
+
+        <!-- Stats & Graphs Tab Content -->
+        <div id="stats-content" class="tab-content">
         <!-- Athlete Search and Selection -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
             <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{{ t('archery.athlete_search') }}</h2>
@@ -125,6 +148,171 @@
             <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{{ t('archery.statistics') }}</h2>
             <div id="statistics-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Statistics cards will be added dynamically -->
+            </div>
+        </div>
+        </div>
+
+        <!-- Personal Results Tab Content -->
+        <div id="results-content" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{{ t('archery.search_results') }}</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('archery.athlete_name') }}
+                        </label>
+                        <div class="flex">
+                            <input type="text" 
+                                   id="athlete-search-results" 
+                                   placeholder="{{ t('archery.search') }}" 
+                                   class="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <button id="search-btn-results" 
+                                    class="bg-primary text-white px-6 py-2 rounded-r-lg hover:bg-primary-dark transition">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div id="search-results-athlete" class="mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('archery.athlete_code') }}
+                        </label>
+                        <input type="text" 
+                               id="athlete-code-input" 
+                               placeholder="{{ t('archery.enter_code') }}" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button id="load-results-btn" 
+                            class="bg-accent text-white px-6 py-2 rounded-lg hover:bg-accent-dark transition font-medium">
+                        {{ t('archery.load_results') }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Table -->
+            <div id="results-table-container" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white" id="results-athlete-name"></h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.competition_code') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.competition_name') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.date') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.location') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.result') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.position') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loading/Empty States -->
+            <div id="results-loading" class="hidden text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
+            </div>
+
+            <div id="results-empty" class="text-center py-12">
+                <i class="fas fa-search text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">{{ t('archery.search_athlete_to_view') }}</p>
+            </div>
+        </div>
+
+        <!-- Rankings Tab Content -->
+        <div id="rankings-content" class="tab-content hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{{ t('archery.select_ranking') }}</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('archery.ranking_name') }}
+                        </label>
+                        <select id="ranking-select" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">{{ t('archery.select_ranking') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('archery.class') }}
+                        </label>
+                        <select id="ranking-class" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">{{ t('archery.select_class') }}</option>
+                            <option value="Senior Maschile">Senior Maschile</option>
+                            <option value="Senior Femminile">Senior Femminile</option>
+                            <option value="Junior Maschile">Junior Maschile</option>
+                            <option value="Junior Femminile">Junior Femminile</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ t('archery.division') }}
+                        </label>
+                        <select id="ranking-division" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">{{ t('archery.select_division') }}</option>
+                            <option value="Compound">Arco Compound</option>
+                            <option value="Olimpico">Arco Olimpico</option>
+                            <option value="Nudo">Arco Nudo</option>
+                            <option value="Longbow">Longbow</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button id="load-ranking-btn" 
+                            class="bg-accent text-white px-6 py-2 rounded-lg hover:bg-accent-dark transition font-medium">
+                        {{ t('archery.load_ranking') }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rankings Table -->
+            <div id="ranking-table-container" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white" id="ranking-title"></h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.rank') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.athlete') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.club') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.score_1') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.score_2') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.total') }}</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.qual_date') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loading/Empty States -->
+            <div id="ranking-loading" class="hidden text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
+            </div>
+
+            <div id="ranking-empty" class="text-center py-12">
+                <i class="fas fa-list-ol text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">{{ t('archery.select_ranking_to_view') }}</p>
             </div>
         </div>
     </div>

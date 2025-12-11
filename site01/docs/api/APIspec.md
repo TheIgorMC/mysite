@@ -332,6 +332,57 @@ Average rankings for a given type/region.
 
 ---
 
+#### `GET /api/ranking/official`
+
+Returns official FITARCO ranking calculated from the `v_ranking_indoor_regionale` database view.
+
+**Sorting Criteria:**
+1. Total Score (Descending)
+2. Time precedence (Qualification Date Ascending)
+
+**Required Query Parameters:**
+
+| Param        | Type   | Description                                                    |
+| ------------ | ------ | -------------------------------------------------------------- |
+| `code`       | string | Qualification code from `ARC_qualifiche` (e.g., "RegionaleIndoor2026Veneto") |
+| `class_name` | string | Exact class name (e.g., "Senior Maschile", "Junior Femminile") |
+| `division`   | string | Division/category (e.g., "Compound", "Arco Nudo") - supports partial match |
+
+**Response:**
+
+```json
+[
+  {
+    "posizione": 1,
+    "tessera": "012345",
+    "atleta": "Zorzi Alberto",
+    "societa": "Arcieri Treviso",
+    "punteggio1": 285,
+    "punteggio2": 283,
+    "totale": 568,
+    "data_qualificazione": "2025-11-15"
+  },
+  {
+    "posizione": 2,
+    "tessera": "067890",
+    "atleta": "Rossi Mario",
+    "societa": "Arcieri Marca",
+    "punteggio1": 282,
+    "punteggio2": 284,
+    "totale": 566,
+    "data_qualificazione": "2025-11-10"
+  }
+]
+```
+
+**Notes:**
+- Position is calculated using `RANK()` window function
+- Results are ordered by total score (descending), then by qualification date (ascending)
+- Division parameter supports partial matching with wildcards (e.g., "Compound" matches "Arco Compound")
+- Data is sourced from the `v_ranking_indoor_regionale` view
+
+---
+
 ### 🧾 Iscrizioni (Registrations)
 
 #### `GET /api/iscrizioni`

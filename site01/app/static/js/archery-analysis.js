@@ -2,13 +2,14 @@
 
 let selectedAthletes = [];
 let resultsChart = null;
+let currentTab = 'stats';
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load competition types and categories
     loadCompetitionTypes();
     loadCategories();
     
-    // Set up event listeners
+    // Set up event listeners for stats tab
     document.getElementById('search-btn').addEventListener('click', searchAthletes);
     document.getElementById('athlete-search').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -21,9 +22,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Category change listener
     document.getElementById('competition-category').addEventListener('change', onCategoryChange);
     
+    // Set up event listeners for results tab
+    document.getElementById('search-btn-results').addEventListener('click', searchAthletesForResults);
+    document.getElementById('athlete-search-results').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchAthletesForResults();
+        }
+    });
+    document.getElementById('load-results-btn').addEventListener('click', loadPersonalResults);
+    
+    // Set up event listeners for rankings tab
+    document.getElementById('load-ranking-btn').addEventListener('click', loadRankingData);
+    loadRankings(); // Load available rankings
+    
     // Initialize empty chart
     initializeChart();
 });
+
+// Tab switching
+function switchTab(tab) {
+    currentTab = tab;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'border-primary', 'text-primary');
+        btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    });
+    document.getElementById(`tab-${tab}`).classList.add('active', 'border-primary', 'text-primary');
+    document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`${tab}-content`).classList.remove('hidden');
+}
+
 
 async function loadCompetitionTypes() {
     try {
@@ -763,6 +797,221 @@ async function loadComparisonStatistics(athletes, competitionType, category, sta
         statsSection.classList.remove('hidden');
     } catch (error) {
         console.error('Error loading comparison statistics:', error);
+    }
+}
+
+// ===== PERSONAL RESULTS TAB FUNCTIONS =====
+
+let selectedAthleteForResults = null;
+
+async function searchAthletesForResults() {
+    const searchTerm = document.getElementById('athlete-search-results').value.trim();
+    const resultsDiv = document.getElementById('search-results-athlete');
+    
+    if (searchTerm.length < 2) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/archery/api/search_athlete?name=${encodeURIComponent(searchTerm)}`);
+        const athletes = await response.json();
+        
+        resultsDiv.innerHTML = '';
+        
+        if (athletes.length === 0) {
+            resultsDiv.innerHTML = '<div class="p-3 text-gray-500 dark:text-gray-400">No athletes found</div>';
+        } else {
+            athletes.forEach(athlete => {
+                const div = document.createElement('div');
+                div.className = 'p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-0';
+                div.textContent = `${athlete.name} (${athlete.id})`;
+                div.onclick = () => selectAthleteForResults(athlete.id, athlete.name);
+                resultsDiv.appendChild(div);
+            });
+        }
+        
+        resultsDiv.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error searching athletes:', error);
+        showNotification(t('messages.error_searching'), 'error');
+    }
+}
+
+function selectAthleteForResults(id, name) {
+    selectedAthleteForResults = { id, name };
+    document.getElementById('athlete-code-input').value = id;
+    document.getElementById('search-results-athlete').classList.add('hidden');
+    document.getElementById('athlete-search-results').value = name;
+}
+
+async function loadPersonalResults() {
+    const athleteCode = document.getElementById('athlete-code-input').value.trim();
+    
+    if (!athleteCode) {
+        showNotification(t('messages.enter_athlete_code'), 'warning');
+        return;
+    }
+    
+    const tableContainer = document.getElementById('results-table-container');
+    const loadingDiv = document.getElementById('results-loading');
+    const emptyDiv = document.getElementById('results-empty');
+    const tableBody = document.getElementById('results-table-body');
+    
+    // Show loading
+    tableContainer.classList.add('hidden');
+    emptyDiv.classList.add('hidden');
+    loadingDiv.classList.remove('hidden');
+    
+    try {
+        const response = await fetch(`/archery/api/athlete/${athleteCode}/results`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load results');
+        }
+        
+        const data = await response.json();
+        
+        // Hide loading
+        loadingDiv.classList.add('hidden');
+        
+        if (!data.results || data.results.length === 0) {
+            emptyDiv.classList.remove('hidden');
+            return;
+        }
+        
+        // Set athlete name
+        document.getElementById('results-athlete-name').textContent = 
+            `${t('archery.results_for')}: ${data.results[0].atleta || athleteCode}`;
+        
+        // Populate table
+        tableBody.innerHTML = '';
+        data.results.forEach(result => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+            row.innerHTML = `
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.codice_gara || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.nome_gara || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.data_gara || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.luogo_gara || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.punteggio || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.posizione || 'N/A'}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        tableContainer.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error loading personal results:', error);
+        loadingDiv.classList.add('hidden');
+        showNotification(t('messages.error_loading_results'), 'error');
+    }
+}
+
+// ===== RANKINGS TAB FUNCTIONS =====
+
+async function loadRankings() {
+    try {
+        const response = await fetch('/archery/api/ranking');
+        const rankings = await response.json();
+        
+        const select = document.getElementById('ranking-select');
+        select.innerHTML = '<option value="">Select Ranking</option>';
+        
+        rankings.forEach(ranking => {
+            const option = document.createElement('option');
+            option.value = ranking.codice;
+            option.textContent = `${ranking.descrizione} (${ranking.regione})`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading rankings:', error);
+        showNotification(t('messages.error_loading_rankings'), 'error');
+    }
+}
+
+async function loadRankingData() {
+    const rankingCode = document.getElementById('ranking-select').value;
+    const className = document.getElementById('ranking-class').value;
+    const division = document.getElementById('ranking-division').value;
+    
+    if (!rankingCode || !className || !division) {
+        showNotification(t('messages.select_all_ranking_fields'), 'warning');
+        return;
+    }
+    
+    const tableContainer = document.getElementById('ranking-table-container');
+    const loadingDiv = document.getElementById('ranking-loading');
+    const emptyDiv = document.getElementById('ranking-empty');
+    const tableBody = document.getElementById('ranking-table-body');
+    
+    // Show loading
+    tableContainer.classList.add('hidden');
+    emptyDiv.classList.add('hidden');
+    loadingDiv.classList.remove('hidden');
+    
+    try {
+        const params = new URLSearchParams({
+            code: rankingCode,
+            class_name: className,
+            division: division
+        });
+        
+        const response = await fetch(`/archery/api/ranking/official?${params}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load ranking data');
+        }
+        
+        const data = await response.json();
+        
+        // Hide loading
+        loadingDiv.classList.add('hidden');
+        
+        if (!data || data.length === 0) {
+            emptyDiv.classList.remove('hidden');
+            return;
+        }
+        
+        // Set ranking title
+        const rankingSelect = document.getElementById('ranking-select');
+        const rankingName = rankingSelect.options[rankingSelect.selectedIndex].text;
+        document.getElementById('ranking-title').textContent = 
+            `${rankingName} - ${className} - ${division}`;
+        
+        // Populate table
+        tableBody.innerHTML = '';
+        data.forEach(entry => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+            
+            // Highlight top 3
+            let rankClass = '';
+            if (entry.posizione === 1) rankClass = 'bg-yellow-100 dark:bg-yellow-900';
+            else if (entry.posizione === 2) rankClass = 'bg-gray-100 dark:bg-gray-700';
+            else if (entry.posizione === 3) rankClass = 'bg-orange-100 dark:bg-orange-900';
+            
+            row.className = `hover:bg-gray-50 dark:hover:bg-gray-700 ${rankClass}`;
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-bold">${entry.posizione}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.societa || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.punteggio1 || '-'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.punteggio2 || '-'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${entry.totale || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.data_qualificazione || 'N/A'}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        tableContainer.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error loading ranking data:', error);
+        loadingDiv.classList.add('hidden');
+        showNotification(t('messages.error_loading_ranking_data'), 'error');
     }
 }
 
