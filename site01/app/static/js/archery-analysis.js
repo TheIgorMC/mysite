@@ -923,13 +923,57 @@ async function loadRankings() {
         rankings.forEach(ranking => {
             const option = document.createElement('option');
             option.value = ranking.codice;
-            option.textContent = `${ranking.descrizione} (${ranking.regione})`;
+            option.textContent = `${ranking.descrizione}`;
+            option.dataset.description = ranking.descrizione; // Store description for later use
             select.appendChild(option);
         });
+        
+        // Add event listener to update class options based on selected ranking
+        select.addEventListener('change', updateClassOptions);
     } catch (error) {
         console.error('Error loading rankings:', error);
         showNotification(t('messages.error_loading_rankings'), 'error');
     }
+}
+
+function updateClassOptions() {
+    const rankingSelect = document.getElementById('ranking-select');
+    const classSelect = document.getElementById('ranking-class');
+    const selectedOption = rankingSelect.options[rankingSelect.selectedIndex];
+    const rankingDescription = selectedOption.dataset.description || '';
+    
+    // Check if ranking name contains "Italiano"
+    const isItaliano = rankingDescription.toLowerCase().includes('italiano');
+    
+    // Get all options
+    const allOptions = [
+        { value: '', text: t('archery.select_class') || 'Seleziona Classe' },
+        { value: 'Senior Maschile', text: 'Senior Maschile' },
+        { value: 'Senior Femminile', text: 'Senior Femminile' },
+        { value: 'Junior Maschile', text: 'Junior Maschile' },
+        { value: 'Junior Femminile', text: 'Junior Femminile' },
+        { value: 'Allievi Maschile', text: 'Allievi Maschile' },
+        { value: 'Allievi Femminile', text: 'Allievi Femminile' },
+        { value: 'Ragazzi Maschile', text: 'Ragazzi Maschile' },
+        { value: 'Ragazzi Femminile', text: 'Ragazzi Femminile' }
+    ];
+    
+    // Add Giovanissimi only if NOT Italiano
+    if (!isItaliano) {
+        allOptions.push(
+            { value: 'Giovanissimi Maschile', text: 'Giovanissimi Maschile' },
+            { value: 'Giovanissimi Femminile', text: 'Giovanissimi Femminile' }
+        );
+    }
+    
+    // Rebuild the select options
+    classSelect.innerHTML = '';
+    allOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        classSelect.appendChild(option);
+    });
 }
 
 async function loadRankingData() {
