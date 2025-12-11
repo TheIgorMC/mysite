@@ -864,7 +864,7 @@ async function loadPersonalResults() {
     loadingDiv.classList.remove('hidden');
     
     try {
-        const response = await fetch(`/api/athlete/${athleteCode}/results`);
+        const response = await fetch(`/archery/api/athlete/${athleteCode}/results`);
         
         if (!response.ok) {
             throw new Error('Failed to load results');
