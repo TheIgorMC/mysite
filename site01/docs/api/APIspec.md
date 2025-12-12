@@ -364,7 +364,7 @@ Returns official FITARCO ranking from the cached ranking table (`MAT_ranking_cac
     "punteggio3": null,
     "punteggio4": null,
     "totale": 568,
-    "media_punti": 284.0,
+    "data_qualificazione": "2025-11-15",
     "data_aggiornamento": "2025-12-10T15:30:00"
   },
   {
@@ -377,7 +377,7 @@ Returns official FITARCO ranking from the cached ranking table (`MAT_ranking_cac
     "punteggio3": null,
     "punteggio4": null,
     "totale": 566,
-    "media_punti": 283.0,
+    "data_qualificazione": "2025-11-10",
     "data_aggiornamento": "2025-12-10T15:30:00"
   }
 ]
@@ -386,8 +386,8 @@ Returns official FITARCO ranking from the cached ranking table (`MAT_ranking_cac
 **Notes:**
 - Position (`rank`) is the **official rank scraped from Fitarco website** - NOT recalculated
 - Supports up to 4 scores (useful for Outdoor competitions: `punteggio1`, `punteggio2`, `punteggio3`, `punteggio4`)
-- `media_punti` contains the average of all scores
-- `data_aggiornamento` shows when the cache was last updated
+- `data_qualificazione` shows the date when the qualification result was achieved
+- `data_aggiornamento` shows when the cache was last updated from Fitarco
 - Results are ordered by official rank first, then by total score
 - Division parameter supports partial matching with wildcards (e.g., "Compound" matches "Arco Compound")
 - Data comes from `MAT_ranking_cache` table which is periodically updated by scraping the official Fitarco rankings

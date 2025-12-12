@@ -914,11 +914,11 @@ async function loadPersonalResults() {
             
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${medal}${result.competition_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.position || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${medal}${result.position || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -997,10 +997,10 @@ function updateClassOptions() {
     // Get all options
     const allOptions = [
         { value: '', text: t('archery.select_class') || 'Seleziona Classe' },
-        { value: 'Senior Maschile', text: 'Senior Maschile' },
-        { value: 'Senior Femminile', text: 'Senior Femminile' },
-        { value: 'Junior Maschile', text: 'Junior Maschile' },
-        { value: 'Junior Femminile', text: 'Junior Femminile' },
+        { value: 'Seniores Maschile', text: 'Seniores Maschile' },
+        { value: 'Seniores Femminile', text: 'Seniores Femminile' },
+        { value: 'Juniores Maschile', text: 'Juniores Maschile' },
+        { value: 'Juniores Femminile', text: 'Juniores Femminile' },
         { value: 'Allievi Maschile', text: 'Allievi Maschile' },
         { value: 'Allievi Femminile', text: 'Allievi Femminile' },
         { value: 'Ragazzi Maschile', text: 'Ragazzi Maschile' },
