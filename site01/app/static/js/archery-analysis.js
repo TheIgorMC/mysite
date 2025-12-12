@@ -904,10 +904,17 @@ async function loadPersonalResults() {
                 isEven ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700'
             }`;
             const compType = result.competition_type || 'N/A';
-            const truncatedType = compType.length > 8 ? compType.substring(0, 8) + '...' : compType;
+            const truncatedType = compType.length > 12 ? compType.substring(0, 12) + '...' : compType;
+            
+            // Add medal emoji for podium positions
+            let medal = '';
+            if (result.position === 1) medal = '🥇 ';
+            else if (result.position === 2) medal = '🥈 ';
+            else if (result.position === 3) medal = '🥉 ';
+            
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${medal}${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
@@ -927,12 +934,12 @@ async function loadPersonalResults() {
             }`;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${result.competition_type || 'N/A'}</span>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">${formatDate(result.date)}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded whitespace-nowrap">${result.competition_type || 'N/A'}</span>
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDate(result.date)}</span>
                         </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${result.competition_name || 'N/A'}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight truncate">${result.competition_name || 'N/A'}</div>
                     </div>
                     <div class="flex flex-col items-end ml-3">
                         <div class="text-lg font-bold text-primary dark:text-primary-light">${result.score || 'N/A'}</div>
