@@ -901,7 +901,7 @@ async function loadPersonalResults() {
             const row = document.createElement('tr');
             const isEven = index % 2 === 0;
             row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${
-                isEven ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+                isEven ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700'
             }`;
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs">${result.competition_type || 'N/A'}</td>
@@ -921,7 +921,7 @@ async function loadPersonalResults() {
             const card = document.createElement('div');
             const isEven = index % 2 === 0;
             card.className = `p-4 rounded-lg border ${
-                isEven ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-50 dark:bg-gray-750 border-gray-300 dark:border-gray-600'
+                isEven ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
             }`;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
