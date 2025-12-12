@@ -885,20 +885,60 @@ async function loadPersonalResults() {
         document.getElementById('results-athlete-name').textContent = 
             `${t('archery.results_for')}: ${data[0].athlete || athleteCode}`;
         
-        // Populate table
+        // Helper function to format date as DD-MM-YYYY
+        const formatDate = (dateStr) => {
+            if (!dateStr || dateStr === 'N/A') return 'N/A';
+            const date = new Date(dateStr);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+        
+        // Populate desktop table
         tableBody.innerHTML = '';
-        data.forEach(result => {
+        data.forEach((result, index) => {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+            const isEven = index % 2 === 0;
+            row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                isEven ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+            }`;
             row.innerHTML = `
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_type || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-xs">${result.competition_type || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.date || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${result.organizer_name || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.score || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${result.position || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.position || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
+        });
+        
+        // Populate mobile cards
+        const mobileContainer = document.getElementById('results-mobile-container');
+        mobileContainer.innerHTML = '';
+        data.forEach((result, index) => {
+            const card = document.createElement('div');
+            const isEven = index % 2 === 0;
+            card.className = `p-4 rounded-lg border ${
+                isEven ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-50 dark:bg-gray-750 border-gray-300 dark:border-gray-600'
+            }`;
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">${result.competition_type || 'N/A'}</span>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">${formatDate(result.date)}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${result.competition_name || 'N/A'}</div>
+                    </div>
+                    <div class="flex flex-col items-end ml-3">
+                        <div class="text-lg font-bold text-primary dark:text-primary-light">${result.score || 'N/A'}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Pos. ${result.position || 'N/A'}</div>
+                    </div>
+                </div>
+            `;
+            mobileContainer.appendChild(card);
         });
         
         tableContainer.classList.remove('hidden');

@@ -198,21 +198,27 @@
             <div id="results-table-container" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white" id="results-athlete-name"></h3>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <!-- Desktop Table -->
+                    <table class="hidden md:table w-full text-left">
                         <thead class="bg-gray-100 dark:bg-gray-700">
                             <tr>
-                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.competition_code') }}</th>
+                                <th class="px-3 py-3 text-gray-700 dark:text-gray-300 w-24">Tipo</th>
                                 <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.competition_name') }}</th>
-                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.date') }}</th>
+                                <th class="px-3 py-3 text-gray-700 dark:text-gray-300 w-28">{{ t('archery.date') }}</th>
                                 <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.location') }}</th>
-                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.result') }}</th>
-                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ t('archery.position') }}</th>
+                                <th class="px-3 py-3 text-gray-700 dark:text-gray-300 text-center w-20">{{ t('archery.result') }}</th>
+                                <th class="px-3 py-3 text-gray-700 dark:text-gray-300 text-center w-16">Pos.</th>
                             </tr>
                         </thead>
                         <tbody id="results-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
                             <!-- Will be populated dynamically -->
                         </tbody>
                     </table>
+                    
+                    <!-- Mobile Cards -->
+                    <div id="results-mobile-container" class="md:hidden space-y-3">
+                        <!-- Will be populated dynamically -->
+                    </div>
                 </div>
             </div>
 
