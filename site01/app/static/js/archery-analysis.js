@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', function() {
             searchAthletesForResults();
         }
     });
+    document.getElementById('athlete-code-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            loadPersonalResults();
+        }
+    });
     document.getElementById('load-results-btn').addEventListener('click', loadPersonalResults);
     
     // Set up event listeners for rankings tab
@@ -843,6 +848,8 @@ function selectAthleteForResults(id, name) {
     document.getElementById('athlete-code-input').value = id;
     document.getElementById('search-results-athlete').classList.add('hidden');
     document.getElementById('athlete-search-results').value = name;
+    // Auto-load results when athlete is selected
+    loadPersonalResults();
 }
 
 async function loadPersonalResults() {
@@ -908,17 +915,18 @@ async function loadPersonalResults() {
             
             // Add medal emoji for podium positions
             let medal = '';
-            if (result.position === 1) medal = '🥇 ';
-            else if (result.position === 2) medal = '🥈 ';
-            else if (result.position === 3) medal = '🥉 ';
+            if (result.position === 1) medal = '🥇';
+            else if (result.position === 2) medal = '🥈';
+            else if (result.position === 3) medal = '🥉';
             
             row.innerHTML = `
+                <td class="px-1 py-3 text-center" style="font-size: 1.1rem;">${medal}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${medal}${result.position || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.position || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -932,14 +940,16 @@ async function loadPersonalResults() {
             card.className = `p-4 rounded-lg border ${
                 isEven ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
             }`;
+            const mobileCompType = result.competition_type || 'N/A';
+            const mobileTruncatedType = mobileCompType.length > 10 ? mobileCompType.substring(0, 8) + '...' : mobileCompType;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded whitespace-nowrap">${result.competition_type || 'N/A'}</span>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded whitespace-nowrap" title="${mobileCompType}">${mobileTruncatedType}</span>
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDate(result.date)}</span>
                         </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight truncate">${result.competition_name || 'N/A'}</div>
+                        <div class="text-base text-gray-900 dark:text-white font-medium leading-tight truncate">${result.competition_name || 'N/A'}</div>
                     </div>
                     <div class="flex flex-col items-end ml-3">
                         <div class="text-lg font-bold text-primary dark:text-primary-light">${result.score || 'N/A'}</div>
@@ -1092,9 +1102,9 @@ async function loadRankingData() {
             
             // Highlight top 3
             let rankClass = '';
-            if (entry.rank === 1) rankClass = 'bg-yellow-100 dark:bg-yellow-900';
-            else if (entry.rank === 2) rankClass = 'bg-gray-100 dark:bg-gray-700';
-            else if (entry.rank === 3) rankClass = 'bg-orange-100 dark:bg-orange-900';
+            if (entry.posizione === 1) rankClass = 'bg-yellow-100 dark:bg-yellow-900';
+            else if (entry.posizione === 2) rankClass = 'bg-gray-100 dark:bg-gray-700';
+            else if (entry.posizione === 3) rankClass = 'bg-orange-100 dark:bg-orange-900';
             else {
                 rankClass = isEven ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700';
             }
@@ -1102,13 +1112,12 @@ async function loadRankingData() {
             row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${rankClass}`;
             
             row.innerHTML = `
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${entry.rank || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${entry.posizione || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${entry.societa || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio1 || '-'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio2 || '-'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center">${entry.totale || 'N/A'}</td>
-                <td class="px-3 py-3 text-gray-900 dark:text-white text-sm whitespace-nowrap">${formatDate(entry.data_qualificazione)}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -1122,9 +1131,9 @@ async function loadRankingData() {
             
             // Special styling for top 3
             let cardClass = '';
-            if (entry.rank === 1) cardClass = 'bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700';
-            else if (entry.rank === 2) cardClass = 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
-            else if (entry.rank === 3) cardClass = 'bg-orange-50 dark:bg-orange-900 border-orange-300 dark:border-orange-700';
+            if (entry.posizione === 1) cardClass = 'bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700';
+            else if (entry.posizione === 2) cardClass = 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+            else if (entry.posizione === 3) cardClass = 'bg-orange-50 dark:bg-orange-900 border-orange-300 dark:border-orange-700';
             else {
                 cardClass = isEven ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
             }
@@ -1134,7 +1143,7 @@ async function loadRankingData() {
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-lg font-bold text-primary dark:text-primary-light">#${entry.rank || 'N/A'}</span>
+                            <span class="text-lg font-bold text-primary dark:text-primary-light">#${entry.posizione || 'N/A'}</span>
                             <span class="text-base font-semibold text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</span>
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${entry.societa || 'N/A'}</div>
@@ -1144,7 +1153,6 @@ async function loadRankingData() {
                         <div class="text-xs text-gray-600 dark:text-gray-400">${entry.punteggio1 || '-'} + ${entry.punteggio2 || '-'}</div>
                     </div>
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatDate(entry.data_qualificazione)}</div>
             `;
             mobileContainer.appendChild(card);
         });
