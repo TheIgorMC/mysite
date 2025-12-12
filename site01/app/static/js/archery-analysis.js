@@ -920,13 +920,13 @@ async function loadPersonalResults() {
             else if (result.position === 3) medal = '🥉';
             
             row.innerHTML = `
-                <td class="px-1 py-3 text-center" style="font-size: 1.1rem;">${medal}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.position || 'N/A'}</td>
+                <td class="px-1 py-3 text-center" style="font-size: 1.1rem;">${medal}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -941,7 +941,7 @@ async function loadPersonalResults() {
                 isEven ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
             }`;
             const mobileCompType = result.competition_type || 'N/A';
-            const mobileTruncatedType = mobileCompType.length > 10 ? mobileCompType.substring(0, 8) + '...' : mobileCompType;
+            const mobileTruncatedType = mobileCompType.length > 15 ? mobileCompType.substring(0, 15) + '...' : mobileCompType;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1 min-w-0">
@@ -1069,6 +1069,11 @@ async function loadRankingData() {
         }
         
         const data = await response.json();
+        
+        console.log('Ranking data received:', data);
+        if (data && data.length > 0) {
+            console.log('First entry:', data[0]);
+        }
         
         // Hide loading
         loadingDiv.classList.add('hidden');
