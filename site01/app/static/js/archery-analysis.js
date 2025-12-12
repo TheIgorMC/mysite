@@ -903,8 +903,10 @@ async function loadPersonalResults() {
             row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${
                 isEven ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700'
             }`;
+            const compType = result.competition_type || 'N/A';
+            const truncatedType = compType.length > 8 ? compType.substring(0, 8) + '...' : compType;
             row.innerHTML = `
-                <td class="px-3 py-3 text-gray-900 dark:text-white text-xs">${result.competition_type || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
@@ -1065,30 +1067,79 @@ async function loadRankingData() {
         document.getElementById('ranking-title').textContent = 
             `${rankingName} - ${className} - ${division}`;
         
-        // Populate table
+        // Helper function to format date as DD-MM-YYYY
+        const formatDate = (dateStr) => {
+            if (!dateStr || dateStr === 'N/A') return 'N/A';
+            const date = new Date(dateStr);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+        
+        // Populate desktop table
         tableBody.innerHTML = '';
-        data.forEach(entry => {
+        data.forEach((entry, index) => {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+            const isEven = index % 2 === 0;
             
             // Highlight top 3
             let rankClass = '';
-            if (entry.posizione === 1) rankClass = 'bg-yellow-100 dark:bg-yellow-900';
-            else if (entry.posizione === 2) rankClass = 'bg-gray-100 dark:bg-gray-700';
-            else if (entry.posizione === 3) rankClass = 'bg-orange-100 dark:bg-orange-900';
+            if (entry.rank === 1) rankClass = 'bg-yellow-100 dark:bg-yellow-900';
+            else if (entry.rank === 2) rankClass = 'bg-gray-100 dark:bg-gray-700';
+            else if (entry.rank === 3) rankClass = 'bg-orange-100 dark:bg-orange-900';
+            else {
+                rankClass = isEven ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-700';
+            }
             
-            row.className = `hover:bg-gray-50 dark:hover:bg-gray-700 ${rankClass}`;
+            row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${rankClass}`;
             
             row.innerHTML = `
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-bold">${entry.posizione}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${entry.rank || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.societa || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.punteggio1 || '-'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.punteggio2 || '-'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white font-semibold">${entry.totale || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.data_qualificazione || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${entry.societa || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio1 || '-'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio2 || '-'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center">${entry.totale || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-sm whitespace-nowrap">${formatDate(entry.data_qualificazione)}</td>
             `;
             tableBody.appendChild(row);
+        });
+        
+        // Populate mobile cards
+        const mobileContainer = document.getElementById('ranking-mobile-container');
+        mobileContainer.innerHTML = '';
+        data.forEach((entry, index) => {
+            const card = document.createElement('div');
+            const isEven = index % 2 === 0;
+            
+            // Special styling for top 3
+            let cardClass = '';
+            if (entry.rank === 1) cardClass = 'bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700';
+            else if (entry.rank === 2) cardClass = 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+            else if (entry.rank === 3) cardClass = 'bg-orange-50 dark:bg-orange-900 border-orange-300 dark:border-orange-700';
+            else {
+                cardClass = isEven ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+            }
+            
+            card.className = `p-4 rounded-lg border ${cardClass}`;
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-lg font-bold text-primary dark:text-primary-light">#${entry.rank || 'N/A'}</span>
+                            <span class="text-base font-semibold text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${entry.societa || 'N/A'}</div>
+                    </div>
+                    <div class="flex flex-col items-end ml-3">
+                        <div class="text-xl font-bold text-primary dark:text-primary-light">${entry.totale || 'N/A'}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">${entry.punteggio1 || '-'} + ${entry.punteggio2 || '-'}</div>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatDate(entry.data_qualificazione)}</div>
+            `;
+            mobileContainer.appendChild(card);
         });
         
         tableContainer.classList.remove('hidden');

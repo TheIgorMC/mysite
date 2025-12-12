@@ -334,11 +334,13 @@ Average rankings for a given type/region.
 
 #### `GET /api/ranking/official`
 
-Returns official FITARCO ranking calculated from the `v_ranking_indoor_regionale` database view.
+Returns official FITARCO ranking from the cached ranking table (`MAT_ranking_cache`).
+
+**Data Source:** `MAT_ranking_cache` table - contains scraped official rankings from the Fitarco website
 
 **Sorting Criteria:**
-1. Total Score (Descending)
-2. Time precedence (Qualification Date Ascending)
+1. Official Rank (Ascending) - as scraped from Fitarco
+2. Total Score (Descending) - as tiebreaker
 
 **Required Query Parameters:**
 
@@ -359,8 +361,11 @@ Returns official FITARCO ranking calculated from the `v_ranking_indoor_regionale
     "societa": "Arcieri Treviso",
     "punteggio1": 285,
     "punteggio2": 283,
+    "punteggio3": null,
+    "punteggio4": null,
     "totale": 568,
-    "data_qualificazione": "2025-11-15"
+    "media_punti": 284.0,
+    "data_aggiornamento": "2025-12-10T15:30:00"
   },
   {
     "posizione": 2,
@@ -369,17 +374,23 @@ Returns official FITARCO ranking calculated from the `v_ranking_indoor_regionale
     "societa": "Arcieri Marca",
     "punteggio1": 282,
     "punteggio2": 284,
+    "punteggio3": null,
+    "punteggio4": null,
     "totale": 566,
-    "data_qualificazione": "2025-11-10"
+    "media_punti": 283.0,
+    "data_aggiornamento": "2025-12-10T15:30:00"
   }
 ]
 ```
 
 **Notes:**
-- Position is calculated using `RANK()` window function
-- Results are ordered by total score (descending), then by qualification date (ascending)
+- Position (`rank`) is the **official rank scraped from Fitarco website** - NOT recalculated
+- Supports up to 4 scores (useful for Outdoor competitions: `punteggio1`, `punteggio2`, `punteggio3`, `punteggio4`)
+- `media_punti` contains the average of all scores
+- `data_aggiornamento` shows when the cache was last updated
+- Results are ordered by official rank first, then by total score
 - Division parameter supports partial matching with wildcards (e.g., "Compound" matches "Arco Compound")
-- Data is sourced from the `v_ranking_indoor_regionale` view
+- Data comes from `MAT_ranking_cache` table which is periodically updated by scraping the official Fitarco rankings
 
 ---
 
