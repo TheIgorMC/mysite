@@ -479,17 +479,30 @@ function renderSubscriptions() {
     
     loading.classList.add('hidden');
     
-    // All subscriptions are actual subscriptions (no turno=0 hack anymore)
-    const subscriptions = allSubscriptions.filter(sub => sub.stato !== 'cancellato');
+    // Filter out subscriptions for past competitions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (subscriptions.length === 0) {
+    const activeSubscriptions = allSubscriptions.filter(sub => {
+        if (sub.stato === 'cancellato') return false;
+        
+        const competition = allCompetitions[sub.codice_gara];
+        if (!competition) return true; // Show if competition data not available
+        
+        const endDate = new Date(competition.data_fine || competition.data_inizio);
+        endDate.setHours(23, 59, 59, 999);
+        
+        return endDate >= today; // Show only current and future competitions
+    });
+    
+    if (activeSubscriptions.length === 0) {
         empty.classList.remove('hidden');
         return;
     }
     
     // Group by competition
     const byCompetition = {};
-    subscriptions.forEach(sub => {
+    activeSubscriptions.forEach(sub => {
         if (!byCompetition[sub.codice_gara]) {
             byCompetition[sub.codice_gara] = [];
         }
@@ -656,17 +669,30 @@ function renderInterest() {
     
     loading.classList.add('hidden');
     
-    // Use the separate interests array (from ARC_interesse table)
-    const interestExpressions = allInterests.filter(int => int.stato === 'attivo');
+    // Filter out interests for past competitions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (interestExpressions.length === 0) {
+    const activeInterests = allInterests.filter(int => {
+        if (int.stato !== 'attivo') return false;
+        
+        const competition = allCompetitions[int.codice_gara];
+        if (!competition) return true; // Show if competition data not available
+        
+        const endDate = new Date(competition.data_fine || competition.data_inizio);
+        endDate.setHours(23, 59, 59, 999);
+        
+        return endDate >= today; // Show only current and future competitions
+    });
+    
+    if (activeInterests.length === 0) {
         empty.classList.remove('hidden');
         return;
     }
     
     // Group by competition
     const byCompetition = {};
-    interestExpressions.forEach(sub => {
+    activeInterests.forEach(sub => {
         if (!byCompetition[sub.codice_gara]) {
             byCompetition[sub.codice_gara] = [];
         }
