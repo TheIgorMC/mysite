@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from app import db
 from app.models import AuthorizedAthlete, User
+from app.api import OrionAPIClient
 from datetime import datetime
 import requests
 
@@ -459,4 +460,23 @@ def update_product(product_id):
     
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/athlete/<int:tessera>/rankings', methods=['GET'])
+def get_athlete_rankings(tessera):
+    """
+    Get all ranking positions for a specific athlete from the official ranking cache.
+    Returns rankings ordered by most recent update first.
+    """
+    try:
+        client = OrionAPIClient()
+        rankings = client._make_request('GET', f'/api/athlete/{tessera}/rankings')
+        
+        if rankings is None:
+            return jsonify([])
+        
+        return jsonify(rankings)
+    
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
