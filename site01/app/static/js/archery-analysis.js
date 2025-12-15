@@ -4,6 +4,53 @@ let selectedAthletes = [];
 let resultsChart = null;
 let currentTab = 'stats';
 
+// Abbreviation maps
+const classeAbbreviations = {
+    'Senior Maschile': 'SM',
+    'Senior Femminile': 'SF',
+    'Master Maschile': 'MM',
+    'Master Femminile': 'MF',
+    'Junior Maschile': 'JM',
+    'Junior Femminile': 'JF',
+    'Allievi Maschile': 'AM',
+    'Allievi Femminile': 'AF',
+    'Ragazzi Maschile': 'RM',
+    'Ragazzi Femminile': 'RF',
+    'Giovanissimi Maschile': 'GM',
+    'Giovanissimi Femminile': 'GF'
+};
+
+const divisionAbbreviations = {
+    'Arco Olimpico': 'OL',
+    'Arco Compound': 'CO',
+    'Arco Nudo': 'AN'
+};
+
+const rankingNames = {
+    'RegionaleIndoor': 'Regionale Indoor',
+    'RegionaleOutdoor': 'Regionale Outdoor',
+    'NazionaleIndoor': 'Nazionale Indoor',
+    'NazionaleOutdoor': 'Nazionale Outdoor'
+};
+
+// Helper to parse ranking code into readable name
+function parseRankingName(qualificaCode) {
+    if (!qualificaCode) return 'N/A';
+    
+    // Extract type and region/year from code like "RegionaleIndoor2026Veneto"
+    const match = qualificaCode.match(/(Regionale|Nazionale)(Indoor|Outdoor)(\d{4})(\w+)?/);
+    if (match) {
+        const [, scope, season, year, region] = match;
+        const baseName = rankingNames[`${scope}${season}`] || `${scope} ${season}`;
+        if (region) {
+            return `${baseName} ${year} - ${region}`;
+        }
+        return `${baseName} ${year}`;
+    }
+    
+    return qualificaCode;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Load competition types and categories
     loadCompetitionTypes();
@@ -919,11 +966,17 @@ async function loadPersonalResults() {
             else if (result.position === 2) medal = '🥈';
             else if (result.position === 3) medal = '🥉';
             
+            // Abbreviate class and division
+            const classeAbbr = classeAbbreviations[result.class_name] || result.class_name || 'N/A';
+            const divAbbr = divisionAbbreviations[result.division] || result.division || 'N/A';
+            
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-xs" title="${compType}">${truncatedType}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${result.competition_name || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white whitespace-nowrap">${formatDate(result.date)}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${result.organizer_name || 'N/A'}</td>
+                <td class="px-2 py-3 text-gray-900 dark:text-white text-xs text-center" title="${result.class_name || ''}">${classeAbbr}</td>
+                <td class="px-2 py-3 text-gray-900 dark:text-white text-xs text-center" title="${result.division || ''}">${divAbbr}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.score || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-semibold text-center">${result.position || 'N/A'}</td>
                 <td class="px-1 py-3 text-center" style="font-size: 1.1rem;">${medal}</td>
@@ -942,6 +995,10 @@ async function loadPersonalResults() {
             }`;
             const mobileCompType = result.competition_type || 'N/A';
             const mobileTruncatedType = mobileCompType.length > 15 ? mobileCompType.substring(0, 15) + '...' : mobileCompType;
+            
+            const classeAbbrMobile = classeAbbreviations[result.class_name] || result.class_name || 'N/A';
+            const divAbbrMobile = divisionAbbreviations[result.division] || result.division || 'N/A';
+            
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1 min-w-0">
@@ -950,6 +1007,7 @@ async function loadPersonalResults() {
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDate(result.date)}</span>
                         </div>
                         <div class="text-base text-gray-900 dark:text-white font-medium leading-tight truncate">${result.competition_name || 'N/A'}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">${classeAbbrMobile} - ${divAbbrMobile}</div>
                     </div>
                     <div class="flex flex-col items-end ml-3">
                         <div class="text-lg font-bold text-primary dark:text-primary-light">${result.score || 'N/A'}</div>
@@ -1002,8 +1060,10 @@ async function loadCurrentRankings(athleteCode) {
                 isEven ? 'bg-blue-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700'
             }`;
             
+            const rankingName = parseRankingName(ranking.qualifica);
+            
             row.innerHTML = `
-                <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.qualifica || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${rankingName}</td>
                 <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.classe_gara || 'N/A'}</td>
                 <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.categoria || 'N/A'}</td>
                 <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${ranking.posizione || 'N/A'}</td>
@@ -1023,9 +1083,11 @@ async function loadCurrentRankings(athleteCode) {
                 isEven ? 'bg-blue-50 dark:bg-gray-800 border-blue-200 dark:border-gray-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
             }`;
             
+            const rankingName = parseRankingName(ranking.qualifica);
+            
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${ranking.qualifica || 'N/A'}</span>
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${rankingName}</span>
                     <span class="text-sm font-bold text-blue-600 dark:text-blue-400">#${ranking.posizione || 'N/A'}</span>
                 </div>
                 <div class="text-sm text-gray-900 dark:text-white mb-1">${ranking.classe_gara || 'N/A'} - ${ranking.categoria || 'N/A'}</div>
