@@ -962,10 +962,82 @@ async function loadPersonalResults() {
         
         tableContainer.classList.remove('hidden');
         
+        // Load current rankings for this athlete
+        loadCurrentRankings(athleteCode);
+        
     } catch (error) {
         console.error('Error loading personal results:', error);
         loadingDiv.classList.add('hidden');
         showNotification(t('messages.error_loading_results'), 'error');
+    }
+}
+
+async function loadCurrentRankings(athleteCode) {
+    try {
+        const response = await fetch(`/api/athlete/${athleteCode}/rankings`);
+        
+        if (!response.ok) {
+            console.warn('No rankings found for athlete');
+            return;
+        }
+        
+        const rankings = await response.json();
+        
+        if (!rankings || rankings.length === 0) {
+            return;
+        }
+        
+        // Show rankings section
+        const rankingsSection = document.getElementById('current-rankings-section');
+        rankingsSection.classList.remove('hidden');
+        
+        // Populate desktop rankings table
+        const rankingsTableBody = document.getElementById('rankings-table-body');
+        rankingsTableBody.innerHTML = '';
+        
+        rankings.forEach((ranking, index) => {
+            const row = document.createElement('tr');
+            const isEven = index % 2 === 0;
+            row.className = `${
+                isEven ? 'bg-blue-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700'
+            }`;
+            
+            row.innerHTML = `
+                <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.qualifica || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.classe_gara || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.categoria || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${ranking.posizione || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${ranking.totale || 'N/A'}</td>
+            `;
+            rankingsTableBody.appendChild(row);
+        });
+        
+        // Populate mobile rankings cards
+        const rankingsMobileContainer = document.getElementById('rankings-mobile-container');
+        rankingsMobileContainer.innerHTML = '';
+        
+        rankings.forEach((ranking, index) => {
+            const card = document.createElement('div');
+            const isEven = index % 2 === 0;
+            card.className = `p-3 rounded border ${
+                isEven ? 'bg-blue-50 dark:bg-gray-800 border-blue-200 dark:border-gray-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+            }`;
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${ranking.qualifica || 'N/A'}</span>
+                    <span class="text-sm font-bold text-blue-600 dark:text-blue-400">#${ranking.posizione || 'N/A'}</span>
+                </div>
+                <div class="text-sm text-gray-900 dark:text-white mb-1">${ranking.classe_gara || 'N/A'} - ${ranking.categoria || 'N/A'}</div>
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Totale: ${ranking.totale || 'N/A'}</div>
+            `;
+            
+            rankingsMobileContainer.appendChild(card);
+        });
+        
+    } catch (error) {
+        console.error('Error loading current rankings:', error);
+        // Don't show error notification, just log it (rankings are optional)
     }
 }
 
@@ -1007,10 +1079,10 @@ function updateClassOptions() {
     // Get all options
     const allOptions = [
         { value: '', text: t('archery.select_class') || 'Seleziona Classe' },
-        { value: 'Seniores Maschile', text: 'Seniores Maschile' },
-        { value: 'Seniores Femminile', text: 'Seniores Femminile' },
         { value: 'Master Maschile', text: 'Master Maschile' },
         { value: 'Master Femminile', text: 'Master Femminile' },
+        { value: 'Seniores Maschile', text: 'Seniores Maschile' },
+        { value: 'Seniores Femminile', text: 'Seniores Femminile' },
         { value: 'Juniores Maschile', text: 'Juniores Maschile' },
         { value: 'Juniores Femminile', text: 'Juniores Femminile' },
         { value: 'Allievi Maschile', text: 'Allievi Maschile' },

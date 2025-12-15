@@ -197,6 +197,34 @@
             <!-- Results Table -->
             <div id="results-table-container" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white" id="results-athlete-name"></h3>
+                
+                <!-- Current Rankings Section -->
+                <div id="current-rankings-section" class="mb-6 hidden">
+                    <h4 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Ranking attuale:</h4>
+                    <div class="overflow-x-auto">
+                        <!-- Desktop Rankings Table -->
+                        <table class="hidden md:table w-full text-left text-sm">
+                            <thead class="bg-blue-100 dark:bg-blue-900">
+                                <tr>
+                                    <th class="px-3 py-2 text-gray-700 dark:text-gray-300">Qualifica</th>
+                                    <th class="px-3 py-2 text-gray-700 dark:text-gray-300">Classe</th>
+                                    <th class="px-3 py-2 text-gray-700 dark:text-gray-300">Categoria</th>
+                                    <th class="px-3 py-2 text-gray-700 dark:text-gray-300 text-center">Pos.</th>
+                                    <th class="px-3 py-2 text-gray-700 dark:text-gray-300 text-center">Totale</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankings-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- Mobile Rankings Cards -->
+                        <div id="rankings-mobile-container" class="md:hidden space-y-2">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="overflow-x-auto">
                     <!-- Desktop Table -->
                     <table class="hidden md:table w-full text-left">

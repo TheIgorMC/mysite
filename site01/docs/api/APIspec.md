@@ -394,6 +394,57 @@ Returns official FITARCO ranking from the cached ranking table (`MAT_ranking_cac
 
 ---
 
+#### `GET /api/athlete/{tessera}/rankings`
+
+Returns all ranking positions (past and present) for a specific athlete from the official ranking cache.
+
+**Path Parameters:**
+
+| Param     | Type | Description                          |
+| --------- | ---- | ------------------------------------ |
+| `tessera` | int  | Athlete ID number (tessera number)   |
+
+**Response:**
+
+```json
+[
+  {
+    "qualifica": "RegionaleIndoor2026Veneto",
+    "posizione": 3,
+    "classe_gara": "Senior Maschile",
+    "categoria": "Arco Compound",
+    "punteggio1": 285,
+    "punteggio2": 283,
+    "punteggio3": null,
+    "punteggio4": null,
+    "totale": 568,
+    "data_rilevamento": "2025-12-10T15:30:00"
+  },
+  {
+    "qualifica": "NazionaleIndoor2026",
+    "posizione": 15,
+    "classe_gara": "Senior Maschile",
+    "categoria": "Arco Compound",
+    "punteggio1": 282,
+    "punteggio2": 280,
+    "punteggio3": null,
+    "punteggio4": null,
+    "totale": 562,
+    "data_rilevamento": "2025-11-20T14:00:00"
+  }
+]
+```
+
+**Notes:**
+- Returns all qualification rankings where the athlete appears
+- Results are ordered by most recent update first (`updated_at DESC`), then by qualification code
+- `posizione` is the official scraped rank from Fitarco (not recalculated)
+- `data_rilevamento` shows when this ranking entry was last updated in the cache
+- Supports up to 4 scores (useful for Outdoor competitions)
+- Returns empty array if athlete has no rankings in the cache
+
+---
+
 ### 🧾 Iscrizioni (Registrations)
 
 #### `GET /api/iscrizioni`
