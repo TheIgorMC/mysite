@@ -1009,6 +1009,8 @@ function updateClassOptions() {
         { value: '', text: t('archery.select_class') || 'Seleziona Classe' },
         { value: 'Seniores Maschile', text: 'Seniores Maschile' },
         { value: 'Seniores Femminile', text: 'Seniores Femminile' },
+        { value: 'Master Maschile', text: 'Master Maschile' },
+        { value: 'Master Femminile', text: 'Master Femminile' },
         { value: 'Juniores Maschile', text: 'Juniores Maschile' },
         { value: 'Juniores Femminile', text: 'Juniores Femminile' },
         { value: 'Allievi Maschile', text: 'Allievi Maschile' },
