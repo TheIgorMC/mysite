@@ -1291,8 +1291,8 @@ async function loadRankingData() {
             // Format position with max if available
             const positionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
             
-            // Check if below minimum score
-            const belowMinScore = minScore && entry.totale && entry.totale < minScore;
+            // Check if below minimum score (only for positions within max_positions)
+            const belowMinScore = maxPositions && minScore && entry.posizione && entry.posizione <= maxPositions && entry.totale && entry.totale < minScore;
             const scoreWarning = belowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo richiesto"></i>' : '';
             
             row.innerHTML = `
@@ -1305,8 +1305,9 @@ async function loadRankingData() {
             `;
             tableBody.appendChild(row);
             
-            // Add separator row after last official position
-            if (maxPositions && entry.posizione === maxPositions && index < data.length - 1) {
+            // Add separator row after last official position (handles ties by checking next entry)
+            const nextEntry = index < data.length - 1 ? data[index + 1] : null;
+            if (maxPositions && entry.posizione && entry.posizione <= maxPositions && nextEntry && nextEntry.posizione && nextEntry.posizione > maxPositions) {
                 const separatorRow = document.createElement('tr');
                 separatorRow.className = 'bg-red-100 dark:bg-red-900/30 border-t-2 border-b-2 border-red-500 dark:border-red-400';
                 separatorRow.innerHTML = `
@@ -1339,8 +1340,8 @@ async function loadRankingData() {
             // Format position for mobile
             const mobilePositionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
             
-            // Check if below minimum score
-            const mobileBelowMinScore = minScore && entry.totale && entry.totale < minScore;
+            // Check if below minimum score (only for positions within max_positions)
+            const mobileBelowMinScore = maxPositions && minScore && entry.posizione && entry.posizione <= maxPositions && entry.totale && entry.totale < minScore;
             const mobileScoreWarning = mobileBelowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo"></i>' : '';
             
             card.innerHTML = `
@@ -1360,8 +1361,9 @@ async function loadRankingData() {
             `;
             mobileContainer.appendChild(card);
             
-            // Add separator card after last official position
-            if (maxPositions && entry.posizione === maxPositions && index < data.length - 1) {
+            // Add separator card after last official position (handles ties by checking next entry)
+            const mobileNextEntry = index < data.length - 1 ? data[index + 1] : null;
+            if (maxPositions && entry.posizione && entry.posizione <= maxPositions && mobileNextEntry && mobileNextEntry.posizione && mobileNextEntry.posizione > maxPositions) {
                 const separatorCard = document.createElement('div');
                 separatorCard.className = 'p-3 rounded-lg border-2 border-red-500 dark:border-red-400 bg-red-100 dark:bg-red-900/30';
                 separatorCard.innerHTML = `
