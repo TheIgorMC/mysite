@@ -1211,12 +1211,13 @@ def get_official_ranking():
         
         # Add available positions info if configured
         ranking_positions = get_ranking_positions()
-        max_positions = ranking_positions.get_positions(code, class_name, division)
+        config = ranking_positions.get_positions(code, class_name, division)
         
-        # If max_positions is configured, add it to each entry
-        if max_positions and isinstance(ranking_data, list):
+        # If config exists, add it to each entry
+        if config and isinstance(ranking_data, list):
             for entry in ranking_data:
-                entry['max_positions'] = max_positions
+                entry['max_positions'] = config['posti']
+                entry['min_score'] = config['min_score']
         
         return jsonify(ranking_data)
     except Exception as e:

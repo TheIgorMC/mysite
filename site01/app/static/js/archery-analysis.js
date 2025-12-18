@@ -1259,6 +1259,7 @@ async function loadRankingData() {
         
         // Get max_positions from first entry (if available)
         const maxPositions = data.length > 0 && data[0].max_positions ? data[0].max_positions : null;
+        const minScore = data.length > 0 && data[0].min_score ? data[0].min_score : null;
         
         // Helper function to format date as DD-MM-YYYY
         const formatDate = (dateStr) => {
@@ -1290,15 +1291,31 @@ async function loadRankingData() {
             // Format position with max if available
             const positionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
             
+            // Check if below minimum score
+            const belowMinScore = minScore && entry.totale && entry.totale < minScore;
+            const scoreWarning = belowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo richiesto"></i>' : '';
+            
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${positionText}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${entry.societa || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio1 || '-'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio2 || '-'}</td>
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center">${entry.totale || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center">${entry.totale || 'N/A'}${scoreWarning}</td>
             `;
             tableBody.appendChild(row);
+            
+            // Add separator row after last official position
+            if (maxPositions && entry.posizione === maxPositions && index < data.length - 1) {
+                const separatorRow = document.createElement('tr');
+                separatorRow.className = 'bg-red-100 dark:bg-red-900/30 border-t-2 border-b-2 border-red-500 dark:border-red-400';
+                separatorRow.innerHTML = `
+                    <td colspan="6" class="px-4 py-2 text-center text-sm font-bold text-red-700 dark:text-red-300">
+                        <i class="fas fa-minus mr-2"></i>Limite posti da invito (${maxPositions})<i class="fas fa-minus ml-2"></i>
+                    </td>
+                `;
+                tableBody.appendChild(separatorRow);
+            }
         });
         
         // Populate mobile cards
@@ -1322,6 +1339,10 @@ async function loadRankingData() {
             // Format position for mobile
             const mobilePositionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
             
+            // Check if below minimum score
+            const mobileBelowMinScore = minScore && entry.totale && entry.totale < minScore;
+            const mobileScoreWarning = mobileBelowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo"></i>' : '';
+            
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1">
@@ -1332,12 +1353,24 @@ async function loadRankingData() {
                         <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${entry.societa || 'N/A'}</div>
                     </div>
                     <div class="flex flex-col items-end ml-3">
-                        <div class="text-xl font-bold text-primary dark:text-primary-light">${entry.totale || 'N/A'}</div>
+                        <div class="text-xl font-bold text-primary dark:text-primary-light">${entry.totale || 'N/A'}${mobileScoreWarning}</div>
                         <div class="text-xs text-gray-600 dark:text-gray-400">${entry.punteggio1 || '-'} + ${entry.punteggio2 || '-'}</div>
                     </div>
                 </div>
             `;
             mobileContainer.appendChild(card);
+            
+            // Add separator card after last official position
+            if (maxPositions && entry.posizione === maxPositions && index < data.length - 1) {
+                const separatorCard = document.createElement('div');
+                separatorCard.className = 'p-3 rounded-lg border-2 border-red-500 dark:border-red-400 bg-red-100 dark:bg-red-900/30';
+                separatorCard.innerHTML = `
+                    <div class="text-center text-sm font-bold text-red-700 dark:text-red-300">
+                        <i class="fas fa-minus mr-2"></i>Limite posti ufficiali (${maxPositions})<i class="fas fa-minus ml-2"></i>
+                    </div>
+                `;
+                mobileContainer.appendChild(separatorCard);
+            }
         });
         
         tableContainer.classList.remove('hidden');

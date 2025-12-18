@@ -19,7 +19,7 @@ class RankingPositions:
             csv_path = os.path.join(app_dir, 'data', 'ranking_positions.csv')
         
         self.csv_path = csv_path
-        self.positions = {}  # Dict: (qualifica, classe_gara, categoria) -> posti_disponibili
+        self.positions = {}  # Dict: (qualifica, classe_gara, categoria) -> {'posti': int, 'min_score': int or None}
         self.load_csv()
     
     def load_csv(self):
@@ -39,12 +39,23 @@ class RankingPositions:
                         row['classe_gara'].strip(),
                         row['categoria'].strip()
                     )
-                    self.positions[key] = int(row['posti_disponibili'])
-            
-            current_app.logger.info(f"Loaded {len(self.positions)} ranking position configurations")
+                    # Parse punteggio_minimo (can be empty)
+                    min_score = None
+                    if 'punteggio_minimo' in row and row['punteggio_minimo'].strip():
+                        try:
+                            min_score = int(row['punteggio_minimo'])
+                        except ValueError:
+                            pass
+                    
+               configuration for a specific ranking/class/division
         
-        except Exception as e:
-            current_app.logger.error(f"Error loading ranking positions CSV: {e}")
+        Args:
+            qualifica: Ranking code (e.g. "RegionaleIndoor2026Veneto")
+            classe_gara: Class (e.g. "Senior Maschile")
+            categoria: Division (e.g. "Arco Olimpico")
+            
+        Returns:
+            Dict with 'posti' and 'min_score'error(f"Error loading ranking positions CSV: {e}")
     
     def get_positions(self, qualifica, classe_gara, categoria):
         """Get number of available positions for a specific ranking/class/division
@@ -68,15 +79,16 @@ class RankingPositions:
         """Get all configured positions as a list of dicts
         
         Returns:
-            List of dicts with qualifica, classe_gara, categoria, posti_disponibili
+            List of dicts with qualifica, classe_gara, categoria, posti_disponibili, punteggio_minimo
         """
         result = []
-        for (qualifica, classe_gara, categoria), posti in self.positions.items():
+        for (qualifica, classe_gara, categoria), config in self.positions.items():
             result.append({
                 'qualifica': qualifica,
                 'classe_gara': classe_gara,
                 'categoria': categoria,
-                'posti_disponibili': posti
+                'posti_disponibili': config['posti'],
+                'punteggio_minimo': config['min_score']
             })
         return result
 
