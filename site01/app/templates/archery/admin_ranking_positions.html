@@ -99,8 +99,8 @@ async function loadCurrentData() {
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.qualifica}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.classe_gara}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.categoria}</td>
-                <td class="px-4 py-3 text-gray-900 dark:text-white text-center ${entry.punteggio_minimo ? 'font-semibold' : 'text-gray-400 dark:text-gray-600'}">${entry.punteggio_minimo || '-'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-center font-semibold">${entry.posti_disponibili}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-center ${entry.punteggio_minimo ? 'font-semibold' : 'text-gray-400 dark:text-gray-600'}">${entry.punteggio_minimo || '-'}</td>
             `;
             tableBody.appendChild(row);
         });

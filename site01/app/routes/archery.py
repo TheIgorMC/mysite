@@ -1213,11 +1213,16 @@ def get_official_ranking():
         ranking_positions = get_ranking_positions()
         config = ranking_positions.get_positions(code, class_name, division)
         
+        # Debug logging
+        current_app.logger.info(f"Looking for ranking config: code={code}, class={class_name}, division={division}")
+        current_app.logger.info(f"Found config: {config}")
+        
         # If config exists, add it to each entry
         if config and isinstance(ranking_data, list):
             for entry in ranking_data:
                 entry['max_positions'] = config['posti']
                 entry['min_score'] = config['min_score']
+            current_app.logger.info(f"Added max_positions={config['posti']}, min_score={config['min_score']} to {len(ranking_data)} entries")
         
         return jsonify(ranking_data)
     except Exception as e:
