@@ -47,18 +47,18 @@ class RankingPositions:
                         except ValueError:
                             pass
                     
-               configuration for a specific ranking/class/division
-        
-        Args:
-            qualifica: Ranking code (e.g. "RegionaleIndoor2026Veneto")
-            classe_gara: Class (e.g. "Senior Maschile")
-            categoria: Division (e.g. "Arco Olimpico")
+                    self.positions[key] = {
+                        'posti': int(row['posti_disponibili']),
+                        'min_score': min_score
+                    }
             
-        Returns:
-            Dict with 'posti' and 'min_score'error(f"Error loading ranking positions CSV: {e}")
+            current_app.logger.info(f"Loaded {len(self.positions)} ranking position configurations")
+        
+        except Exception as e:
+            current_app.logger.error(f"Error loading ranking positions CSV: {e}")
     
     def get_positions(self, qualifica, classe_gara, categoria):
-        """Get number of available positions for a specific ranking/class/division
+        """Get configuration for a specific ranking/class/division
         
         Args:
             qualifica: Ranking code (e.g. "RegionaleIndoor2026Veneto")
@@ -66,7 +66,7 @@ class RankingPositions:
             categoria: Division (e.g. "Arco Olimpico")
             
         Returns:
-            Number of positions or None if not configured
+            Dict with 'posti' and 'min_score' or None if not configured
         """
         key = (qualifica.strip(), classe_gara.strip(), categoria.strip())
         return self.positions.get(key)
