@@ -1095,28 +1095,70 @@ async function loadCurrentRankings(athleteCode) {
 
 // ===== RANKINGS TAB FUNCTIONS =====
 
+let allRankings = []; // Store all rankings globally
+
 async function loadRankings() {
     try {
         const response = await fetch('/archery/api/ranking');
-        const rankings = await response.json();
+        allRankings = await response.json();
         
-        const select = document.getElementById('ranking-select');
-        select.innerHTML = `<option value="">${t('archery.select_ranking')}</option>`;
+        // Check if there are both team and individual variants
+        checkTeamVariants();
         
-        rankings.forEach(ranking => {
-            const option = document.createElement('option');
-            option.value = ranking.codice;
-            option.textContent = `${ranking.descrizione}`;
-            option.dataset.description = ranking.descrizione; // Store description for later use
-            select.appendChild(option);
-        });
+        // Initial population with individual rankings
+        filterRankingsByType('individual');
         
-        // Add event listener to update class options based on selected ranking
-        select.addEventListener('change', updateClassOptions);
+        // Add event listeners
+        document.getElementById('ranking-select').addEventListener('change', updateClassOptions);
+        document.getElementById('team-selector').addEventListener('change', onTeamSelectorChange);
     } catch (error) {
         console.error('Error loading rankings:', error);
         showNotification(t('messages.error_loading_rankings'), 'error');
     }
+}
+
+function checkTeamVariants() {
+    // Check if there are both individual and team variants
+    const individualRankings = allRankings.filter(r => !r.codice.includes('SQ'));
+    const teamRankings = allRankings.filter(r => r.codice.includes('SQ'));
+    
+    const teamSelectorContainer = document.getElementById('team-selector-container');
+    
+    if (individualRankings.length > 0 && teamRankings.length > 0) {
+        // Show selector if both exist
+        teamSelectorContainer.classList.remove('hidden');
+    } else {
+        // Hide selector if only one type exists
+        teamSelectorContainer.classList.add('hidden');
+    }
+}
+
+function onTeamSelectorChange() {
+    const teamSelector = document.getElementById('team-selector');
+    const selectedType = teamSelector.value; // 'individual' or 'team'
+    filterRankingsByType(selectedType);
+}
+
+function filterRankingsByType(type) {
+    const select = document.getElementById('ranking-select');
+    select.innerHTML = `<option value="">${t('archery.select_ranking')}</option>`;
+    
+    let filteredRankings;
+    if (type === 'team') {
+        // Show only rankings with 'SQ' in code
+        filteredRankings = allRankings.filter(r => r.codice.includes('SQ'));
+    } else {
+        // Show only rankings WITHOUT 'SQ' in code
+        filteredRankings = allRankings.filter(r => !r.codice.includes('SQ'));
+    }
+    
+    filteredRankings.forEach(ranking => {
+        const option = document.createElement('option');
+        option.value = ranking.codice;
+        option.textContent = `${ranking.descrizione}`;
+        option.dataset.description = ranking.descrizione;
+        select.appendChild(option);
+    });
 }
 
 function updateClassOptions() {
@@ -1215,6 +1257,9 @@ async function loadRankingData() {
         document.getElementById('ranking-title').textContent = 
             `${rankingName} - ${className} - ${division}`;
         
+        // Get max_positions from first entry (if available)
+        const maxPositions = data.length > 0 && data[0].max_positions ? data[0].max_positions : null;
+        
         // Helper function to format date as DD-MM-YYYY
         const formatDate = (dateStr) => {
             if (!dateStr || dateStr === 'N/A') return 'N/A';
@@ -1242,8 +1287,11 @@ async function loadRankingData() {
             
             row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${rankClass}`;
             
+            // Format position with max if available
+            const positionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
+            
             row.innerHTML = `
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${entry.posizione || 'N/A'}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${positionText}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</td>
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${entry.societa || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio1 || '-'}</td>
@@ -1270,11 +1318,15 @@ async function loadRankingData() {
             }
             
             card.className = `p-4 rounded-lg border ${cardClass}`;
+            
+            // Format position for mobile
+            const mobilePositionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
+            
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-lg font-bold text-primary dark:text-primary-light">#${entry.posizione || 'N/A'}</span>
+                            <span class="text-lg font-bold text-primary dark:text-primary-light">#${mobilePositionText}</span>
                             <span class="text-base font-semibold text-gray-900 dark:text-white">${entry.atleta || 'N/A'}</span>
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${entry.societa || 'N/A'}</div>

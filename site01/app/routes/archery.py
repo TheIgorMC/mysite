@@ -14,6 +14,7 @@ from app.archery_utils import (
     get_statistics_summary
 )
 from app.models import AuthorizedAthlete, User
+from app.ranking_positions import get_ranking_positions
 from app import db
 
 bp = Blueprint('archery', __name__, url_prefix='/archery')
@@ -1196,7 +1197,44 @@ def get_official_ranking():
         
         client = OrionAPIClient()
         ranking_data = client.get_ranking_official(code, class_name, division)
+        
+        # Add available positions info if configured
+        ranking_positions = get_ranking_positions()
+        max_positions = ranking_positions.get_positions(code, class_name, division)
+        
+        # If max_positions is configured, add it to each entry
+        if max_positions and isinstance(ranking_data, list):
+            for entry in ranking_data:
+                entry['max_positions'] = max_positions
+        
         return jsonify(ranking_data)
     except Exception as e:
         current_app.logger.error(f"Error fetching official ranking: {e}")
         return jsonify({'error': 'Failed to fetch official ranking', 'details': str(e)}), 500
+
+
+@bp.route('/api/ranking/positions')
+def get_ranking_positions_api():
+    """Get all configured ranking positions from CSV"""
+    try:
+        ranking_positions = get_ranking_positions()
+        return jsonify(ranking_positions.get_all_positions())
+    except Exception as e:
+        current_app.logger.error(f"Error fetching ranking positions: {e}")
+        return jsonify({'error': 'Failed to fetch ranking positions', 'details': str(e)}), 500
+
+
+@bp.route('/api/ranking/positions/reload', methods=['POST'])
+@login_required
+def reload_ranking_positions():
+    """Reload ranking positions CSV (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        ranking_positions = get_ranking_positions()
+        ranking_positions.reload()
+        return jsonify({'success': True, 'message': 'Ranking positions reloaded'})
+    except Exception as e:
+        current_app.logger.error(f"Error reloading ranking positions: {e}")
+        return jsonify({'error': 'Failed to reload ranking positions', 'details': str(e)}), 500
