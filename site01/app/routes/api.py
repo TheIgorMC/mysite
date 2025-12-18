@@ -470,11 +470,44 @@ def get_athlete_rankings(tessera):
     Returns rankings ordered by most recent update first.
     """
     try:
+        from app.ranking_positions import get_ranking_positions
+        
         client = OrionAPIClient()
         rankings = client._make_request('GET', f'/api/athlete/{tessera}/rankings')
         
         if rankings is None:
             return jsonify([])
+        
+        # Add max_positions and min_score to each ranking
+        ranking_positions = get_ranking_positions()
+        for ranking in rankings:
+            # Normalize class and division names
+            qualifica = ranking.get('qualifica', '')
+            classe = ranking.get('classe_gara', '')
+            categoria = ranking.get('categoria', '')
+            
+            # Apply same normalization as in archery.py
+            normalized_class = classe
+            normalized_division = categoria
+            
+            classe_lower = classe.lower()
+            if 'senior' in classe_lower:
+                normalized_class = classe.replace('Seniores', 'Senior').replace('seniores', 'Senior')
+            elif 'junior' in classe_lower:
+                normalized_class = classe.replace('Juniores', 'Junior').replace('juniores', 'Junior')
+            
+            categoria_lower = categoria.lower()
+            if 'olimpic' in categoria_lower and 'arco' not in categoria_lower:
+                normalized_division = 'Arco Olimpico'
+            elif 'compound' in categoria_lower and 'arco' not in categoria_lower:
+                normalized_division = 'Arco Compound'
+            elif 'nudo' in categoria_lower and 'arco' not in categoria_lower:
+                normalized_division = 'Arco Nudo'
+            
+            config = ranking_positions.get_positions(qualifica, normalized_class, normalized_division)
+            if config:
+                ranking['max_positions'] = config['posti']
+                ranking['min_score'] = config['min_score']
         
         return jsonify(rankings)
     

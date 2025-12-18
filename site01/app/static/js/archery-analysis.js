@@ -1052,12 +1052,36 @@ async function loadCurrentRankings(athleteCode) {
             
             const rankingName = parseRankingName(ranking.qualifica);
             
+            // Determine position format and score styling
+            const maxPos = ranking.max_positions;
+            const minScore = ranking.min_score;
+            const currentPos = ranking.posizione;
+            const currentScore = ranking.totale;
+            
+            // Position format: XX/YY if qualified, XX (YY) if not
+            let positionText;
+            const isQualified = maxPos && currentPos && currentPos <= maxPos;
+            if (maxPos) {
+                if (isQualified) {
+                    positionText = `${currentPos}<span class="text-sm text-gray-600 dark:text-gray-400">/${maxPos}</span>`;
+                } else {
+                    positionText = `${currentPos} <span class="text-sm text-gray-500 dark:text-gray-500">(${maxPos})</span>`;
+                }
+            } else {
+                positionText = currentPos || 'N/A';
+            }
+            
+            // Score styling: yellow if below min, warning only if qualified
+            const belowMin = minScore && currentScore && currentScore < minScore;
+            const scoreClass = belowMin ? 'bg-yellow-100 dark:bg-yellow-900/30' : '';
+            const scoreWarning = (belowMin && isQualified) ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo richiesto"></i>' : '';
+            
             row.innerHTML = `
                 <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${rankingName}</td>
                 <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.classe_gara || 'N/A'}</td>
                 <td class="px-3 py-2 text-gray-900 dark:text-white text-xs">${ranking.categoria || 'N/A'}</td>
-                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${ranking.posizione || 'N/A'}</td>
-                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${ranking.totale || 'N/A'}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center">${positionText}</td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white font-semibold text-center ${scoreClass}">${ranking.totale || 'N/A'}${scoreWarning}</td>
             `;
             rankingsTableBody.appendChild(row);
         });
@@ -1075,13 +1099,37 @@ async function loadCurrentRankings(athleteCode) {
             
             const rankingName = parseRankingName(ranking.qualifica);
             
+            // Determine position format and score styling
+            const maxPos = ranking.max_positions;
+            const minScore = ranking.min_score;
+            const currentPos = ranking.posizione;
+            const currentScore = ranking.totale;
+            
+            // Position format: XX/YY if qualified, XX (YY) if not
+            let mobilePositionText;
+            const isMobileQualified = maxPos && currentPos && currentPos <= maxPos;
+            if (maxPos) {
+                if (isMobileQualified) {
+                    mobilePositionText = `${currentPos}<span class="text-xs text-gray-500 dark:text-gray-500">/${maxPos}</span>`;
+                } else {
+                    mobilePositionText = `${currentPos} <span class="text-xs text-gray-400 dark:text-gray-600">(${maxPos})</span>`;
+                }
+            } else {
+                mobilePositionText = currentPos || 'N/A';
+            }
+            
+            // Score styling: yellow if below min, warning only if qualified
+            const mobileBelowMin = minScore && currentScore && currentScore < minScore;
+            const mobileScoreClass = mobileBelowMin ? 'bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded' : '';
+            const mobileScoreWarning = (mobileBelowMin && isMobileQualified) ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1 text-xs" title="Sotto minimo"></i>' : '';
+            
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${rankingName}</span>
-                    <span class="text-sm font-bold text-blue-600 dark:text-blue-400">#${ranking.posizione || 'N/A'}</span>
+                    <span class="text-sm font-bold text-blue-600 dark:text-blue-400">#${mobilePositionText}</span>
                 </div>
                 <div class="text-sm text-gray-900 dark:text-white mb-1">${ranking.classe_gara || 'N/A'} - ${ranking.categoria || 'N/A'}</div>
-                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Totale: ${ranking.totale || 'N/A'}</div>
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 ${mobileScoreClass}">Totale: ${ranking.totale || 'N/A'}${mobileScoreWarning}</div>
             `;
             
             rankingsMobileContainer.appendChild(card);
@@ -1288,12 +1336,20 @@ async function loadRankingData() {
             
             row.className = `hover:bg-gray-100 dark:hover:bg-gray-600 ${rankClass}`;
             
-            // Format position with max if available
-            const positionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
+            // Format position with max only if within available positions
+            let positionText;
+            if (maxPositions && entry.posizione && entry.posizione <= maxPositions) {
+                positionText = `${entry.posizione}<span class="text-sm text-gray-600 dark:text-gray-400">/${maxPositions}</span>`;
+            } else {
+                positionText = entry.posizione || 'N/A';
+            }
             
-            // Check if below minimum score (only for positions within max_positions)
-            const belowMinScore = maxPositions && minScore && entry.posizione && entry.posizione <= maxPositions && entry.totale && entry.totale < minScore;
-            const scoreWarning = belowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo richiesto"></i>' : '';
+            // Check if below minimum score
+            const belowMinScore = minScore && entry.totale && entry.totale < minScore;
+            const withinPositions = maxPositions && entry.posizione && entry.posizione <= maxPositions;
+            // Yellow background for all below min, warning icon only if also within positions
+            const scoreClass = belowMinScore ? 'bg-yellow-100 dark:bg-yellow-900/30' : '';
+            const scoreWarning = (belowMinScore && withinPositions) ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo richiesto"></i>' : '';
             
             row.innerHTML = `
                 <td class="px-3 py-3 text-gray-900 dark:text-white font-bold">${positionText}</td>
@@ -1301,7 +1357,7 @@ async function loadRankingData() {
                 <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">${entry.societa || 'N/A'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio1 || '-'}</td>
                 <td class="px-3 py-3 text-gray-900 dark:text-white text-center">${entry.punteggio2 || '-'}</td>
-                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center">${entry.totale || 'N/A'}${scoreWarning}</td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white font-bold text-center ${scoreClass}">${entry.totale || 'N/A'}${scoreWarning}</td>
             `;
             tableBody.appendChild(row);
             
@@ -1337,12 +1393,20 @@ async function loadRankingData() {
             
             card.className = `p-4 rounded-lg border ${cardClass}`;
             
-            // Format position for mobile
-            const mobilePositionText = maxPositions ? `${entry.posizione}/${maxPositions}` : (entry.posizione || 'N/A');
+            // Format position for mobile - show /max only if within available positions
+            let mobilePositionText;
+            if (maxPositions && entry.posizione && entry.posizione <= maxPositions) {
+                mobilePositionText = `${entry.posizione}<span class="text-xs text-gray-500 dark:text-gray-500">/${maxPositions}</span>`;
+            } else {
+                mobilePositionText = entry.posizione || 'N/A';
+            }
             
-            // Check if below minimum score (only for positions within max_positions)
-            const mobileBelowMinScore = maxPositions && minScore && entry.posizione && entry.posizione <= maxPositions && entry.totale && entry.totale < minScore;
-            const mobileScoreWarning = mobileBelowMinScore ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo"></i>' : '';
+            // Check if below minimum score
+            const mobileBelowMinScore = minScore && entry.totale && entry.totale < minScore;
+            const mobileWithinPositions = maxPositions && entry.posizione && entry.posizione <= maxPositions;
+            // Yellow background for all below min, warning icon only if also within positions
+            const mobileScoreClass = mobileBelowMinScore ? 'bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded' : '';
+            const mobileScoreWarning = (mobileBelowMinScore && mobileWithinPositions) ? '<i class="fas fa-exclamation-triangle text-orange-500 ml-1" title="Punteggio sotto il minimo"></i>' : '';
             
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
@@ -1354,7 +1418,7 @@ async function loadRankingData() {
                         <div class="text-sm text-gray-600 dark:text-gray-400 leading-tight">${entry.societa || 'N/A'}</div>
                     </div>
                     <div class="flex flex-col items-end ml-3">
-                        <div class="text-xl font-bold text-primary dark:text-primary-light">${entry.totale || 'N/A'}${mobileScoreWarning}</div>
+                        <div class="text-xl font-bold text-primary dark:text-primary-light ${mobileScoreClass}">${entry.totale || 'N/A'}${mobileScoreWarning}</div>
                         <div class="text-xs text-gray-600 dark:text-gray-400">${entry.punteggio1 || '-'} + ${entry.punteggio2 || '-'}</div>
                     </div>
                 </div>
