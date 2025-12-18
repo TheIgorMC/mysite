@@ -1,9 +1,11 @@
 """
 Archery routes blueprint
 """
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, send_from_directory
 from flask_login import login_required, current_user
 from datetime import datetime
+from werkzeug.utils import secure_filename
+import os
 from app.api import OrionAPIClient
 from app.utils import t
 from app.archery_utils import (
@@ -145,6 +147,15 @@ def index():
 def analysis():
     """Performance analysis page"""
     return render_template('archery/analysis.html')
+
+
+@bp.route('/admin/ranking-positions')
+@login_required
+def admin_ranking_positions():
+    """Admin page for managing ranking positions CSV"""
+    if not current_user.is_admin:
+        return render_template('errors/403.html'), 403
+    return render_template('archery/admin_ranking_positions.html')
 
 @bp.route('/api/search_athlete')
 def search_athlete():
@@ -1238,3 +1249,60 @@ def reload_ranking_positions():
     except Exception as e:
         current_app.logger.error(f"Error reloading ranking positions: {e}")
         return jsonify({'error': 'Failed to reload ranking positions', 'details': str(e)}), 500
+
+
+@bp.route('/api/ranking/positions/upload', methods=['POST'])
+@login_required
+def upload_ranking_positions():
+    """Upload new ranking positions CSV file (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.endswith('.csv'):
+        return jsonify({'error': 'File must be a CSV'}), 400
+    
+    try:
+        # Save to data directory
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        data_dir = os.path.join(app_dir, 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        
+        file_path = os.path.join(data_dir, 'ranking_positions.csv')
+        file.save(file_path)
+        
+        # Reload the data
+        ranking_positions = get_ranking_positions()
+        ranking_positions.reload()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Ranking positions CSV uploaded and loaded successfully',
+            'count': len(ranking_positions.positions)
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error uploading ranking positions: {e}")
+        return jsonify({'error': 'Failed to upload ranking positions', 'details': str(e)}), 500
+
+
+@bp.route('/api/ranking/positions/download')
+@login_required
+def download_ranking_positions():
+    """Download current ranking positions CSV (admin only)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        data_dir = os.path.join(app_dir, 'data')
+        return send_from_directory(data_dir, 'ranking_positions.csv', as_attachment=True)
+    except Exception as e:
+        current_app.logger.error(f"Error downloading ranking positions: {e}")
+        return jsonify({'error': 'Failed to download ranking positions', 'details': str(e)}), 500

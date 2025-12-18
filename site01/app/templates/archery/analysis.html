@@ -268,19 +268,20 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
                 <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{{ t('archery.select_ranking') }}</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <!-- Team/Individual Selector (shown only if both variants exist) -->
-                    <div id="team-selector-container" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tipo
-                        </label>
-                        <select id="team-selector" 
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="individual">Individuale</option>
-                            <option value="team">Squadra</option>
-                        </select>
-                    </div>
-                    
+                <!-- Team/Individual Selector (dynamically shown) -->
+                <div id="team-selector-container" class="hidden mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tipo
+                    </label>
+                    <select id="team-selector" 
+                            class="w-full md:w-64 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="individual">Individuale</option>
+                        <option value="team">Squadra</option>
+                    </select>
+                </div>
+                
+                <!-- Ranking Selection Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ t('archery.ranking_name') }}

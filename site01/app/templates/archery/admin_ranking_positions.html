@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('admin.ranking_positions') }} - {{ t('nav.admin') }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Gestione Posti Ranking</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Carica e gestisci il file CSV con i posti disponibili per ogni ranking</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Carica Nuovo CSV</h2>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Seleziona file CSV
+                </label>
+                <input type="file" id="csv-file-input" accept=".csv" 
+                       class="block w-full text-sm text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none">
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Formato: qualifica, classe_gara, categoria, posti_disponibili
+                </p>
+            </div>
+            
+            <button id="upload-btn" onclick="uploadCSV()" 
+                    class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                <i class="fas fa-upload mr-2"></i>Carica CSV
+            </button>
+        </div>
+
+        <!-- Download Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Scarica CSV Attuale</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Scarica il file CSV attualmente in uso per modificarlo localmente</p>
+            
+            <a href="/archery/api/ranking/positions/download" 
+               class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                <i class="fas fa-download mr-2"></i>Scarica CSV
+            </a>
+        </div>
+
+        <!-- Current Data Preview -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Anteprima Configurazione Attuale</h2>
+            
+            <div id="data-loading" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Caricamento...</p>
+            </div>
+            
+            <div id="data-container" class="hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">Qualifica</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">Classe</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300">Categoria</th>
+                                <th class="px-4 py-3 text-gray-700 dark:text-gray-300 text-center">Posti</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+                <p id="data-count" class="mt-4 text-sm text-gray-600 dark:text-gray-400"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadCurrentData() {
+    const loading = document.getElementById('data-loading');
+    const container = document.getElementById('data-container');
+    const tableBody = document.getElementById('data-table-body');
+    const countElement = document.getElementById('data-count');
+    
+    try {
+        const response = await fetch('/archery/api/ranking/positions');
+        const data = await response.json();
+        
+        loading.classList.add('hidden');
+        container.classList.remove('hidden');
+        
+        tableBody.innerHTML = '';
+        data.forEach((entry, index) => {
+            const row = document.createElement('tr');
+            const isEven = index % 2 === 0;
+            row.className = isEven ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700';
+            row.innerHTML = `
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.qualifica}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.classe_gara}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white">${entry.categoria}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-center font-semibold">${entry.posti_disponibili}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        countElement.textContent = `Totale configurazioni: ${data.length}`;
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        loading.innerHTML = '<p class="text-red-500">Errore nel caricamento dei dati</p>';
+    }
+}
+
+async function uploadCSV() {
+    const fileInput = document.getElementById('csv-file-input');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('Seleziona un file CSV', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const uploadBtn = document.getElementById('upload-btn');
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Caricamento...';
+    
+    try {
+        const response = await fetch('/archery/api/ranking/positions/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification(`CSV caricato con successo! ${result.count} configurazioni caricate.`, 'success');
+            fileInput.value = '';
+            loadCurrentData(); // Reload preview
+        } else {
+            showNotification(result.error || 'Errore nel caricamento', 'error');
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        showNotification('Errore nel caricamento del file', 'error');
+    } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Carica CSV';
+    }
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadCurrentData);
+</script>
+{% endblock %}
