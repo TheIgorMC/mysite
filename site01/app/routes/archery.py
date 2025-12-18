@@ -1209,12 +1209,34 @@ def get_official_ranking():
         client = OrionAPIClient()
         ranking_data = client.get_ranking_official(code, class_name, division)
         
+        # Normalize class and division names for CSV lookup
+        # CSV uses standardized format, API might use variations
+        normalized_class = class_name
+        normalized_division = division
+        
+        # Normalize class: Senior/Junior/Master/Allievi/Ragazzi/Giovanissimi + Maschile/Femminile
+        class_lower = class_name.lower()
+        if 'senior' in class_lower:
+            normalized_class = class_name.replace('Seniores', 'Senior').replace('seniores', 'Senior')
+        elif 'junior' in class_lower:
+            normalized_class = class_name.replace('Juniores', 'Junior').replace('juniores', 'Junior')
+        
+        # Normalize division: add "Arco" prefix if not present
+        division_lower = division.lower()
+        if 'olimpic' in division_lower and 'arco' not in division_lower:
+            normalized_division = 'Arco Olimpico'
+        elif 'compound' in division_lower and 'arco' not in division_lower:
+            normalized_division = 'Arco Compound'
+        elif 'nudo' in division_lower and 'arco' not in division_lower:
+            normalized_division = 'Arco Nudo'
+        
         # Add available positions info if configured
         ranking_positions = get_ranking_positions()
-        config = ranking_positions.get_positions(code, class_name, division)
+        config = ranking_positions.get_positions(code, normalized_class, normalized_division)
         
         # Debug logging
-        current_app.logger.info(f"Looking for ranking config: code={code}, class={class_name}, division={division}")
+        current_app.logger.info(f"Original params: code={code}, class={class_name}, division={division}")
+        current_app.logger.info(f"Normalized params: class={normalized_class}, division={normalized_division}")
         current_app.logger.info(f"Found config: {config}")
         
         # If config exists, add it to each entry
