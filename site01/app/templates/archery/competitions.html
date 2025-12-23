@@ -555,6 +555,7 @@ let currentFilter = 'upcoming';
 let allCompetitions = [];
 let allInviti = {};  // Invitation details mapped by codice_gara
 let allTurni = {};   // Turns mapped by codice_gara
+let allSocieta = {};  // Organizations mapped by codice_societa
 let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects
 let userInterests = new Map();  // Map of codice_gara -> array of interest expressions
 let authorizedAthletes = [];  // User's authorized athletes from website
@@ -597,9 +598,10 @@ async function loadInitialData() {
         await Promise.all([
             loadInvitiMassExport(),
             loadUserSubscriptionsMassExport(),
-            loadUserInterestsMassExport()
+            loadUserInterestsMassExport(),
+            loadSocietaMassExport()
         ]);
-        console.log('Loaded inviti, subscriptions, and interests via mass export');
+        console.log('Loaded inviti, subscriptions, interests, and societies via mass export');
         console.log('Total inviti:', Object.keys(allInviti).length);
         console.log('Competitions without invites:', allCompetitions.filter(c => !allInviti[c.codice]).length);
         if (allCompetitions.length > 0) {
@@ -648,6 +650,28 @@ async function loadInvitiMassExport() {
         console.error('Error loading inviti:', error);
     }
     console.log('loadInvitiMassExport: Complete. Total mapped:', Object.keys(allInviti).length);
+}
+
+async function loadSocietaMassExport() {
+    // Load ALL organizations data from API
+    console.log('loadSocietaMassExport: Starting...');
+    try {
+        const resp = await fetch(`/archery/api/societa?export=full`);
+        console.log('loadSocietaMassExport: Fetch complete, status:', resp.status);
+        if (resp.ok) {
+            const societa = await resp.json();
+            console.log('loadSocieta: Got', societa.length, 'organizations');
+            // Map organizations by codice for fast lookup
+            societa.forEach(org => {
+                allSocieta[org.codice] = org;
+            });
+        } else {
+            console.warn('loadSocietaMassExport: Response not OK:', resp.status);
+        }
+    } catch (error) {
+        console.error('Error loading societa:', error);
+    }
+    console.log('loadSocietaMassExport: Complete. Total mapped:', Object.keys(allSocieta).length);
 }
 
 async function loadUserSubscriptionsMassExport() {
@@ -1007,6 +1031,10 @@ function renderCompetitions(competitions) {
         const dateText = formatDateRange(competition.data_inizio, competition.data_fine);
         const locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
         
+        // Get organization name from loaded data
+        const societa = allSocieta[competition.societa_codice];
+        const organizerText = societa?.nome || competition.societa_codice || 'N/A';
+        
         // Check for interests
         const hasExpressedInterest = userInterests.has(competition.codice) && 
             userInterests.get(competition.codice).some(i => i.stato === 'attivo');
@@ -1277,21 +1305,11 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
         </div>
     </div>`;
     
-    // Debug: log what we have for the organization
-    console.log('Organizer data:', {
-        codice: competition.codice,
-        nome: competition.nome,
-        societa_nome: competition.societa_nome,
-        societa_codice: competition.societa_codice,
-        luogo: competition.luogo
-    });
-    
-    // Show both organization name and code if available
+    // Get organization name from loaded data
+    const societa = allSocieta[competition.societa_codice];
     let organizerDisplay = 'N/A';
-    if (competition.societa_nome && competition.societa_codice) {
-        organizerDisplay = `${competition.societa_nome} <span class="text-xs text-gray-500 dark:text-gray-400">(${competition.societa_codice})</span>`;
-    } else if (competition.societa_nome) {
-        organizerDisplay = competition.societa_nome;
+    if (societa && societa.nome) {
+        organizerDisplay = `${societa.nome} <span class="text-xs text-gray-500 dark:text-gray-400">(${competition.societa_codice})</span>`;
     } else if (competition.societa_codice) {
         organizerDisplay = competition.societa_codice;
     }
