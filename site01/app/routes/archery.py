@@ -669,6 +669,22 @@ def get_turni():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/api/societa')
+def get_societa():
+    """Proxy endpoint for fetching organizations (società) from Orion API"""
+    export = request.args.get('export', 'false').lower() == 'full'
+    include_coords = request.args.get('include_coords', 'false').lower() == 'true'
+    
+    client = OrionAPIClient()
+    
+    try:
+        # Fetch from Orion API
+        params = {'include_coords': str(include_coords).lower()}
+        societa = client._make_request('GET', '/api/societa', params=params)
+        return jsonify(societa if societa else [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @bp.route('/api/inviti')
 def get_inviti():
     """Proxy endpoint for fetching invitations (inviti) from FastAPI"""
