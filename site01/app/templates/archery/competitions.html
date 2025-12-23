@@ -54,9 +54,30 @@
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
 
-        <!-- Competitions Grid -->
-        <div id="competitions-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Competitions will be loaded here by JavaScript -->
+        <!-- Competitions Container -->
+        <div id="competitions-container" class="hidden">
+            <!-- Desktop Table -->
+            <div class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+                <table id="competitions-table" class="w-full">
+                    <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-32">Stato</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Gara</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-56">Data/Luogo</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-40">Iscrizione</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-16">Info</th>
+                        </tr>
+                    </thead>
+                    <tbody id="competitions-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Mobile Cards -->
+            <div id="competitions-mobile" class="md:hidden space-y-3">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
         </div>
 
         <!-- Empty State -->
@@ -67,94 +88,9 @@
     </div>
 </section>
 
-<!-- Competition Card Template -->
+<!-- Competition Template (used for both desktop rows and mobile cards) -->
 <template id="competition-card-template">
-    <div class="competition-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-        <div class="p-6">
-            <!-- Header -->
-            <div class="flex items-start justify-between mb-4">
-                <div class="flex-1">
-                    <h3 class="competition-name text-xl font-bold text-gray-900 dark:text-white mb-1"></h3>
-                    <span class="competition-code text-xs font-mono text-gray-500 dark:text-gray-400 block mb-2"></span>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        <i class="fas fa-map-marker-alt mr-2"></i>
-                        <span class="competition-location"></span>
-                    </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <i class="fas fa-calendar mr-2"></i>
-                        <span class="competition-date"></span>
-                    </div>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                    <span class="competition-badge px-3 py-1 rounded-full text-xs font-semibold"></span>
-                    <button class="btn-info text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm px-2 py-1 rounded transition" title="Visualizza invito">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Details -->
-            <div class="space-y-2 mb-4">
-                <div class="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                    <i class="fas fa-bullseye mr-2 text-primary"></i>
-                    <span class="competition-type"></span>
-                </div>
-                <div class="competition-category-container hidden flex items-center text-sm text-gray-700 dark:text-gray-300">
-                    <i class="fas fa-tag mr-2 text-primary"></i>
-                    <span class="competition-category"></span>
-                </div>
-                <div class="competition-deadline-container hidden flex items-center text-sm text-gray-700 dark:text-gray-300">
-                    <i class="fas fa-clock mr-2 text-primary"></i>
-                    <span>{{ t('competitions.deadline') }}: <span class="competition-deadline"></span></span>
-                </div>
-            </div>
-
-            <!-- Subscription Status -->
-            <div class="competition-subscription-status hidden mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center text-green-800 dark:text-green-300 cursor-pointer hover:opacity-80 transition flex-1" onclick="toggleAthleteList(this)">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        <span>{{ t('competitions.subscribed') }}</span>
-                        <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="btn-unsubscribe text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="{{ t('competitions.delete_subscription') }}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="athlete-list hidden mt-3 pt-3 border-t border-green-200 dark:border-green-800 space-y-2">
-                    <!-- Athletes will be populated here -->
-                </div>
-            </div>
-
-            <!-- Interest Status -->
-            <div class="competition-interest-status hidden mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center text-yellow-800 dark:text-yellow-300 cursor-pointer hover:opacity-80 transition flex-1" onclick="toggleAthleteList(this)">
-                        <i class="fas fa-star mr-2"></i>
-                        <span class="interest-status-text">Interesse espresso</span>
-                        <i class="fas fa-chevron-down ml-2 text-xs athlete-list-toggle"></i>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="btn-delete-interest text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-2 py-1 rounded transition" title="Rimuovi interesse">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="athlete-list hidden mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 space-y-2">
-                    <!-- Athletes will be populated here -->
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex gap-2">
-                <button class="btn-subscribe w-full bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition font-medium">
-                    <i class="fas fa-user-plus mr-2"></i>Iscriviti
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- Data will be stored here and used to render both desktop and mobile versions -->
 </template>
 
 <!-- Subscription Modal -->
@@ -1043,63 +979,32 @@ function getSubscriptionSummary(codiceGara) {
 }
 
 function renderCompetitions(competitions) {
-    const grid = document.getElementById('competitions-grid');
+    const container = document.getElementById('competitions-container');
+    const tableBody = document.getElementById('competitions-table-body');
+    const mobileContainer = document.getElementById('competitions-mobile');
     const emptyState = document.getElementById('empty-state');
-    const template = document.getElementById('competition-card-template');
     
-    grid.innerHTML = '';
+    // Clear both desktop and mobile containers
+    if (tableBody) tableBody.innerHTML = '';
+    if (mobileContainer) mobileContainer.innerHTML = '';
     
     if (competitions.length === 0) {
-        grid.classList.add('hidden');
+        container.classList.add('hidden');
         emptyState.classList.remove('hidden');
         return;
     }
     
-    grid.classList.remove('hidden');
+    container.classList.remove('hidden');
     emptyState.classList.add('hidden');
     
-    competitions.forEach(competition => {
-        const card = template.content.cloneNode(true);
-        
-        // Fill in competition details
-        card.querySelector('.competition-name').textContent = competition.nome;
-        card.querySelector('.competition-code').textContent = competition.codice;
-        
-        // Show location (luogo) if available, otherwise show societa name or code
-        let locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
-        card.querySelector('.competition-location').textContent = locationText;
-        
-        // Format date range (shows both dates if they differ)
-        const dateText = formatDateRange(competition.data_inizio, competition.data_fine);
-        card.querySelector('.competition-date').textContent = dateText;
-        
-        // Debug: Log first competition's dates to verify data
-        if (competitions.indexOf(competition) === 0) {
-            console.log('[Competition Debug]', {
-                nome: competition.nome,
-                data_inizio: competition.data_inizio,
-                data_fine: competition.data_fine,
-                formatted: dateText
-            });
-        }
-        
-        card.querySelector('.competition-type').textContent = competition.tipo || 'Competition';
-        
-        // Get competition status (red/green/blue/white)
+    competitions.forEach((competition, index) => {
+        // Get competition status and subscription summary
         const competitionStatus = getCompetitionStatus(competition);
-        
-        // Status badge with color
-        const badge = card.querySelector('.competition-badge');
-        badge.textContent = competitionStatus.label;
-        badge.className = `competition-badge px-3 py-1 rounded-full text-xs font-semibold ${competitionStatus.color}`;
-        
-        // Subscription status and button logic
-        const subscribeBtn = card.querySelector('.btn-subscribe');
-        const unsubscribeBtn = card.querySelector('.btn-unsubscribe');
-        const interestStatusBox = card.querySelector('.competition-interest-status');
-        const interestDeleteBtn = card.querySelector('.btn-delete-interest');
-        
         const subSummary = getSubscriptionSummary(competition.codice);
+        
+        // Format date range
+        const dateText = formatDateRange(competition.data_inizio, competition.data_fine);
+        const locationText = competition.luogo || competition.societa_nome || competition.societa_codice || 'TBA';
         
         // Check for interests
         const hasExpressedInterest = userInterests.has(competition.codice) && 
@@ -1115,256 +1020,346 @@ function renderCompetitions(competitions) {
             interest => !subscribedTessere.has(interest.tessera_atleta)
         );
         
-        // Show interest status if there are interests from athletes who are NOT subscribed
-        if (unsubscribedInterests.length > 0) {
-            interestStatusBox.classList.remove('hidden');
-            const interestText = interestStatusBox.querySelector('.interest-status-text');
-            const count = unsubscribedInterests.length;
-            interestText.textContent = count === 1 ? 
-                'Interesse espresso' : 
-                `${count} interessati`;
+        // ====== DESKTOP TABLE ROW ======
+        if (tableBody) {
+            const row = document.createElement('tr');
+            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors';
+            row.dataset.competitionCode = competition.codice;
             
-            // Populate athlete list
-            const athleteListContainer = interestStatusBox.querySelector('.athlete-list');
-            athleteListContainer.innerHTML = unsubscribedInterests.map(interest => {
-                const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
-                const athleteName = athlete ? athlete.display : interest.tessera_atleta;
-                
-                // Show convert button only if invite is published (canSubscribe = true)
-                const canConvert = competitionStatus.canSubscribe;
-                const convertBtn = canConvert ? 
-                    `<button onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event)" 
-                             class="ml-2 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors" 
-                             title="Converti in iscrizione">
-                        <i class="fas fa-exchange-alt"></i>
-                    </button>` : '';
-                
-                const convertOption = canConvert ? `
-                    <a href="#" onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event); return false;" 
-                       class="block px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-exchange-alt mr-2"></i>Converti
-                    </a>
-                ` : '';
-                
-                return `
-                    <div class="text-xs text-yellow-800 dark:text-yellow-300 flex items-center justify-between py-2">
-                        <span>
-                            <i class="fas fa-user mr-2"></i>${athleteName}
-                            ${interest.categoria ? ` - ${interest.categoria}` : ''}
-                            ${interest.classe ? ` - ${interest.classe}` : ''}
-                        </span>
-                        <div class="relative inline-block text-left">
-                            <button onclick="toggleDropdown(event, 'int-${interest.id}')" 
-                                    class="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors" 
-                                    title="Azioni">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <div id="dropdown-int-${interest.id}" class="hidden absolute right-0 mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
-                                <div class="py-1">
-                                    <a href="#" onclick="editUserInterest(${interest.id}, '${competition.codice}', event); return false;" 
-                                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-edit mr-2"></i>Modifica
-                                    </a>
-                                    ${convertOption}
-                                    <a href="#" onclick="deleteSingleInterest(${interest.id}, '${competition.codice}', event); return false;" 
-                                       class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-trash mr-2"></i>Elimina
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+            row.innerHTML = `
+                <td class="px-4 py-4">
+                    <div class="flex items-center gap-2">
+                        <button class="expand-toggle text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors" onclick="toggleDetails(this, event)">
+                            <i class="fas fa-chevron-right text-sm"></i>
+                        </button>
+                        <span class="competition-badge px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${competitionStatus.color}">${competitionStatus.label}</span>
                     </div>
-                `;
-            }).join('');
+                </td>
+                <td class="px-4 py-4">
+                    <div class="text-base font-semibold text-gray-900 dark:text-white mb-1">${competition.nome}</div>
+                    <div class="text-xs font-mono text-gray-500 dark:text-gray-400">${competition.codice}</div>
+                </td>
+                <td class="px-4 py-4">
+                    <div class="flex items-center text-sm text-gray-700 dark:text-gray-300 mb-1">
+                        <i class="fas fa-calendar mr-1 text-gray-400 text-xs"></i>
+                        <span>${dateText}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-map-marker-alt mr-1 text-gray-400 text-xs"></i>
+                        <span>${locationText}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                    <div class="subscription-cell"></div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                    ${competitionStatus.status !== 'attesa_invito' ? 
+                        `<button class="btn-info text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition" title="Info" onclick="showCompetitionInfoById('${competition.codice}', event)">
+                            <i class="fas fa-info-circle"></i>
+                        </button>` : 
+                        '<span class="text-gray-400">-</span>'}
+                </td>
+            `;
             
-            // Hide the global delete button since we now have per-row buttons
-            if (interestDeleteBtn) {
-                interestDeleteBtn.classList.add('hidden');
-            }
+            // Populate subscription cell
+            const subCell = row.querySelector('.subscription-cell');
+            subCell.innerHTML = renderSubscriptionCell(competition, competitionStatus, subSummary);
+            
+            tableBody.appendChild(row);
+            
+            // Create expandable details row
+            const detailsRow = document.createElement('tr');
+            detailsRow.className = 'competition-details hidden border-b border-gray-200 dark:border-gray-700';
+            detailsRow.dataset.competitionCode = competition.codice;
+            
+            detailsRow.innerHTML = `
+                <td colspan="5" class="px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
+                    ${renderExpandedDetails(competition, competitionStatus, subSummary, unsubscribedInterests)}
+                </td>
+            `;
+            
+            tableBody.appendChild(detailsRow);
         }
         
-        if (subSummary.hasActiveSubscription) {
-            // User has active subscriptions - show summary
-            const statusBox = card.querySelector('.competition-subscription-status');
-            statusBox.classList.remove('hidden');
+        // ====== MOBILE CARD ======
+        if (mobileContainer) {
+            const card = document.createElement('div');
+            card.className = 'competition-card-mobile bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden';
+            card.dataset.competitionCode = competition.codice;
             
-            // Update status box based on primary subscription status
-            const statusTextContainer = statusBox.querySelector('.flex.items-center.text-green-800');
-            const statusIcon = statusTextContainer.querySelector('i');
-            const statusText = statusTextContainer.querySelector('span');
-            
-            // Remove all color classes
-            statusBox.classList.remove(
-                'bg-green-50', 'dark:bg-green-900/20', 'border-green-200', 'dark:border-green-800',
-                'bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-200', 'dark:border-yellow-800',
-                'bg-red-50', 'dark:bg-red-900/20', 'border-red-200', 'dark:border-red-800',
-                'bg-gray-50', 'dark:bg-gray-900/20', 'border-gray-200', 'dark:border-gray-800'
-            );
-            statusTextContainer.classList.remove(
-                'text-green-800', 'dark:text-green-300',
-                'text-yellow-800', 'dark:text-yellow-300',
-                'text-red-800', 'dark:text-red-300',
-                'text-gray-800', 'dark:text-gray-300'
-            );
-            
-            // Apply styling based on primary status
-            const colorMap = {
-                'green': {
-                    bg: ['bg-green-50', 'dark:bg-green-900/20', 'border-green-200', 'dark:border-green-800'],
-                    text: ['text-green-800', 'dark:text-green-300']
-                },
-                'yellow': {
-                    bg: ['bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-200', 'dark:border-yellow-800'],
-                    text: ['text-yellow-800', 'dark:text-yellow-300']
-                },
-                'gray': {
-                    bg: ['bg-gray-50', 'dark:bg-gray-900/20', 'border-gray-200', 'dark:border-gray-800'],
-                    text: ['text-gray-800', 'dark:text-gray-300']
-                }
-            };
-            
-            const colors = colorMap[subSummary.statusColor];
-            statusBox.classList.add(...colors.bg);
-            statusTextContainer.classList.add(...colors.text);
-            statusIcon.className = `${subSummary.statusIcon} mr-2`;
-            statusText.textContent = subSummary.statusText;
-            
-            // Populate athlete list for subscriptions
-            const athleteListContainer = statusBox.querySelector('.athlete-list');
-            athleteListContainer.innerHTML = subSummary.activeSubs.map(sub => {
-                const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
-                const athleteName = athlete ? athlete.display : sub.tessera_atleta;
-                
-                // Status badge
-                let statusBadge = '';
-                let textColor = colors.text.join(' ');
-                if (sub.stato === 'confermato') {
-                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Confermato</span>';
-                } else if (sub.stato === 'in attesa') {
-                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">In attesa</span>';
-                } else if (sub.stato === 'cancellazione richiesta') {
-                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Cancellazione richiesta</span>';
-                } else if (sub.stato === 'richiesta_effettuata') {
-                    statusBadge = '<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Richiesta</span>';
-                }
-                
-                // Check if tripla is in notes (for OL division)
-                const hasTripla = sub.categoria === 'OL' && (sub.note || '').toLowerCase().includes('tripla');
-                const triplaIcon = hasTripla ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot target">3⊙</span>' : '';
-                
-                return `
-                    <div class="text-xs ${textColor} flex items-center justify-between py-2">
-                        <span>
-                            <i class="fas fa-user mr-2"></i>${athleteName}
-                            ${sub.categoria ? ` - ${sub.categoria}` : ''}${triplaIcon}
-                            ${sub.classe ? ` - ${sub.classe}` : ''}
-                            ${sub.turno ? ` - Turno ${sub.turno}` : ''}
-                            ${statusBadge}
-                        </span>
-                        <div class="relative inline-block text-left">
-                            <button onclick="toggleDropdown(event, 'sub-${sub.id}')" 
-                                    class="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors" 
-                                    title="Azioni">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <div id="dropdown-sub-${sub.id}" class="hidden absolute right-0 mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
-                                <div class="py-1">
-                                    <a href="#" onclick="editUserSubscription(${sub.id}, '${competition.codice}', event); return false;" 
-                                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-edit mr-2"></i>Modifica
-                                    </a>
-                                    <a href="#" onclick="deleteSingleSubscription(${sub.id}, '${competition.codice}', event); return false;" 
-                                       class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-trash mr-2"></i>Elimina
-                                    </a>
-                                </div>
+            card.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1 pr-2">
+                            <div class="text-base font-semibold text-gray-900 dark:text-white mb-1">${competition.nome}</div>
+                            <div class="text-xs font-mono text-gray-500 dark:text-gray-400 mb-2">${competition.codice}</div>
+                            <div class="flex items-center text-sm text-gray-700 dark:text-gray-300 mb-1">
+                                <i class="fas fa-calendar mr-1 text-gray-400 text-xs"></i>
+                                <span>${dateText}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-map-marker-alt mr-1 text-gray-400 text-xs"></i>
+                                <span>${locationText}</span>
                             </div>
                         </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="competition-badge px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${competitionStatus.color}">${competitionStatus.label}</span>
+                            ${competitionStatus.status !== 'attesa_invito' ?
+                                `<button class="text-blue-600 dark:text-blue-400 text-sm" onclick="showCompetitionInfoById('${competition.codice}', event)">
+                                    <i class="fas fa-info-circle mr-1"></i>Info
+                                </button>` : ''}
+                        </div>
                     </div>
-                `;
-            }).join('');
+                    
+                    ${renderMobileSubscriptionSection(competition, competitionStatus, subSummary)}
+                    
+                    <button class="w-full mt-3 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition flex items-center justify-center" onclick="toggleMobileDetails(this, event)">
+                        <i class="fas fa-chevron-down mr-2"></i>
+                        <span>Dettagli</span>
+                    </button>
+                    
+                    <div class="mobile-details hidden mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        ${renderExpandedDetails(competition, competitionStatus, subSummary, unsubscribedInterests)}
+                    </div>
+                </div>
+            `;
             
-            // Allow subscribing additional athletes if:
-            // 1. User has multiple authorized athletes
-            // 2. Not all athletes are subscribed (active subscriptions < total athletes)
-            // 3. Competition subscriptions are still open (not past deadline)
-            const canSubscribeMore = authorizedAthletes.length > 1 && 
-                                      subSummary.activeSubs.length < authorizedAthletes.length &&
-                                      competitionStatus.canSubscribe;
-            
-            if (canSubscribeMore) {
-                subscribeBtn.disabled = false;
-                subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Aggiungi atleta';
-            } else {
-                subscribeBtn.disabled = true;
-                subscribeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-            
-            // Hide the global delete button since we now have per-row buttons
-            if (unsubscribeBtn) {
-                unsubscribeBtn.classList.add('hidden');
-            }
-        } else if (subSummary.allCancelled) {
-            // All subscriptions cancelled - allow resubscription
-            subscribeBtn.disabled = false;
-            subscribeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Iscriviti';
-        } else {
-            // Not subscribed - configure button based on competition status
-            if (competitionStatus.canExpressInterest) {
-                // Check if user already expressed interest (has interest in userInterests)
-                const hasExpressedInterest = userInterests.has(competition.codice) && 
-                    userInterests.get(competition.codice).some(i => i.stato === 'attivo');
-                
-                if (hasExpressedInterest) {
-                    // Already expressed interest - allow re-expressing
-                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>Mi interessa';
-                    subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-yellow-500', 'hover:bg-yellow-600');
-                    subscribeBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-                    subscribeBtn.disabled = false;
-                } else {
-                    // Show "Mi interessa" button for competitions without invites
-                    subscribeBtn.innerHTML = '<i class="fas fa-star mr-2"></i>Mi interessa';
-                    subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
-                    subscribeBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-                    subscribeBtn.disabled = false;
-                }
-            } else if (competitionStatus.canSubscribe) {
-                // Normal subscribe button
-                subscribeBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Iscriviti';
-                subscribeBtn.classList.add('bg-primary', 'hover:bg-primary-dark');
-                subscribeBtn.disabled = false;
-            } else {
-                // Closed - cannot subscribe
-                subscribeBtn.textContent = 'Chiuso';
-                subscribeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
-                subscribeBtn.classList.add('bg-red-600', 'opacity-50', 'cursor-not-allowed');
-                subscribeBtn.disabled = true;
-            }
+            mobileContainer.appendChild(card);
         }
+    });
+}
+
+// Helper function to render subscription cell (desktop table)
+function renderSubscriptionCell(competition, status, subSummary) {
+    if (subSummary.hasActiveSubscription) {
+        return `<div class="flex items-center justify-center gap-1">
+            <i class="fas fa-check-circle text-${subSummary.statusColor}-600 text-sm"></i>
+            <span class="text-xs font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.activeSubs.length}</span>
+        </div>`;
+    }
+    
+    // Show subscribe button
+    let buttonHtml = '';
+    if (status.canExpressInterest) {
+        const hasInterest = userInterests.has(competition.codice) && 
+            userInterests.get(competition.codice).some(i => i.stato === 'attivo');
+        buttonHtml = `<button class="px-3 py-1 text-xs rounded transition ${hasInterest ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-yellow-500 hover:bg-yellow-600'} text-white" onclick="openSubscriptionModalById('${competition.codice}', event)">
+            <i class="fas fa-star mr-1"></i>Interessa
+        </button>`;
+    } else if (status.canSubscribe) {
+        buttonHtml = `<button class="px-3 py-1 text-xs bg-primary hover:bg-primary-dark text-white rounded transition" onclick="openSubscriptionModalById('${competition.codice}', event)">
+            <i class="fas fa-user-plus mr-1"></i>Iscriviti
+        </button>`;
+    } else {
+        buttonHtml = `<span class="text-xs text-gray-500 dark:text-gray-400">Chiuso</span>`;
+    }
+    
+    return buttonHtml;
+}
+
+// Helper function to render mobile subscription section
+function renderMobileSubscriptionSection(competition, status, subSummary) {
+    if (subSummary.hasActiveSubscription) {
+        return `<div class="p-2 bg-${subSummary.statusColor}-50 dark:bg-${subSummary.statusColor}-900/20 border border-${subSummary.statusColor}-200 dark:border-${subSummary.statusColor}-800 rounded-lg mb-2">
+            <div class="flex items-center text-sm">
+                <i class="fas fa-${subSummary.statusIcon.split(' ')[1].replace('fa-', '')} text-${subSummary.statusColor}-600 mr-2"></i>
+                <span class="font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.statusText}</span>
+            </div>
+        </div>`;
+    }
+    
+    // Show subscribe button
+    let buttonHtml = '';
+    if (status.canExpressInterest) {
+        const hasInterest = userInterests.has(competition.codice) && 
+            userInterests.get(competition.codice).some(i => i.stato === 'attivo');
+        buttonHtml = `<button class="w-full px-4 py-2 text-sm rounded transition ${hasInterest ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-yellow-500 hover:bg-yellow-600'} text-white" onclick="openSubscriptionModalById('${competition.codice}', event)">
+            <i class="fas fa-star mr-2"></i>Mi interessa
+        </button>`;
+    } else if (status.canSubscribe) {
+        buttonHtml = `<button class="w-full px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-white rounded transition" onclick="openSubscriptionModalById('${competition.codice}', event)">
+            <i class="fas fa-user-plus mr-2"></i>Iscriviti
+        </button>`;
+    } else {
+        buttonHtml = `<button class="w-full px-4 py-2 text-sm bg-gray-400 text-white rounded cursor-not-allowed" disabled>
+            Chiuso
+        </button>`;
+    }
+    
+    return buttonHtml;
+}
+
+// Helper function to render expanded details (both desktop and mobile)
+function renderExpandedDetails(competition, status, subSummary, unsubscribedInterests) {
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">';
+    
+    // Left column - Competition info
+    html += '<div class="space-y-2">';
+    html += `<div class="flex items-start">
+        <i class="fas fa-bullseye mr-2 mt-1 text-primary flex-shrink-0"></i>
+        <div>
+            <span class="font-medium text-gray-700 dark:text-gray-300">Tipo: </span>
+            <span class="text-gray-600 dark:text-gray-400">${competition.tipo || 'N/A'}</span>
+        </div>
+    </div>`;
+    
+    const organizerText = competition.societa_nome || competition.societa_codice || 'N/A';
+    html += `<div class="flex items-start">
+        <i class="fas fa-users mr-2 mt-1 text-primary flex-shrink-0"></i>
+        <div>
+            <span class="font-medium text-gray-700 dark:text-gray-300">Organizzatore: </span>
+            <span class="text-gray-600 dark:text-gray-400">${organizerText}</span>
+        </div>
+    </div>`;
+    
+    // Deadline if available
+    const invito = allInviti[competition.codice];
+    if (invito && invito.data_chiusura_iscrizioni) {
+        html += `<div class="flex items-start">
+            <i class="fas fa-clock mr-2 mt-1 text-primary flex-shrink-0"></i>
+            <div>
+                <span class="font-medium text-gray-700 dark:text-gray-300">Scadenza: </span>
+                <span class="text-gray-600 dark:text-gray-400">${formatDate(invito.data_chiusura_iscrizioni)}</span>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    
+    // Right column - Subscription/Interest details
+    html += '<div class="space-y-3">';
+    
+    // Show subscribed athletes
+    if (subSummary.hasActiveSubscription) {
+        html += `<div class="p-3 bg-white dark:bg-gray-700 border border-${subSummary.statusColor}-300 dark:border-${subSummary.statusColor}-700 rounded-lg">
+            <div class="flex items-center text-sm mb-2">
+                <i class="fas fa-check-circle mr-2 text-${subSummary.statusColor}-600"></i>
+                <span class="font-medium text-gray-900 dark:text-white">${subSummary.statusText}</span>
+            </div>
+            <div class="space-y-1 text-xs">`;
         
-        // Button actions
-        subscribeBtn.addEventListener('click', () => {
-            if (!subscribeBtn.disabled) {
-                openSubscriptionModal(competition);
-            }
+        subSummary.activeSubs.forEach(sub => {
+            const athlete = authorizedAthletes.find(a => a.tessera === sub.tessera_atleta);
+            const athleteName = athlete ? athlete.display : sub.tessera_atleta;
+            const hasTripla = sub.categoria === 'OL' && (sub.note || '').toLowerCase().includes('tripla');
+            
+            html += `<div class="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-800 rounded">
+                <span class="text-gray-700 dark:text-gray-300">${athleteName}</span>
+                <div class="flex items-center gap-1">
+                    ${hasTripla ? '<span class="px-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot">3⊙</span>' : ''}
+                    <button class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400" onclick="editUserSubscription(${sub.id}, '${competition.codice}', event)" title="Modifica">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400" onclick="deleteSubscriptionById(${sub.id}, '${competition.codice}', event)" title="Elimina">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>`;
         });
         
-        // Info button - show competition invite (hide if no invite available)
-        const infoBtn = card.querySelector('.btn-info');
-        if (competitionStatus.status === 'attesa_invito') {
-            // Hide info button if competition has no invite
-            infoBtn.classList.add('hidden');
-        } else {
-            infoBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showCompetitionInfo(competition);
-            });
-        }
+        html += '</div></div>';
+    }
+    
+    // Show interested athletes
+    if (unsubscribedInterests.length > 0) {
+        html += `<div class="p-3 bg-white dark:bg-gray-700 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+            <div class="flex items-center text-sm mb-2">
+                <i class="fas fa-star mr-2 text-yellow-600"></i>
+                <span class="font-medium text-gray-900 dark:text-white">Interesse espresso</span>
+            </div>
+            <div class="space-y-1 text-xs">`;
         
-        grid.appendChild(card);
-    });
+        unsubscribedInterests.forEach(interest => {
+            const athlete = authorizedAthletes.find(a => a.tessera === interest.tessera_atleta);
+            const athleteName = athlete ? athlete.display : interest.tessera_atleta;
+            const canConvert = status.canSubscribe;
+            
+            html += `<div class="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-800 rounded">
+                <span class="text-gray-700 dark:text-gray-300">${athleteName}</span>
+                <div class="flex items-center gap-1">
+                    ${canConvert ? `<button class="px-2 py-0.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded" onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event)" title="Converti">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>` : ''}
+                    <button class="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400" onclick="deleteInterestById(${interest.id}, '${competition.codice}', event)" title="Rimuovi">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+        
+        html += '</div></div>';
+    }
+    
+    html += '</div></div>';
+    
+    return html;
+}
+
+// Toggle functions for expand/collapse
+function toggleDetails(button, event) {
+    event.stopPropagation();
+    const row = button.closest('tr');
+    const code = row.dataset.competitionCode;
+    const detailsRow = document.querySelector(`tr.competition-details[data-competition-code="${code}"]`);
+    const icon = button.querySelector('i');
+    
+    if (detailsRow.classList.contains('hidden')) {
+        detailsRow.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        detailsRow.classList.add('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    }
+}
+
+function toggleMobileDetails(button, event) {
+    event.stopPropagation();
+    const card = button.closest('.competition-card-mobile');
+    const details = card.querySelector('.mobile-details');
+    const icon = button.querySelector('i');
+    const text = button.querySelector('span');
+    
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        text.textContent = 'Nascondi';
+    } else {
+        details.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        text.textContent = 'Dettagli';
+    }
+}
+
+// Helper functions to call existing modal functions
+function openSubscriptionModalById(codiceGara, event) {
+    event.stopPropagation();
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    if (competition) openSubscriptionModal(competition);
+}
+
+function showCompetitionInfoById(codiceGara, event) {
+    event.stopPropagation();
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    if (competition) showCompetitionInfo(competition);
+}
+
+function deleteSubscriptionById(subId, codiceGara, event) {
+    event.stopPropagation();
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    const subscriptions = userSubscriptions.get(codiceGara) || [];
+    const sub = subscriptions.find(s => s.id === subId);
+    if (sub && competition) deleteSubscription(sub, competition);
+}
+
+function deleteInterestById(interestId, codiceGara, event) {
+    event.stopPropagation();
+    const competition = allCompetitions.find(c => c.codice === codiceGara);
+    const interests = userInterests.get(codiceGara) || [];
+    const interest = interests.find(i => i.id === interestId);
+    if (interest && competition) deleteInterest(interest, competition);
 }
 
 async function openSubscriptionModal(competition) {
