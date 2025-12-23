@@ -64,7 +64,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-32">Stato</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Gara</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-56">Data/Luogo</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-40">Iscrizione</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-24">Status</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-32">Azione</th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase w-16">Info</th>
                         </tr>
                     </thead>
@@ -1023,15 +1024,14 @@ function renderCompetitions(competitions) {
         // ====== DESKTOP TABLE ROW ======
         if (tableBody) {
             const row = document.createElement('tr');
-            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors';
+            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer';
             row.dataset.competitionCode = competition.codice;
+            row.onclick = (e) => toggleDetailsFromRow(row, e);
             
             row.innerHTML = `
                 <td class="px-4 py-4">
                     <div class="flex items-center gap-2">
-                        <button class="expand-toggle text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors" onclick="toggleDetails(this, event)">
-                            <i class="fas fa-chevron-right text-sm"></i>
-                        </button>
+                        <i class="expand-icon fas fa-chevron-right text-sm text-gray-500 dark:text-gray-400 transition-transform"></i>
                         <span class="competition-badge px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${competitionStatus.color}">${competitionStatus.label}</span>
                     </div>
                 </td>
@@ -1053,8 +1053,11 @@ function renderCompetitions(competitions) {
                         <span>${competition.societa_nome || competition.societa_codice || 'N/A'}</span>
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center">
-                    <div class="subscription-cell"></div>
+                <td class="px-4 py-4 text-center" onclick="event.stopPropagation()">
+                    <div class="status-icons-cell"></div>
+                </td>
+                <td class="px-4 py-4 text-center" onclick="event.stopPropagation()">
+                    <div class="action-cell"></div>
                 </td>
                 <td class="px-4 py-4 text-center">
                     ${competitionStatus.status !== 'attesa_invito' ? 
@@ -1065,9 +1068,13 @@ function renderCompetitions(competitions) {
                 </td>
             `;
             
-            // Populate subscription cell
-            const subCell = row.querySelector('.subscription-cell');
-            subCell.innerHTML = renderSubscriptionCell(competition, competitionStatus, subSummary);
+            // Populate status icons cell
+            const statusCell = row.querySelector('.status-icons-cell');
+            statusCell.innerHTML = renderStatusIcons(competition, competitionStatus, subSummary, unsubscribedInterests);
+            
+            // Populate action cell
+            const actionCell = row.querySelector('.action-cell');
+            actionCell.innerHTML = renderActionButton(competition, competitionStatus, subSummary);
             
             tableBody.appendChild(row);
             
@@ -1077,7 +1084,7 @@ function renderCompetitions(competitions) {
             detailsRow.dataset.competitionCode = competition.codice;
             
             detailsRow.innerHTML = `
-                <td colspan="5" class="px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
+                <td colspan="6" class="px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
                     ${renderExpandedDetails(competition, competitionStatus, subSummary, unsubscribedInterests)}
                 </td>
             `;
@@ -1133,38 +1140,55 @@ function renderCompetitions(competitions) {
     });
 }
 
-// Helper function to render subscription cell (desktop table)
-function renderSubscriptionCell(competition, status, subSummary) {
+// Helper function to render status icons (subscriptions + interests)
+function renderStatusIcons(competition, status, subSummary, unsubscribedInterests) {
+    const icons = [];
+    
+    // Show subscription status icon
     if (subSummary.hasActiveSubscription) {
-        // Determine icon based on primary status
         let icon = 'fa-check-circle';
+        let color = subSummary.statusColor;
         if (subSummary.primaryStatus === 'in attesa') {
             icon = 'fa-hourglass-half';
         } else if (subSummary.primaryStatus === 'richiesta_effettuata') {
             icon = 'fa-paper-plane';
         }
-        
-        // Check if user can subscribe more athletes
+        icons.push(`<div class="flex items-center gap-1" title="${subSummary.statusText}">
+            <i class="fas ${icon} text-${color}-600"></i>
+            <span class="text-xs font-medium text-${color}-800 dark:text-${color}-300">${subSummary.activeSubs.length}</span>
+        </div>`);
+    }
+    
+    // Show interest icon
+    if (unsubscribedInterests.length > 0) {
+        icons.push(`<div class="flex items-center gap-1" title="Interesse espresso">
+            <i class="fas fa-star text-yellow-600"></i>
+            <span class="text-xs font-medium text-yellow-800 dark:text-yellow-300">${unsubscribedInterests.length}</span>
+        </div>`);
+    }
+    
+    if (icons.length === 0) {
+        return '<span class="text-gray-400">-</span>';
+    }
+    
+    return `<div class="flex flex-col gap-1 items-center">${icons.join('')}</div>`;
+}
+
+// Helper function to render action button
+function renderActionButton(competition, status, subSummary) {
+    // Check if user can subscribe more athletes
+    if (subSummary.hasActiveSubscription) {
         const canSubscribeMore = authorizedAthletes.length > 1 && 
                                   subSummary.activeSubs.length < authorizedAthletes.length &&
                                   status.canSubscribe;
         
         if (canSubscribeMore) {
-            return `<div class="flex items-center justify-center gap-2">
-                <div class="flex items-center gap-1">
-                    <i class="fas ${icon} text-${subSummary.statusColor}-600 text-sm"></i>
-                    <span class="text-xs font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.activeSubs.length}</span>
-                </div>
-                <button class="px-2 py-1 text-xs bg-primary hover:bg-primary-dark text-white rounded transition" onclick="openSubscriptionModalById('${competition.codice}', event)" title="Aggiungi atleta">
-                    <i class="fas fa-user-plus"></i>
-                </button>
-            </div>`;
+            return `<button class="px-3 py-1 text-xs bg-primary hover:bg-primary-dark text-white rounded transition" onclick="openSubscriptionModalById('${competition.codice}', event)">
+                <i class="fas fa-user-plus mr-1"></i>Aggiungi
+            </button>`;
         }
         
-        return `<div class="flex items-center justify-center gap-1">
-            <i class="fas ${icon} text-${subSummary.statusColor}-600 text-sm"></i>
-            <span class="text-xs font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.activeSubs.length}</span>
-        </div>`;
+        return '<span class="text-xs text-gray-500 dark:text-gray-400">-</span>';
     }
     
     // Show subscribe button
@@ -1345,21 +1369,26 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
 }
 
 // Toggle functions for expand/collapse
-function toggleDetails(button, event) {
-    event.stopPropagation();
-    const row = button.closest('tr');
+function toggleDetailsFromRow(row, event) {
+    // Don't toggle if clicking on buttons or links
+    if (event.target.closest('button') || event.target.closest('a')) {
+        return;
+    }
+    
     const code = row.dataset.competitionCode;
     const detailsRow = document.querySelector(`tr.competition-details[data-competition-code="${code}"]`);
-    const icon = button.querySelector('i');
+    const icon = row.querySelector('.expand-icon');
     
     if (detailsRow.classList.contains('hidden')) {
         detailsRow.classList.remove('hidden');
         icon.classList.remove('fa-chevron-right');
         icon.classList.add('fa-chevron-down');
+        icon.style.transform = 'rotate(90deg)';
     } else {
         detailsRow.classList.add('hidden');
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-right');
+        icon.style.transform = 'rotate(0deg)';
     }
 }
 
