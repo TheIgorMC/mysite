@@ -1023,7 +1023,7 @@ function renderCompetitions(competitions) {
         // ====== DESKTOP TABLE ROW ======
         if (tableBody) {
             const row = document.createElement('tr');
-            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors';
+            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors';
             row.dataset.competitionCode = competition.codice;
             
             row.innerHTML = `
@@ -1044,9 +1044,13 @@ function renderCompetitions(competitions) {
                         <i class="fas fa-calendar mr-1 text-gray-400 text-xs"></i>
                         <span>${dateText}</span>
                     </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
                         <i class="fas fa-map-marker-alt mr-1 text-gray-400 text-xs"></i>
                         <span>${locationText}</span>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-500 dark:text-gray-500">
+                        <i class="fas fa-users mr-1 text-gray-400 text-xs"></i>
+                        <span>${competition.societa_nome || competition.societa_codice || 'N/A'}</span>
                     </div>
                 </td>
                 <td class="px-4 py-4 text-center">
@@ -1132,8 +1136,33 @@ function renderCompetitions(competitions) {
 // Helper function to render subscription cell (desktop table)
 function renderSubscriptionCell(competition, status, subSummary) {
     if (subSummary.hasActiveSubscription) {
+        // Determine icon based on primary status
+        let icon = 'fa-check-circle';
+        if (subSummary.primaryStatus === 'in attesa') {
+            icon = 'fa-hourglass-half';
+        } else if (subSummary.primaryStatus === 'richiesta_effettuata') {
+            icon = 'fa-paper-plane';
+        }
+        
+        // Check if user can subscribe more athletes
+        const canSubscribeMore = authorizedAthletes.length > 1 && 
+                                  subSummary.activeSubs.length < authorizedAthletes.length &&
+                                  status.canSubscribe;
+        
+        if (canSubscribeMore) {
+            return `<div class="flex items-center justify-center gap-2">
+                <div class="flex items-center gap-1">
+                    <i class="fas ${icon} text-${subSummary.statusColor}-600 text-sm"></i>
+                    <span class="text-xs font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.activeSubs.length}</span>
+                </div>
+                <button class="px-2 py-1 text-xs bg-primary hover:bg-primary-dark text-white rounded transition" onclick="openSubscriptionModalById('${competition.codice}', event)" title="Aggiungi atleta">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            </div>`;
+        }
+        
         return `<div class="flex items-center justify-center gap-1">
-            <i class="fas fa-check-circle text-${subSummary.statusColor}-600 text-sm"></i>
+            <i class="fas ${icon} text-${subSummary.statusColor}-600 text-sm"></i>
             <span class="text-xs font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.activeSubs.length}</span>
         </div>`;
     }
@@ -1160,12 +1189,33 @@ function renderSubscriptionCell(competition, status, subSummary) {
 // Helper function to render mobile subscription section
 function renderMobileSubscriptionSection(competition, status, subSummary) {
     if (subSummary.hasActiveSubscription) {
-        return `<div class="p-2 bg-${subSummary.statusColor}-50 dark:bg-${subSummary.statusColor}-900/20 border border-${subSummary.statusColor}-200 dark:border-${subSummary.statusColor}-800 rounded-lg mb-2">
+        // Determine icon based on primary status
+        let icon = 'check-circle';
+        if (subSummary.primaryStatus === 'in attesa') {
+            icon = 'hourglass-half';
+        } else if (subSummary.primaryStatus === 'richiesta_effettuata') {
+            icon = 'paper-plane';
+        }
+        
+        // Check if user can subscribe more athletes
+        const canSubscribeMore = authorizedAthletes.length > 1 && 
+                                  subSummary.activeSubs.length < authorizedAthletes.length &&
+                                  status.canSubscribe;
+        
+        let html = `<div class="p-2 bg-${subSummary.statusColor}-50 dark:bg-${subSummary.statusColor}-900/20 border border-${subSummary.statusColor}-200 dark:border-${subSummary.statusColor}-800 rounded-lg mb-2">
             <div class="flex items-center text-sm">
-                <i class="fas fa-${subSummary.statusIcon.split(' ')[1].replace('fa-', '')} text-${subSummary.statusColor}-600 mr-2"></i>
+                <i class="fas fa-${icon} text-${subSummary.statusColor}-600 mr-2"></i>
                 <span class="font-medium text-${subSummary.statusColor}-800 dark:text-${subSummary.statusColor}-300">${subSummary.statusText}</span>
             </div>
         </div>`;
+        
+        if (canSubscribeMore) {
+            html += `<button class="w-full px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-white rounded transition mb-2" onclick="openSubscriptionModalById('${competition.codice}', event)">
+                <i class="fas fa-user-plus mr-2"></i>Aggiungi atleta
+            </button>`;
+        }
+        
+        return html;
     }
     
     // Show subscribe button
