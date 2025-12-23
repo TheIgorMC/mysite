@@ -1277,6 +1277,15 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
         </div>
     </div>`;
     
+    // Debug: log what we have for the organization
+    console.log('Organizer data:', {
+        codice: competition.codice,
+        nome: competition.nome,
+        societa_nome: competition.societa_nome,
+        societa_codice: competition.societa_codice,
+        luogo: competition.luogo
+    });
+    
     // Show both organization name and code if available
     let organizerDisplay = 'N/A';
     if (competition.societa_nome && competition.societa_codice) {
