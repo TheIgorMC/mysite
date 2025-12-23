@@ -771,6 +771,10 @@ def handle_iscrizioni():
                                 details['Data'] = data_inizio
                         if comp_details.get('luogo'):
                             details['Luogo'] = comp_details['luogo']
+                        if comp_details.get('societa_nome'):
+                            details['Società Organizzatrice'] = comp_details['societa_nome']
+                        elif comp_details.get('societa_codice'):
+                            details['Società Organizzatrice'] = comp_details['societa_codice']
                     
                     details['Codice Gara'] = data['codice_gara']
                     
