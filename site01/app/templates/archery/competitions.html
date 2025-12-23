@@ -1024,7 +1024,7 @@ function renderCompetitions(competitions) {
         // ====== DESKTOP TABLE ROW ======
         if (tableBody) {
             const row = document.createElement('tr');
-            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer';
+            row.className = 'competition-row border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer';
             row.dataset.competitionCode = competition.codice;
             row.onclick = (e) => toggleDetailsFromRow(row, e);
             
@@ -1277,12 +1277,21 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
         </div>
     </div>`;
     
-    const organizerText = competition.societa_nome || competition.societa_codice || 'N/A';
+    // Show both organization name and code if available
+    let organizerDisplay = 'N/A';
+    if (competition.societa_nome && competition.societa_codice) {
+        organizerDisplay = `${competition.societa_nome} <span class="text-xs text-gray-500 dark:text-gray-400">(${competition.societa_codice})</span>`;
+    } else if (competition.societa_nome) {
+        organizerDisplay = competition.societa_nome;
+    } else if (competition.societa_codice) {
+        organizerDisplay = competition.societa_codice;
+    }
+    
     html += `<div class="flex items-start">
         <i class="fas fa-users mr-2 mt-1 text-primary flex-shrink-0"></i>
         <div>
             <span class="font-medium text-gray-700 dark:text-gray-300">Organizzatore: </span>
-            <span class="text-gray-600 dark:text-gray-400">${organizerText}</span>
+            <span class="text-gray-600 dark:text-gray-400">${organizerDisplay}</span>
         </div>
     </div>`;
     
