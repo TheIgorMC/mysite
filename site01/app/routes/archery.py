@@ -18,6 +18,7 @@ from app.archery_utils import (
 )
 from app.models import AuthorizedAthlete, User
 from app.ranking_positions import get_ranking_positions
+from app.email_grouping import send_grouped_emails
 from app import db
 
 bp = Blueprint('archery', __name__, url_prefix='/archery')
@@ -817,21 +818,17 @@ def handle_iscrizioni():
                     if comp_details and comp_details.get('nome'):
                         subject += f" - {comp_details['nome']}"
                     
-                    # Send email to each user managing this athlete
-                    for user_email in user_emails:
-                        current_app.logger.info(f'[EMAIL] Sending subscription email to {user_email}')
-                        try:
-                            result = client.send_email(
-                                recipient_email=user_email,
-                                mail_type='subscription',
-                                locale='it',
-                                subject=subject,
-                                body_text='Iscrizione registrata con successo.',
-                                details_json=details
-                            )
-                            current_app.logger.info(f'[EMAIL] Successfully queued subscription email to {user_email}: {result}')
-                        except Exception as send_err:
-                            current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    # Use grouped email sending (handles single or multiple athletes)
+                    send_grouped_emails(
+                        athletes_data=[{
+                            'tessera_atleta': data['tessera_atleta'],
+                            'details': details
+                        }],
+                        mail_type='subscription',
+                        subject_prefix=subject,
+                        body_text='Iscrizione registrata con successo.',
+                        client=client
+                    )
                 else:
                     current_app.logger.warning(f'[EMAIL] No users found managing athlete {data["tessera_atleta"]}')
             except Exception as email_err:
@@ -889,20 +886,17 @@ def manage_iscrizione(subscription_id):
                         if comp_details and comp_details.get('nome'):
                             subject += f" - {comp_details['nome']}"
                         
-                        for user_email in user_emails:
-                            current_app.logger.info(f'[EMAIL] Sending cancellation email to {user_email}')
-                            try:
-                                result_email = client.send_email(
-                                    recipient_email=user_email,
-                                    mail_type='cancellation_confirmed',
-                                    locale='it',
-                                    subject=subject,
-                                    body_text='Iscrizione cancellata con successo.',
-                                    details_json=details
-                                )
-                                current_app.logger.info(f'[EMAIL] Successfully queued cancellation email to {user_email}: {result_email}')
-                            except Exception as send_err:
-                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                        # Use grouped email sending
+                        send_grouped_emails(
+                            athletes_data=[{
+                                'tessera_atleta': tessera_atleta,
+                                'details': details
+                            }],
+                            mail_type='cancellation_confirmed',
+                            subject_prefix=subject,
+                            body_text='Iscrizione cancellata con successo.',
+                            client=client
+                        )
                     else:
                         current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
@@ -964,20 +958,17 @@ def manage_iscrizione(subscription_id):
                         if comp_details and comp_details.get('nome'):
                             subject += f" - {comp_details['nome']}"
                         
-                        for user_email in user_emails:
-                            current_app.logger.info(f'[EMAIL] Sending modification email to {user_email}')
-                            try:
-                                result_email = client.send_email(
-                                    recipient_email=user_email,
-                                    mail_type='modification_confirmed',
-                                    locale='it',
-                                    subject=subject,
-                                    body_text='Iscrizione modificata con successo.',
-                                    details_json=details
-                                )
-                                current_app.logger.info(f'[EMAIL] Successfully queued modification email to {user_email}: {result_email}')
-                            except Exception as send_err:
-                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                        # Use grouped email sending
+                        send_grouped_emails(
+                            athletes_data=[{
+                                'tessera_atleta': tessera_atleta,
+                                'details': details
+                            }],
+                            mail_type='modification_confirmed',
+                            subject_prefix=subject,
+                            body_text='Iscrizione modificata con successo.',
+                            client=client
+                        )
                     else:
                         current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
@@ -1073,20 +1064,17 @@ def handle_interesse():
                     if comp_details and comp_details.get('nome'):
                         subject += f" - {comp_details['nome']}"
                     
-                    for user_email in user_emails:
-                        current_app.logger.info(f'[EMAIL] Sending interest email to {user_email}')
-                        try:
-                            result = client.send_email(
-                                recipient_email=user_email,
-                                mail_type='interest',
-                                locale='it',
-                                subject=subject,
-                                body_text='Espressione di interesse registrata con successo.',
-                                details_json=details
-                            )
-                            current_app.logger.info(f'[EMAIL] Successfully queued interest email to {user_email}: {result}')
-                        except Exception as send_err:
-                            current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                    # Use grouped email sending
+                    send_grouped_emails(
+                        athletes_data=[{
+                            'tessera_atleta': data['tessera_atleta'],
+                            'details': details
+                        }],
+                        mail_type='interest',
+                        subject_prefix=subject,
+                        body_text='Espressione di interesse registrata con successo.',
+                        client=client
+                    )
                 else:
                     current_app.logger.warning(f'[EMAIL] No users found managing athlete {data["tessera_atleta"]}')
             except Exception as email_err:
@@ -1128,19 +1116,17 @@ def manage_interesse(interest_id):
                             'Stato': 'Cancellata'
                         }
                         
-                        for user_email in user_emails:
-                            current_app.logger.info(f'[EMAIL] Sending interest cancellation email to {user_email}')
-                            try:
-                                result_email = client.send_email(
-                                    recipient_email=user_email,
-                                    mail_type='cancellation_confirmed',
-                                    locale='it',
-                                    body_text='Espressione di interesse cancellata con successo.',
-                                    details_json=details
-                                )
-                                current_app.logger.info(f'[EMAIL] Successfully queued interest cancellation email to {user_email}: {result_email}')
-                            except Exception as send_err:
-                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                        # Use grouped email sending
+                        send_grouped_emails(
+                            athletes_data=[{
+                                'tessera_atleta': tessera_atleta,
+                                'details': details
+                            }],
+                            mail_type='cancellation_confirmed',
+                            subject_prefix='Interesse cancellato',
+                            body_text='Espressione di interesse cancellata con successo.',
+                            client=client
+                        )
                     else:
                         current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
@@ -1176,19 +1162,17 @@ def manage_interesse(interest_id):
                             'Modifiche': ', '.join(changes) if changes else 'Nessuna modifica specifica'
                         }
                         
-                        for user_email in user_emails:
-                            current_app.logger.info(f'[EMAIL] Sending interest modification email to {user_email}')
-                            try:
-                                result_email = client.send_email(
-                                    recipient_email=user_email,
-                                    mail_type='modification_confirmed',
-                                    locale='it',
-                                    body_text='Espressione di interesse modificata con successo.',
-                                    details_json=details
-                                )
-                                current_app.logger.info(f'[EMAIL] Successfully queued interest modification email to {user_email}: {result_email}')
-                            except Exception as send_err:
-                                current_app.logger.error(f'[EMAIL] Failed to send to {user_email}: {send_err}')
+                        # Use grouped email sending
+                        send_grouped_emails(
+                            athletes_data=[{
+                                'tessera_atleta': tessera_atleta,
+                                'details': details
+                            }],
+                            mail_type='modification_confirmed',
+                            subject_prefix='Interesse modificato',
+                            body_text='Espressione di interesse modificata con successo.',
+                            client=client
+                        )
                     else:
                         current_app.logger.warning(f'[EMAIL] No users found managing athlete {tessera_atleta}')
                 except Exception as email_err:
@@ -1389,7 +1373,7 @@ def link_athlete_email():
     client = OrionAPIClient()
     
     try:
-        result = client._make_request('POST', '/api/mailer/link', json_data={
+        result = client._make_request('POST', '/api/mailer/link', data={
             'tessera': tessera,
             'email': email
         })
@@ -1441,7 +1425,7 @@ def sync_athlete_emails():
     
     for athlete in authorized:
         try:
-            client._make_request('POST', '/api/mailer/link', json_data={
+            client._make_request('POST', '/api/mailer/link', data={
                 'tessera': int(athlete.tessera_atleta),
                 'email': current_user.email
             })
