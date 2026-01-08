@@ -7,6 +7,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 from app.api import OrionAPIClient
+from app.models import AuthorizedAthlete
 from app.utils import t
 from app.archery_utils import (
     get_categories,
@@ -1354,3 +1355,108 @@ def download_ranking_positions():
     except Exception as e:
         current_app.logger.error(f"Error downloading ranking positions: {e}")
         return jsonify({'error': 'Failed to download ranking positions', 'details': str(e)}), 500
+
+
+# ============================================
+# ATHLETE EMAIL MANAGEMENT
+# ============================================
+
+@bp.route('/api/athlete/<int:tessera>/emails')
+@login_required
+def get_athlete_emails(tessera):
+    """Get all email addresses associated with an athlete"""
+    client = OrionAPIClient()
+    
+    try:
+        emails = client._make_request('GET', f'/api/mailer/athlete/{tessera}')
+        return jsonify(emails if emails else [])
+    except Exception as e:
+        current_app.logger.error(f"Error fetching athlete emails: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/athlete/email/link', methods=['POST'])
+@login_required
+def link_athlete_email():
+    """Link an email address to an athlete"""
+    data = request.get_json()
+    tessera = data.get('tessera')
+    email = data.get('email')
+    
+    if not tessera or not email:
+        return jsonify({'error': 'tessera and email are required'}), 400
+    
+    client = OrionAPIClient()
+    
+    try:
+        result = client._make_request('POST', '/api/mailer/link', json_data={
+            'tessera': tessera,
+            'email': email
+        })
+        return jsonify(result if result else {'status': 'ok'})
+    except Exception as e:
+        current_app.logger.error(f"Error linking athlete email: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/athlete/email/unlink', methods=['DELETE'])
+@login_required
+def unlink_athlete_email():
+    """Remove the association between an athlete and an email"""
+    tessera = request.args.get('tessera')
+    email = request.args.get('email')
+    
+    if not tessera or not email:
+        return jsonify({'error': 'tessera and email query parameters are required'}), 400
+    
+    client = OrionAPIClient()
+    
+    try:
+        result = client._make_request('DELETE', f'/api/mailer/link?tessera={tessera}&email={email}')
+        return jsonify(result if result else {'status': 'ok'})
+    except Exception as e:
+        current_app.logger.error(f"Error unlinking athlete email: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/athlete/email/sync', methods=['POST'])
+@login_required
+def sync_athlete_emails():
+    """
+    Sync emails for all authorized athletes of the current user.
+    Links user's email to all their authorized athletes.
+    """
+    if not current_user.email:
+        return jsonify({'error': 'User has no email address'}), 400
+    
+    # Get all authorized athletes for this user
+    authorized = AuthorizedAthlete.query.filter_by(user_id=current_user.id).all()
+    
+    if not authorized:
+        return jsonify({'message': 'No authorized athletes to sync', 'synced': 0}), 200
+    
+    client = OrionAPIClient()
+    synced_count = 0
+    errors = []
+    
+    for athlete in authorized:
+        try:
+            client._make_request('POST', '/api/mailer/link', json_data={
+                'tessera': int(athlete.tessera_atleta),
+                'email': current_user.email
+            })
+            synced_count += 1
+        except Exception as e:
+            errors.append(f"Athlete {athlete.tessera_atleta}: {str(e)}")
+            current_app.logger.error(f"Error syncing athlete {athlete.tessera_atleta}: {e}")
+    
+    response = {
+        'message': f'Synced {synced_count} out of {len(authorized)} athletes',
+        'synced': synced_count,
+        'total': len(authorized)
+    }
+    
+    if errors:
+        response['errors'] = errors
+    
+    return jsonify(response)

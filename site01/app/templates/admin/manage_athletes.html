@@ -106,7 +106,15 @@
                         </div>
                         
                         <!-- Athletes List -->
-                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Authorized Athletes</h4>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Authorized Athletes</h4>
+                            <button id="sync-emails-btn" onclick="syncAthleteEmails()" 
+                                    class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                                    title="Sync user's email to all athletes">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Sync Emails</span>
+                            </button>
+                        </div>
                         
                         <div id="user-athletes-list" class="space-y-3">
                             <!-- Populated by JavaScript -->
@@ -504,6 +512,52 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// Sync athlete emails
+async function syncAthleteEmails() {
+    if (!selectedUser) {
+        showNotification('No user selected', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('sync-emails-btn');
+    const originalHtml = btn.innerHTML;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
+    
+    try {
+        const response = await fetch('/archery/api/athlete/email/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to sync emails');
+        }
+        
+        // Show success message with details
+        let message = data.message;
+        if (data.errors && data.errors.length > 0) {
+            message += `\nWarnings: ${data.errors.join(', ')}`;
+        }
+        
+        showNotification(message, data.errors && data.errors.length > 0 ? 'warning' : 'success');
+        
+    } catch (error) {
+        console.error('Error syncing emails:', error);
+        showNotification(error.message || 'Failed to sync emails', 'error');
+    } finally {
+        // Restore button state
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
 }
 </script>
 

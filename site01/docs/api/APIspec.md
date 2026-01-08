@@ -760,6 +760,251 @@ Scheduled email for future:
 
 ---
 
+## 📨 Athlete Email Management (Flask Proxy Endpoints)
+
+These endpoints are available through the Flask backend and proxy requests to the Orion API.
+
+### `GET /archery/api/athlete/<tessera>/emails`
+
+Get all email addresses associated with a specific athlete.
+
+**Path params:**
+
+* `tessera` (int, required): Athlete ID
+
+**Auth:** Login required
+
+**Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "tessera": 123456,
+    "email": "athlete@example.com",
+    "created_at": "2025-11-15T14:30:00"
+  },
+  {
+    "id": 2,
+    "tessera": 123456,
+    "email": "parent@example.com",
+    "created_at": "2025-11-16T09:15:00"
+  }
+]
+```
+
+---
+
+### `POST /archery/api/athlete/email/link`
+
+Link an email address to an athlete. If the association already exists, it's ignored without error.
+
+**Auth:** Login required
+
+**Body:**
+
+```json
+{
+  "tessera": 123456,
+  "email": "athlete@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "message": "Linked athlete@example.com to 123456"
+}
+```
+
+---
+
+### `DELETE /archery/api/athlete/email/unlink`
+
+Remove the association between an athlete and a specific email address.
+
+**Auth:** Login required
+
+**Query params:**
+
+| Param     | Type   | Required | Description                  |
+| --------- | ------ | -------- | ---------------------------- |
+| `tessera` | int    | ✅ Yes   | Athlete ID                   |
+| `email`   | string | ✅ Yes   | Email address to unlink      |
+
+**Example:**
+
+```
+DELETE /archery/api/athlete/email/unlink?tessera=123456&email=athlete@example.com
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "message": "Link removed"
+}
+```
+
+---
+
+### `POST /archery/api/athlete/email/sync`
+
+Automatically sync the current user's email address to all their authorized athletes.
+This is useful when a user adds new athletes or when you want to bulk-link emails.
+
+**Auth:** Login required
+
+**Body:** None (uses current user's email and authorized athletes)
+
+**Response:**
+
+```json
+{
+  "message": "Synced 5 out of 5 athletes",
+  "synced": 5,
+  "total": 5
+}
+```
+
+**Error Response (if user has no email):**
+
+```json
+{
+  "error": "User has no email address"
+}
+```
+
+**Partial Success Response (some athletes failed):**
+
+```json
+{
+  "message": "Synced 3 out of 5 athletes",
+  "synced": 3,
+  "total": 5,
+  "errors": [
+    "Athlete 123456: Connection timeout",
+    "Athlete 789012: Invalid tessera"
+  ]
+}
+```
+
+---
+
+## 📨 Athlete Email Management
+
+### `GET /api/mailer/athlete/{tessera}`
+
+Get all email addresses associated with a specific athlete.
+
+**Path params:**
+
+* `tessera` (int, required): Athlete ID
+
+**Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "tessera": 123456,
+    "email": "athlete@example.com",
+    "created_at": "2025-11-15T14:30:00"
+  },
+  {
+    "id": 2,
+    "tessera": 123456,
+    "email": "parent@example.com",
+    "created_at": "2025-11-16T09:15:00"
+  }
+]
+```
+
+---
+
+### `POST /api/mailer/link`
+
+Link an email address to an athlete. If the association already exists, it's ignored without error (`INSERT IGNORE`).
+
+**Body:**
+
+```json
+{
+  "tessera": 123456,
+  "email": "athlete@example.com"
+}
+```
+
+**Fields:**
+
+| Field     | Type   | Required | Description               |
+| --------- | ------ | -------- | ------------------------- |
+| `tessera` | int    | ✅ Yes   | Athlete ID                |
+| `email`   | string | ✅ Yes   | Email address to link     |
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "message": "Linked athlete@example.com to 123456"
+}
+```
+
+**Notes:**
+
+* Email is automatically normalized (stripped and lowercased)
+* Duplicate links are silently ignored (no error)
+* Uses `INSERT IGNORE` to handle concurrent requests safely
+
+---
+
+### `DELETE /api/mailer/link`
+
+Remove the association between an athlete and a specific email address.
+
+**Query params:**
+
+| Param     | Type   | Required | Description                  |
+| --------- | ------ | -------- | ---------------------------- |
+| `tessera` | int    | ✅ Yes   | Athlete ID                   |
+| `email`   | string | ✅ Yes   | Email address to unlink      |
+
+**Example:**
+
+```
+DELETE /api/mailer/link?tessera=123456&email=athlete@example.com
+```
+
+**Response (success):**
+
+```json
+{
+  "status": "ok",
+  "message": "Link removed"
+}
+```
+
+**Response (not found):**
+
+```json
+{
+  "detail": "Association not found"
+}
+```
+
+Status code: `404`
+
+**Notes:**
+
+* Email is automatically normalized (stripped and lowercased)
+* Returns 404 if the association doesn't exist
+
+---
+
 ## 🧱 Data Flow Update
 
 ```text
@@ -771,6 +1016,7 @@ Modules:
   ├── /api/interesse → interest tracking (pre-registration)
   ├── /api/iscrizioni → full CRUD + export
   ├── /api/mail/send → email queue management
+  ├── /api/mailer/... → athlete email management
   ├── /api/stats, /api/ranking → analytics
   └── /api/elec/... → electronics management
 ```
