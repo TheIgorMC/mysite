@@ -404,6 +404,7 @@ let allInterests = [];
 let allCompetitions = {};
 let allInviti = {};
 let allAthletes = {};
+let allSocieta = {};
 
 // Tab switching
 function switchTab(tab) {
@@ -465,6 +466,16 @@ async function loadData() {
             console.log('Loaded inviti:', Object.keys(allInviti).length);
         }
 
+        // Load società (organizations)
+        const societaResp = await fetch('/archery/api/societa');
+        if (societaResp.ok) {
+            const societa = await societaResp.json();
+            societa.forEach(soc => {
+                allSocieta[soc.codice] = soc;
+            });
+            console.log('Loaded società:', Object.keys(allSocieta).length);
+        }
+
         renderSubscriptions();
         renderInterest();
     } catch (error) {
@@ -487,12 +498,13 @@ function renderSubscriptions() {
         if (sub.stato === 'cancellato') return false;
         
         const competition = allCompetitions[sub.codice_gara];
-        if (!competition) return true; // Show if competition data not available
+        if (!competition) return false; // Hide if competition data not available
         
-        const endDate = new Date(competition.data_fine || competition.data_inizio);
-        endDate.setHours(23, 59, 59, 999);
+        // Use data_fine if available, otherwise data_inizio
+        const compDate = new Date(competition.data_fine || competition.data_inizio);
+        compDate.setHours(23, 59, 59, 999);
         
-        return endDate >= today; // Show only current and future competitions
+        return compDate >= today; // Show only current and future competitions
     });
     
     if (activeSubscriptions.length === 0) {
@@ -623,16 +635,25 @@ function renderSubscriptions() {
         
         competitionCard.innerHTML = `
             ${competitionInfo}
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-users mr-2"></i><strong>${subs.length}</strong> ${t('admin.subscriptions.tab_subscriptions').toLowerCase()}
-                    </p>
-                    <button onclick="showAddSubscriptionModal('${codiceGara}')" 
-                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i>${t('admin.subscriptions.add_subscription')}
-                    </button>
-                </div>
+            <div id="details-subs-${codiceGara}" class="hidden">
+                ${invito ? `
+                <div class="flex flex-wrap gap-4 mb-3 text-sm">
+                    <div class="flex items-center text-green-600 dark:text-green-400">
+                        <i class="fas fa-door-open mr-2"></i>
+                        <span><strong>Apertura:</strong> ${formatDate(invito.data_apertura_iscrizioni)}</span>
+                    </div>
+                    <div class="flex items-center text-red-600 dark:text-red-400">
+                        <i class="fas fa-door-closed mr-2"></i>
+                        <span><strong>Chiusura:</strong> ${formatDate(invito.data_chiusura_iscrizioni)}</span>
+                    </div>
+                </div>` : ''}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <button onclick="showAddSubscriptionModal('${codiceGara}')" 
+                                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>${t('admin.subscriptions.add_subscription')}
+                        </button>
+                    </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -653,6 +674,7 @@ function renderSubscriptions() {
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         `;
         
@@ -677,12 +699,13 @@ function renderInterest() {
         if (int.stato !== 'attivo') return false;
         
         const competition = allCompetitions[int.codice_gara];
-        if (!competition) return true; // Show if competition data not available
+        if (!competition) return false; // Hide if competition data not available
         
-        const endDate = new Date(competition.data_fine || competition.data_inizio);
-        endDate.setHours(23, 59, 59, 999);
+        // Use data_fine if available, otherwise data_inizio
+        const compDate = new Date(competition.data_fine || competition.data_inizio);
+        compDate.setHours(23, 59, 59, 999);
         
-        return endDate >= today; // Show only current and future competitions
+        return compDate >= today; // Show only current and future competitions
     });
     
     if (activeInterests.length === 0) {
@@ -783,12 +806,21 @@ function renderInterest() {
         
         competitionCard.innerHTML = `
             ${competitionInfo}
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-star mr-2 text-yellow-600"></i><strong>${interests.length}</strong> ${t('admin.subscriptions.tab_interests').toLowerCase()}
-                    </p>
-                    <div class="flex gap-2">
+            <div id="details-interest-${codiceGara}" class="hidden">
+                ${invito ? `
+                <div class="flex flex-wrap gap-4 mb-3 text-sm">
+                    <div class="flex items-center text-green-600 dark:text-green-400">
+                        <i class="fas fa-door-open mr-2"></i>
+                        <span><strong>Apertura:</strong> ${formatDate(invito.data_apertura_iscrizioni)}</span>
+                    </div>
+                    <div class="flex items-center text-red-600 dark:text-red-400">
+                        <i class="fas fa-door-closed mr-2"></i>
+                        <span><strong>Chiusura:</strong> ${formatDate(invito.data_chiusura_iscrizioni)}</span>
+                    </div>
+                </div>` : ''}
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex gap-2">
                         <button onclick="deleteSelectedInterests('${codiceGara}')"
                                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2">
                             <i class="fas fa-trash-alt"></i>
@@ -823,6 +855,7 @@ function renderInterest() {
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         `;
         
@@ -1576,6 +1609,21 @@ function formatDateRange(startStr, endStr) {
     }
     
     return `${startDay} ${startMonth}`;
+}
+
+function toggleCompetitionDetails(detailsId) {
+    const details = document.getElementById(`details-${detailsId}`);
+    const icon = document.getElementById(`icon-${detailsId}`);
+    
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.classList.add('fa-chevron-down');
+        icon.classList.remove('fa-chevron-right');
+    } else {
+        details.classList.add('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    }
 }
 
 
