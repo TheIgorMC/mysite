@@ -551,6 +551,8 @@ function renderSubscriptions() {
                                 <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600 dark:text-gray-400">
                                     <span><i class="fas fa-calendar mr-1"></i>${formatDate(competition.data_inizio)}</span>
                                     <span><i class="fas fa-map-marker-alt mr-1"></i>${competition.luogo || 'N/A'}</span>
+                                    ${invito ? `<span class="text-green-600 dark:text-green-400"><i class="fas fa-door-open mr-1"></i>${formatDate(invito.data_apertura_iscrizioni)}</span>` : ''}
+                                    ${invito ? `<span class="text-red-600 dark:text-red-400"><i class="fas fa-door-closed mr-1"></i>${formatDate(invito.data_chiusura_iscrizioni)}</span>` : ''}
                                     <span class="font-semibold text-blue-600 dark:text-blue-400"><i class="fas fa-users mr-1"></i>${subs.length} iscrizioni</span>
                                     <span class="text-xs font-mono text-gray-500">${codiceGara}</span>
                                 </div>
@@ -744,6 +746,8 @@ function renderInterest() {
                                 <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600 dark:text-gray-400">
                                     <span><i class="fas fa-calendar mr-1"></i>${formatDate(competition.data_inizio)}</span>
                                     <span><i class="fas fa-map-marker-alt mr-1"></i>${competition.luogo || 'N/A'}</span>
+                                    ${invito ? `<span class="text-green-600 dark:text-green-400"><i class="fas fa-door-open mr-1"></i>${formatDate(invito.data_apertura_iscrizioni)}</span>` : ''}
+                                    ${invito ? `<span class="text-red-600 dark:text-red-400"><i class="fas fa-door-closed mr-1"></i>${formatDate(invito.data_chiusura_iscrizioni)}</span>` : ''}
                                     <span class="font-semibold text-yellow-600 dark:text-yellow-400"><i class="fas fa-star mr-1"></i>${interests.length} interesse</span>
                                     <span class="text-xs font-mono text-gray-500">${codiceGara}</span>
                                 </div>
