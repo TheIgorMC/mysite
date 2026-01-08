@@ -1407,38 +1407,77 @@ def unlink_athlete_email():
 @login_required
 def sync_athlete_emails():
     """
-    Sync emails for all authorized athletes of the current user.
-    Links user's email to all their authorized athletes.
+    Sync emails for authorized athletes.
+    If user is admin: syncs ALL athletes from ALL users.
+    If user is normal: syncs only their authorized athletes.
     """
-    if not current_user.email:
-        return jsonify({'error': 'User has no email address'}), 400
-    
-    # Get all authorized athletes for this user
-    authorized = AuthorizedAthlete.query.filter_by(user_id=current_user.id).all()
-    
-    if not authorized:
-        return jsonify({'message': 'No authorized athletes to sync', 'synced': 0}), 200
-    
     client = OrionAPIClient()
     synced_count = 0
     errors = []
     
-    for athlete in authorized:
-        try:
-            client._make_request('POST', '/api/mailer/link', data={
-                'tessera': int(athlete.tessera_atleta),
-                'email': current_user.email
-            })
-            synced_count += 1
-        except Exception as e:
-            errors.append(f"Athlete {athlete.tessera_atleta}: {str(e)}")
-            current_app.logger.error(f"Error syncing athlete {athlete.tessera_atleta}: {e}")
-    
-    response = {
-        'message': f'Synced {synced_count} out of {len(authorized)} athletes',
-        'synced': synced_count,
-        'total': len(authorized)
-    }
+    # Check if user is admin
+    if current_user.is_admin:
+        # Get ALL authorized athletes grouped by user
+        # We need to link each athlete to their respective user's email
+        from app.models import User
+        
+        # Get all users who have authorized athletes
+        users_with_athletes = db.session.query(User).join(
+            AuthorizedAthlete, User.id == AuthorizedAthlete.user_id
+        ).distinct().all()
+        
+        total_athletes = 0
+        for user in users_with_athletes:
+            if not user.email:
+                current_app.logger.warning(f"User {user.id} has no email, skipping their athletes")
+                continue
+            
+            authorized = AuthorizedAthlete.query.filter_by(user_id=user.id).all()
+            total_athletes += len(authorized)
+            
+            for athlete in authorized:
+                try:
+                    client._make_request('POST', '/api/mailer/link', data={
+                        'tessera': int(athlete.tessera_atleta),
+                        'email': user.email
+                    })
+                    synced_count += 1
+                except Exception as e:
+                    errors.append(f"Athlete {athlete.tessera_atleta} (User {user.email}): {str(e)}")
+                    current_app.logger.error(f"Error syncing athlete {athlete.tessera_atleta} for user {user.email}: {e}")
+        
+        response = {
+            'message': f'Admin sync: {synced_count} out of {total_athletes} athletes from {len(users_with_athletes)} users',
+            'synced': synced_count,
+            'total': total_athletes,
+            'users_synced': len(users_with_athletes)
+        }
+    else:
+        # Normal user - sync only their athletes
+        if not current_user.email:
+            return jsonify({'error': 'User has no email address'}), 400
+        
+        authorized = AuthorizedAthlete.query.filter_by(user_id=current_user.id).all()
+        
+        if not authorized:
+            return jsonify({'message': 'No authorized athletes to sync', 'synced': 0}), 200
+        
+        for athlete in authorized:
+            try:
+                client._make_request('POST', '/api/mailer/link', data={
+                    'tessera': int(athlete.tessera_atleta),
+                    'email': current_user.email
+                })
+                synced_count += 1
+            except Exception as e:
+                errors.append(f"Athlete {athlete.tessera_atleta}: {str(e)}")
+                current_app.logger.error(f"Error syncing athlete {athlete.tessera_atleta}: {e}")
+        
+        response = {
+            'message': f'Synced {synced_count} out of {len(authorized)} athletes',
+            'synced': synced_count,
+            'total': len(authorized)
+        }
     
     if errors:
         response['errors'] = errors
