@@ -1352,6 +1352,21 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
             const athleteName = athlete ? athlete.display : sub.tessera_atleta;
             const hasTripla = sub.categoria === 'OL' && (sub.note || '').toLowerCase().includes('tripla');
             
+            // Check if there's a user note (excluding auto-generated content)
+            let hasUserNote = false;
+            let userNote = '';
+            if (sub.note) {
+                userNote = sub.note;
+                // Remove CAMBI RICHIESTI section
+                if (userNote.includes('CAMBI RICHIESTI:')) {
+                    const parts = userNote.split('CAMBI RICHIESTI:');
+                    userNote = parts[0].trim();
+                }
+                // Remove 'tripla' mentions as they're system-generated
+                userNote = userNote.replace(/\btripla\b/gi, '').trim();
+                hasUserNote = userNote.length > 0;
+            }
+            
             // Build info line with turn, category, and class
             const infoItems = [];
             if (sub.turno) infoItems.push(`Turno ${sub.turno}`);
@@ -1365,6 +1380,7 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
                         <div class="font-medium text-gray-900 dark:text-white mb-1 flex items-center gap-2">
                             ${athleteName}
                             ${hasTripla ? '<span class="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot">3⊙</span>' : ''}
+                            ${hasUserNote ? `<i class="fas fa-sticky-note text-blue-500 text-sm" title="${userNote.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"></i>` : ''}
                         </div>
                         ${infoLine ? `<div class="text-xs text-gray-600 dark:text-gray-400">${infoLine}</div>` : ''}
                     </div>
@@ -1397,8 +1413,15 @@ function renderExpandedDetails(competition, status, subSummary, unsubscribedInte
             const athleteName = athlete ? athlete.display : interest.tessera_atleta;
             const canConvert = status.canSubscribe;
             
+            // Check if there's a user note
+            const hasUserNote = interest.note && interest.note.trim().length > 0;
+            const noteTooltip = hasUserNote ? interest.note.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+            
             html += `<div class="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-800 rounded">
-                <span class="text-gray-700 dark:text-gray-300">${athleteName}</span>
+                <span class="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    ${athleteName}
+                    ${hasUserNote ? `<i class="fas fa-sticky-note text-blue-500 text-sm" title="${noteTooltip}"></i>` : ''}
+                </span>
                 <div class="flex items-center gap-1">
                     ${canConvert ? `<button class="px-2 py-0.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded" onclick="convertInterestToSubscription(${interest.id}, '${competition.codice}', event)" title="Converti">
                         <i class="fas fa-exchange-alt"></i>
@@ -3403,7 +3426,13 @@ function toggleTriplaVisibility(bowClass) {
     const container = document.getElementById('tripla-container');
     if (!container) return;
     
-    if (bowClass === 'OL') {
+    // Get current competition to check if it's indoor
+    const codiceGara = document.getElementById('competition-id')?.value;
+    const competition = codiceGara ? allCompetitions.find(c => c.codice === codiceGara) : null;
+    const isIndoor = competition && competition.tipo_gara && (competition.tipo_gara.includes('18m') || competition.tipo_gara.includes('25m'));
+    
+    // Show tripla only for OL bow class AND indoor competitions
+    if (bowClass === 'OL' && isIndoor) {
         container.classList.remove('hidden');
     } else {
         container.classList.add('hidden');
@@ -3417,7 +3446,12 @@ function toggleUserTriplaVisibility(bowClass) {
     const container = document.getElementById('edit-user-tripla-container');
     if (!container) return;
     
-    if (bowClass === 'OL') {
+    // Get current competition from editingSubscription to check if it's indoor
+    const competition = editingSubscription ? allCompetitions.find(c => c.codice === editingSubscription.codiceGara) : null;
+    const isIndoor = competition && competition.tipo_gara && (competition.tipo_gara.includes('18m') || competition.tipo_gara.includes('25m'));
+    
+    // Show tripla only for OL bow class AND indoor competitions
+    if (bowClass === 'OL' && isIndoor) {
         container.classList.remove('hidden');
     } else {
         container.classList.add('hidden');
