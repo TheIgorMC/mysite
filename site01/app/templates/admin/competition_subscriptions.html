@@ -324,6 +324,44 @@
         </div>
     </div>
     
+    <!-- Note Modal -->
+    <div id="note-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeNoteModal()"></div>
+            
+            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 sm:mx-0 sm:h-10 sm:w-10">
+                                <i class="fas fa-sticky-note text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-semibold text-gray-900 dark:text-white">
+                                Nota Atleta
+                            </h3>
+                        </div>
+                        <button onclick="closeNoteModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <p id="note-content" class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="closeNoteModal()"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                        Chiudi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Competition Invite Modal -->
     <div id="invite-modal" class="fixed z-50 inset-0 overflow-y-auto hidden">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -590,11 +628,27 @@ function renderSubscriptions() {
             const hasTripla = sub.classe === 'OL' && (sub.note || '').toLowerCase().includes('tripla');
             const triplaIcon = hasTripla ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded" title="3-spot target">3⊙</span>' : '';
             
+            // Check if there's a user note (excluding auto-generated content)
+            let hasUserNote = false;
+            let userNote = '';
+            if (sub.note) {
+                userNote = sub.note;
+                // Remove CAMBI RICHIESTI section
+                if (userNote.includes('CAMBI RICHIESTI:')) {
+                    const parts = userNote.split('CAMBI RICHIESTI:');
+                    userNote = parts[0].trim();
+                }
+                // Remove 'tripla' mentions as they're system-generated
+                userNote = userNote.replace(/\btripla\b/gi, '').trim();
+                hasUserNote = userNote.length > 0;
+            }
+            const noteIcon = hasUserNote ? `<i class="fas fa-sticky-note text-blue-500 cursor-pointer ml-1" title="${userNote.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" onclick="showNoteModal('${userNote.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '\\n')}')"></i>` : '';
+            
             return `
                 <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td class="px-4 py-3">${t('admin.subscriptions.turn')} ${sub.turno}</td>
                     <td class="px-4 py-3">${sub.tessera_atleta}</td>
-                    <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
+                    <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}${noteIcon}</td>
                     <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
                     <td class="px-4 py-3">${sub.classe || 'N/A'}${triplaIcon}</td>
                     <td class="px-4 py-3">
@@ -779,7 +833,7 @@ function renderInterest() {
                            data-competition-code="${codiceGara}">
                 </td>
                 <td class="px-4 py-3">${sub.tessera_atleta}</td>
-                <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}</td>
+                <td class="px-4 py-3">${sub.nome_atleta || 'N/A'}${sub.note && sub.note.trim() ? `<i class="fas fa-sticky-note text-blue-500 cursor-pointer ml-1" title="${sub.note.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" onclick="showNoteModal('${sub.note.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '\\n')}')"></i>` : ''}</td>
                 <td class="px-4 py-3">${sub.categoria || 'N/A'}</td>
                 <td class="px-4 py-3">${sub.classe || 'N/A'}</td>
                 <td class="px-4 py-3 text-sm">${sub.note || '-'}</td>
@@ -1578,6 +1632,15 @@ async function showCompetitionInfo(codiceGara) {
 
 function closeInviteModal() {
     document.getElementById('invite-modal').classList.add('hidden');
+}
+
+function showNoteModal(noteText) {
+    document.getElementById('note-content').textContent = noteText;
+    document.getElementById('note-modal').classList.remove('hidden');
+}
+
+function closeNoteModal() {
+    document.getElementById('note-modal').classList.add('hidden');
 }
 
 function formatDateRange(startStr, endStr) {
