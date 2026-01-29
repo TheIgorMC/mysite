@@ -110,14 +110,9 @@
         <!-- Tab Navigation -->
         <div class="mb-8">
             <div class="flex flex-wrap gap-2 justify-center">
-                <button onclick="showTab('users')" 
-                        id="tab-users"
-                        class="px-6 py-3 rounded-lg bg-primary text-white font-semibold">
-                    <i class="fas fa-users mr-2"></i>Users
-                </button>
                 <button onclick="showTab('gallery')" 
                         id="tab-gallery"
-                        class="px-6 py-3 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold">
+                        class="px-6 py-3 rounded-lg bg-primary text-white font-semibold">
                     <i class="fas fa-images mr-2"></i>Gallery
                 </button>
                 <button onclick="showTab('shop')" 
@@ -129,88 +124,6 @@
         </div>
         
         <!-- Users Tab -->
-        <div id="content-users" class="tab-content">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">User Management</h2>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="border-b border-gray-200 dark:border-gray-700">
-                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Username</th>
-                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Email</th>
-                                <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300">Name</th>
-                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Club Member</th>
-                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Admin</th>
-                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300" title="Locked Section Access">
-                                    <i class="fas fa-lock"></i>
-                                </th>
-                                <th class="text-center py-3 px-4 text-gray-700 dark:text-gray-300">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for user in users %}
-                            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center">
-                                        <img src="{{ url_for('static', filename='uploads/avatars/' + user.avatar) }}" 
-                                             alt="{{ user.username }}" 
-                                             class="h-10 w-10 rounded-full object-cover mr-3">
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ user.username }}</span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{{ user.email }}</td>
-                                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">
-                                    {{ user.first_name or '' }} {{ user.last_name or '' }}
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    <form method="POST" action="{{ url_for('main.toggle_club_member', user_id=user.id) }}" class="inline">
-                                        <button type="submit" 
-                                                class="{% if user.is_club_member %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-600{% endif %}">
-                                            <i class="fas fa-certificate text-xl"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    {% if user.id != current_user.id %}
-                                    <form method="POST" action="{{ url_for('main.toggle_admin', user_id=user.id) }}" class="inline">
-                                        <button type="submit" 
-                                                class="{% if user.is_admin %}text-primary{% else %}text-gray-400 dark:text-gray-600{% endif %}">
-                                            <i class="fas fa-shield-alt text-xl"></i>
-                                        </button>
-                                    </form>
-                                    {% else %}
-                                    <i class="fas fa-shield-alt text-xl text-primary"></i>
-                                    {% endif %}
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    <form method="POST" action="{{ url_for('main.toggle_locked_section', user_id=user.id) }}" class="inline">
-                                        <button type="submit" 
-                                                title="Toggle Locked Section Access"
-                                                class="{% if user.has_locked_section_access %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-600{% endif %} hover:opacity-75 transition-opacity">
-                                            <i class="fas fa-lock text-xl"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    {% if user.id != current_user.id %}
-                                    <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" 
-                                          onsubmit="return confirm('Are you sure you want to delete this user?')" 
-                                          class="inline">
-                                        <button type="submit" 
-                                                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
         
         <!-- Gallery Tab -->
         <div id="content-gallery" class="tab-content">
