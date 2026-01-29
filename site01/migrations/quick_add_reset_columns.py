@@ -11,9 +11,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     print("Importing app and db...")
-    from app import app, db
+    from app import create_app, db
     from sqlalchemy import text
     print("✓ Imports successful")
+    
+    print("\nCreating app...")
+    app = create_app(os.getenv('FLASK_ENV', 'production'))
+    print("✓ App created")
     
     print("\nConnecting to database...")
     with app.app_context():
