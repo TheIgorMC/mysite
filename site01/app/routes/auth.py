@@ -154,3 +154,97 @@ def change_password():
     flash('Password changed successfully', 'success')
     return redirect(url_for('auth.settings'))
 
+
+@bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Request password reset"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Generate reset token
+            token = user.generate_reset_token()
+            db.session.commit()
+            
+            # Send reset email
+            from flask import current_app, url_for
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            try:
+                # Try to use OrionAPIClient if available
+                from app.utils import OrionAPIClient
+                client = OrionAPIClient()
+                
+                email_body = f"""
+Ciao {user.first_name or user.username},
+
+Hai richiesto il reset della password. Clicca sul link seguente per reimpostare la tua password:
+
+{reset_url}
+
+Questo link è valido per 24 ore.
+
+Se non hai richiesto questo reset, ignora questa email.
+
+Saluti,
+Il Team
+                """
+                
+                client.send_email(
+                    recipient_email=user.email,
+                    mail_type='password_reset',
+                    locale='it',
+                    subject='Reset Password',
+                    body_text=email_body,
+                    details_json={'reset_url': reset_url}
+                )
+                flash(t('auth.reset_email_sent'), 'success')
+            except Exception as e:
+                current_app.logger.error(f'Failed to send reset email: {e}')
+                # Show token in flash for development (remove in production!)
+                flash(f'Email service unavailable. Reset link: {reset_url}', 'warning')
+        else:
+            # Don't reveal if user exists - still show success message
+            flash(t('auth.reset_email_sent'), 'success')
+        
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/forgot_password.html')
+
+
+@bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password with token"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    user = User.query.filter_by(reset_token=token).first()
+    
+    if not user or not user.verify_reset_token(token):
+        flash(t('auth.invalid_reset_token'), 'error')
+        return redirect(url_for('auth.forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash(t('auth.passwords_do_not_match'), 'error')
+            return render_template('auth/reset_password.html', token=token)
+        
+        if len(password) < 6:
+            flash(t('auth.password_too_short'), 'error')
+            return render_template('auth/reset_password.html', token=token)
+        
+        user.set_password(password)
+        user.clear_reset_token()
+        db.session.commit()
+        
+        flash(t('auth.password_reset_success'), 'success')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/reset_password.html', token=token)

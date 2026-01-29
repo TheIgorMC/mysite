@@ -31,6 +31,10 @@ class User(UserMixin, db.Model):
     # Preferences
     preferred_language = db.Column(db.String(2), default='it')
     
+    # Password reset
+    reset_token = db.Column(db.String(256), index=True)
+    reset_token_expiry = db.Column(db.DateTime)
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
@@ -51,6 +55,30 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check if password matches hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def generate_reset_token(self):
+        """Generate a password reset token"""
+        import secrets
+        from datetime import timedelta
+        
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiry = datetime.utcnow() + timedelta(hours=24)
+        return self.reset_token
+    
+    def verify_reset_token(self, token):
+        """Verify if reset token is valid and not expired"""
+        if not self.reset_token or not self.reset_token_expiry:
+            return False
+        if self.reset_token != token:
+            return False
+        if datetime.utcnow() > self.reset_token_expiry:
+            return False
+        return True
+    
+    def clear_reset_token(self):
+        """Clear reset token after use"""
+        self.reset_token = None
+        self.reset_token_expiry = None
     
     def __repr__(self):
         return f'<User {self.username}>'
