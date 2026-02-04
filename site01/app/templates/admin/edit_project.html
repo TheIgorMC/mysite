@@ -3,9 +3,6 @@
 {% block title %}Edit Project - {{ item.title_en }} - Admin{% endblock %}
 
 {% block head %}
-<!-- Include a simple WYSIWYG editor (optional - puoi usare anche textarea normale) -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <style>
     /* Fix Quill editor dark mode */
     .dark .ql-toolbar {
@@ -360,9 +357,19 @@
     </div>
 </section>
 
+<!-- Quill Editor CSS and JS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
 <script>
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if Quill is loaded
+    if (typeof Quill === 'undefined') {
+        console.error('Quill is not loaded!');
+        return;
+    }
+    
     // Initialize Quill editors
     var quillEN = new Quill('#editor-en', {
         theme: 'snow',
