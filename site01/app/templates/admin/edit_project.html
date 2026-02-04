@@ -47,10 +47,23 @@
     /* Light mode - ensure white background */
     .ql-container {
         background-color: white !important;
+        border: 1px solid #ccc !important;
     }
     
     .ql-toolbar {
         background-color: rgb(249, 250, 251) !important;
+        border: 1px solid #ccc !important;
+    }
+    
+    /* Ensure editors are visible */
+    #editor-en, #editor-it {
+        min-height: 400px;
+        border: 1px solid #ccc;
+        border-radius: 0.5rem;
+    }
+    
+    .dark #editor-en, .dark #editor-it {
+        border-color: rgb(75, 85, 99);
     }
 </style>
 {% endblock %}
@@ -348,47 +361,50 @@
 </section>
 
 <script>
-// Initialize Quill editors
-var quillEN = new Quill('#editor-en', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'code-block'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'color': [] }, { 'background': [] }],
-            ['link', 'image'],
-            ['clean']
-        ]
-    }
-});
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill editors
+    var quillEN = new Quill('#editor-en', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
 
-var quillIT = new Quill('#editor-it', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'code-block'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'color': [] }, { 'background': [] }],
-            ['link', 'image'],
-            ['clean']
-        ]
-    }
-});
+    var quillIT = new Quill('#editor-it', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
 
-// Load existing content
-var contentEN = document.getElementById('content_en').value;
-var contentIT = document.getElementById('content_it').value;
-if (contentEN) quillEN.root.innerHTML = contentEN;
-if (contentIT) quillIT.root.innerHTML = contentIT;
+    // Load existing content
+    var contentEN = document.getElementById('content_en').value;
+    var contentIT = document.getElementById('content_it').value;
+    if (contentEN) quillEN.root.innerHTML = contentEN;
+    if (contentIT) quillIT.root.innerHTML = contentIT;
 
-// Save editor content to hidden inputs on form submit
-document.querySelector('form').addEventListener('submit', function() {
-    document.getElementById('content_en').value = quillEN.root.innerHTML;
-    document.getElementById('content_it').value = quillIT.root.innerHTML;
+    // Save editor content to hidden inputs on form submit
+    document.querySelector('form').addEventListener('submit', function() {
+        document.getElementById('content_en').value = quillEN.root.innerHTML;
+        document.getElementById('content_it').value = quillIT.root.innerHTML;
+    });
 });
 
 // Toggle PCB section based on category
