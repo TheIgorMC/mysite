@@ -6,6 +6,53 @@
 <!-- Include a simple WYSIWYG editor (optional - puoi usare anche textarea normale) -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+    /* Fix Quill editor dark mode */
+    .dark .ql-toolbar {
+        background-color: rgb(55, 65, 81) !important;
+        border-color: rgb(75, 85, 99) !important;
+    }
+    
+    .dark .ql-container {
+        background-color: rgb(31, 41, 55) !important;
+        border-color: rgb(75, 85, 99) !important;
+        color: rgb(243, 244, 246) !important;
+    }
+    
+    .dark .ql-editor {
+        color: rgb(243, 244, 246) !important;
+    }
+    
+    .dark .ql-editor.ql-blank::before {
+        color: rgb(156, 163, 175) !important;
+    }
+    
+    .dark .ql-stroke {
+        stroke: rgb(209, 213, 219) !important;
+    }
+    
+    .dark .ql-fill {
+        fill: rgb(209, 213, 219) !important;
+    }
+    
+    .dark .ql-picker-label {
+        color: rgb(209, 213, 219) !important;
+    }
+    
+    .dark .ql-picker-options {
+        background-color: rgb(55, 65, 81) !important;
+        border-color: rgb(75, 85, 99) !important;
+    }
+    
+    /* Light mode - ensure white background */
+    .ql-container {
+        background-color: white !important;
+    }
+    
+    .ql-toolbar {
+        background-color: rgb(249, 250, 251) !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -171,7 +218,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Full Content (English)
                         </label>
-                        <div id="editor-en" class="bg-white" style="height: 400px;"></div>
+                        <div id="editor-en" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
                         <input type="hidden" name="content_en" id="content_en" value="{{ item.content_en or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             <i class="fas fa-info-circle mr-1"></i>
@@ -184,7 +231,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Full Content (Italian)
                         </label>
-                        <div id="editor-it" class="bg-white" style="height: 400px;"></div>
+                        <div id="editor-it" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
                         <input type="hidden" name="content_it" id="content_it" value="{{ item.content_it or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             <i class="fas fa-info-circle mr-1"></i>
@@ -239,9 +286,17 @@
                                name="pcb_background" 
                                accept="image/*"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Screenshot dello sbroglio PCB per effetto parallax
-                        </p>
+                        <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <p class="text-xs text-blue-800 dark:text-blue-300 mb-2">
+                                <i class="fas fa-lightbulb mr-1"></i><strong>Aspect Ratio Consigliato:</strong>
+                            </p>
+                            <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1 ml-4">
+                                <li>• <strong>Ideale:</strong> Verticale 2:3 o 3:4 (es. 1200x1800px)</li>
+                                <li>• <strong>Minimo:</strong> Quadrato 1:1 (es. 1200x1200px)</li>
+                                <li>• <strong>Evitare:</strong> Formati panoramici orizzontali</li>
+                                <li>• Screenshot dello sbroglio PCB a risoluzione alta per effetto parallax fluido</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
