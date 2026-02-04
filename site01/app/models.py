@@ -301,8 +301,13 @@ class GalleryItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title_it = db.Column(db.String(256), nullable=False)
     title_en = db.Column(db.String(256), nullable=False)
-    description_it = db.Column(db.Text)
-    description_en = db.Column(db.Text)
+    description_it = db.Column(db.Text)  # Short description for cards
+    description_en = db.Column(db.Text)  # Short description for cards
+    
+    # Blog post content (full article)
+    content_it = db.Column(db.Text)  # Full HTML/Markdown content in Italian
+    content_en = db.Column(db.Text)  # Full HTML/Markdown content in English
+    slug = db.Column(db.String(256), unique=True, index=True)  # URL-friendly identifier
     
     # Item details
     category = db.Column(db.String(64))  # Primary category: 3dprinting, electronics
@@ -310,6 +315,9 @@ class GalleryItem(db.Model):
     tags = db.Column(db.Text)  # Comma-separated tags for search/filtering
     main_image = db.Column(db.String(256))
     images = db.Column(db.Text)  # JSON array of image URLs
+    
+    # Electronics-specific: PCB background for parallax effect
+    pcb_background = db.Column(db.String(256))  # Screenshot dello sbroglio PCB
     
     # External links
     external_url = db.Column(db.String(512))  # Link to Printables, GitHub, etc.
@@ -319,8 +327,10 @@ class GalleryItem(db.Model):
     
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_featured = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
+    view_count = db.Column(db.Integer, default=0)  # Track popularity
     
     def __repr__(self):
         return f'<GalleryItem {self.title_en}>'

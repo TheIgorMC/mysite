@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if category == '3dprinting' %}Progetti Stampa 3D{% else %}Progetti Elettronica{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-50 dark:bg-gray-900">
+    <div class="container mx-auto px-4">
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            {% if category == '3dprinting' %}
+            <div class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full mb-4">
+                <i class="fas fa-cube mr-2"></i>Stampa 3D
+            </div>
+            <h1 class="text-5xl font-bold mb-4 text-gray-900 dark:text-white">Progetti Stampa 3D</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Scopri tutti i miei progetti realizzati con stampanti 3D, dai prototipi funzionali agli oggetti decorativi
+            </p>
+            {% else %}
+            <div class="inline-block px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 rounded-full mb-4">
+                <i class="fas fa-microchip mr-2"></i>Elettronica
+            </div>
+            <h1 class="text-5xl font-bold mb-4 text-gray-900 dark:text-white">Progetti Elettronica</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Esplora i miei progetti elettronici: schede PCB personalizzate, dispositivi IoT e molto altro
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Project Grid -->
+        {% if items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {% for item in items %}
+            <article class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden">
+                <!-- Image -->
+                {% if item.main_image %}
+                <a href="{{ url_for('main.project_detail', slug=item.slug) }}" class="block relative group">
+                    <img src="{{ url_for('static', filename='uploads/gallery/' + item.main_image) }}" 
+                         alt="{{ item['title_' + session.get('language', 'it')] }}"
+                         class="w-full h-64 object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="absolute bottom-4 left-4 right-4 text-white">
+                            <p class="text-sm font-semibold">
+                                <i class="fas fa-arrow-right mr-2"></i>Leggi articolo completo
+                            </p>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <!-- Tags -->
+                    {% if item.tags %}
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        {% for tag in item.tags.split(',')[:3] %}
+                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
+                            {{ tag.strip() }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Title -->
+                    <h2 class="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
+                        <a href="{{ url_for('main.project_detail', slug=item.slug) }}" class="hover:text-primary transition-colors">
+                            {{ item['title_' + session.get('language', 'it')] }}
+                        </a>
+                    </h2>
+                    
+                    <!-- Description -->
+                    {% if item['description_' + session.get('language', 'it')] %}
+                    <p class="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                        {{ item['description_' + session.get('language', 'it')] }}
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Metadata -->
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                            <span title="Visualizzazioni">
+                                <i class="far fa-eye mr-1"></i>{{ item.view_count or 0 }}
+                            </span>
+                            {% if item.created_at %}
+                            <span title="Data pubblicazione">
+                                <i class="far fa-calendar mr-1"></i>{{ item.created_at.strftime('%d/%m/%Y') }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{{ url_for('main.project_detail', slug=item.slug) }}" 
+                           class="inline-flex items-center text-primary hover:text-primary-dark font-semibold">
+                            Leggi <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Has Products Badge -->
+                    {% if item.products %}
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <span class="inline-flex items-center text-sm text-green-600 dark:text-green-400">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            {{ item.products|length }} prodotto{% if item.products|length > 1 %}i{% endif %} disponibile{% if item.products|length > 1 %}i{% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-20">
+            <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+            <h3 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">Nessun progetto trovato</h3>
+            <p class="text-gray-500 dark:text-gray-400">
+                {% if category == '3dprinting' %}
+                Non ci sono ancora progetti di stampa 3D pubblicati.
+                {% else %}
+                Non ci sono ancora progetti di elettronica pubblicati.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+        
+    </div>
+</section>
+
+<style>
+    /* Line clamp utility for description truncation */
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

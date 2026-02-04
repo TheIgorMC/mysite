@@ -237,6 +237,98 @@ def toggle_gallery_item(item_id):
     flash('Gallery item status updated', 'success')
     return redirect(url_for('main.admin') + '#gallery')
 
+
+@bp.route('/admin/edit_project/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def edit_project(item_id):
+    """Edit a project with blog post fields"""
+    if not current_user.is_admin:
+        flash('Access denied.', 'error')
+        return redirect(url_for('main.index'))
+    
+    item = GalleryItem.query.get_or_404(item_id)
+    
+    if request.method == 'POST':
+        import os
+        import uuid
+        import re
+        
+        # Update basic fields
+        item.title_en = request.form.get('title_en')
+        item.title_it = request.form.get('title_it')
+        item.description_en = request.form.get('description_en')
+        item.description_it = request.form.get('description_it')
+        item.content_en = request.form.get('content_en')
+        item.content_it = request.form.get('content_it')
+        item.category = request.form.get('category')
+        item.tags = request.form.get('tags')
+        item.external_url = request.form.get('external_url')
+        
+        # Generate/update slug
+        new_slug = request.form.get('slug')
+        if new_slug:
+            # Validate slug format
+            new_slug = re.sub(r'[^a-z0-9-]', '', new_slug.lower().replace(' ', '-'))
+            # Check uniqueness
+            existing = GalleryItem.query.filter(GalleryItem.slug == new_slug, GalleryItem.id != item_id).first()
+            if existing:
+                flash('Slug already in use. Using generated slug.', 'warning')
+                new_slug = re.sub(r'[^a-z0-9]+', '-', item.title_en.lower()).strip('-')
+            item.slug = new_slug
+        else:
+            # Generate from title if empty
+            item.slug = re.sub(r'[^a-z0-9]+', '-', item.title_en.lower()).strip('-')
+        
+        # Handle main image upload
+        main_image = request.files.get('main_image')
+        if main_image and main_image.filename:
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            if '.' in main_image.filename and main_image.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                filename = main_image.filename
+                ext = filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{uuid.uuid4().hex}.{ext}"
+                
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                # Delete old image if exists
+                if item.main_image:
+                    old_path = os.path.join(upload_folder, item.main_image)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                main_image.save(os.path.join(upload_folder, unique_filename))
+                item.main_image = unique_filename
+        
+        # Handle PCB background upload (only for electronics)
+        if item.category == 'electronics':
+            pcb_bg = request.files.get('pcb_background')
+            if pcb_bg and pcb_bg.filename:
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'webp'}
+                if '.' in pcb_bg.filename and pcb_bg.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                    filename = pcb_bg.filename
+                    ext = filename.rsplit('.', 1)[1].lower()
+                    unique_filename = f"pcb_{uuid.uuid4().hex}.{ext}"
+                    
+                    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'pcb')
+                    os.makedirs(upload_folder, exist_ok=True)
+                    
+                    # Delete old PCB background if exists
+                    if item.pcb_background:
+                        old_path = os.path.join(upload_folder, item.pcb_background)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    
+                    pcb_bg.save(os.path.join(upload_folder, unique_filename))
+                    item.pcb_background = unique_filename
+        
+        db.session.commit()
+        flash('Project updated successfully!', 'success')
+        return redirect(url_for('main.edit_project', item_id=item.id))
+    
+    return render_template('admin/edit_project.html', item=item)
+
+
 @bp.route('/admin/delete_gallery_item/<int:item_id>', methods=['POST'])
 @login_required
 def delete_gallery_item(item_id):
@@ -399,3 +491,41 @@ def locked_shop():
     products = Product.query.filter_by(is_active=True).all()
     
     return render_template('locked_shop.html', products=products)
+
+
+# Blog post routes
+@bp.route('/project/<slug>')
+def project_detail(slug):
+    """Display a single project as a blog post"""
+    item = GalleryItem.query.filter_by(slug=slug).first_or_404()
+    
+    # Increment view count
+    item.view_count = (item.view_count or 0) + 1
+    db.session.commit()
+    
+    # Get related projects (same category, excluding current)
+    related = GalleryItem.query.filter(
+        GalleryItem.category == item.category,
+        GalleryItem.id != item.id,
+        GalleryItem.is_active == True
+    ).order_by(GalleryItem.view_count.desc()).limit(3).all()
+    
+    return render_template('project_detail.html', item=item, related=related)
+
+
+@bp.route('/projects/<category>')
+def projects_by_category(category):
+    """List all projects in a category (blog index)"""
+    # Validate category
+    valid_categories = ['3dprinting', 'electronics']
+    if category not in valid_categories:
+        flash('Invalid category', 'error')
+        return redirect(url_for('main.index'))
+    
+    items = GalleryItem.query.filter_by(
+        category=category,
+        is_active=True
+    ).order_by(GalleryItem.created_at.desc()).all()
+    
+    return render_template('projects_list.html', items=items, category=category)
+

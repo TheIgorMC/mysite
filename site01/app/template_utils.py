@@ -5,6 +5,7 @@ from flask import session, request
 from app.utils import t, get_translation
 from datetime import datetime
 import os
+import json
 
 def utility_processor():
     """Make utility functions available in all templates"""
@@ -24,6 +25,17 @@ def utility_processor():
         config=get_config()
     )
 
+def from_json_filter(value):
+    """Convert JSON string to Python object"""
+    if not value:
+        return []
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return []
+
 def register_template_utilities(app):
-    """Register template context processor"""
+    """Register template context processor and filters"""
     app.context_processor(utility_processor)
+    app.jinja_env.filters['from_json'] = from_json_filter
+

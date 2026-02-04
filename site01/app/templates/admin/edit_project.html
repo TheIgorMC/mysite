@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Project - {{ item.title_en }} - Admin{% endblock %}
+
+{% block head %}
+<!-- Include a simple WYSIWYG editor (optional - puoi usare anche textarea normale) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 max-w-6xl">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="{{ url_for('main.admin') }}#gallery" 
+               class="inline-flex items-center text-primary hover:text-primary-dark mb-4 transition">
+                <i class="fas fa-arrow-left mr-2"></i>Torna alla Gallery
+            </a>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-edit mr-3"></i>Modifica Progetto
+                    </h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2">{{ item.title_en }}</p>
+                </div>
+                {% if item.slug %}
+                <a href="{{ url_for('main.project_detail', slug=item.slug) }}" 
+                   target="_blank"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    <i class="fas fa-external-link-alt mr-2"></i>Anteprima Live
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            
+            <!-- Basic Info Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-info-circle mr-2"></i>Informazioni Base
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Title EN -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Title (English) *
+                        </label>
+                        <input type="text" 
+                               name="title_en" 
+                               value="{{ item.title_en }}"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Title IT -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Title (Italian) *
+                        </label>
+                        <input type="text" 
+                               name="title_it" 
+                               value="{{ item.title_it }}"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Category *
+                        </label>
+                        <select name="category" 
+                                id="category"
+                                required
+                                onchange="togglePCBSection()"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="3dprinting" {% if item.category == '3dprinting' %}selected{% endif %}>3D Printing</option>
+                            <option value="electronics" {% if item.category == 'electronics' %}selected{% endif %}>Electronics</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Slug -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            URL Slug
+                        </label>
+                        <input type="text" 
+                               name="slug" 
+                               value="{{ item.slug or '' }}"
+                               placeholder="my-project-slug"
+                               pattern="[a-z0-9-]+"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Solo lettere minuscole, numeri e trattini. Lascia vuoto per generare automaticamente.
+                        </p>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tags
+                        </label>
+                        <input type="text" 
+                               name="tags" 
+                               value="{{ item.tags or '' }}"
+                               placeholder="arduino, iot, sensor, 3d-print"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Separa i tag con virgole
+                        </p>
+                    </div>
+                    
+                    <!-- External URL -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            External Link (GitHub, Printables, etc.)
+                        </label>
+                        <input type="url" 
+                               name="external_url" 
+                               value="{{ item.external_url or '' }}"
+                               placeholder="https://github.com/username/project"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Descriptions Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-align-left mr-2"></i>Descrizioni Brevi (per cards)
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Description EN -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Description (English)
+                        </label>
+                        <textarea name="description_en" 
+                                  rows="3"
+                                  placeholder="Short description for gallery cards..."
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">{{ item.description_en or '' }}</textarea>
+                    </div>
+                    
+                    <!-- Description IT -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Description (Italian)
+                        </label>
+                        <textarea name="description_it" 
+                                  rows="3"
+                                  placeholder="Breve descrizione per le cards della galleria..."
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">{{ item.description_it or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Full Content Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-file-alt mr-2"></i>Contenuto Completo (Blog Post)
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Content EN -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Full Content (English)
+                        </label>
+                        <div id="editor-en" class="bg-white" style="height: 400px;"></div>
+                        <input type="hidden" name="content_en" id="content_en" value="{{ item.content_en or '' }}">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Puoi usare HTML. Questo è il contenuto principale dell'articolo.
+                        </p>
+                    </div>
+                    
+                    <!-- Content IT -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Full Content (Italian)
+                        </label>
+                        <div id="editor-it" class="bg-white" style="height: 400px;"></div>
+                        <input type="hidden" name="content_it" id="content_it" value="{{ item.content_it or '' }}">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Puoi usare HTML. Questo è il contenuto principale dell'articolo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Images Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-images mr-2"></i>Immagini
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Main Image -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Main Image
+                        </label>
+                        {% if item.main_image %}
+                        <div class="mb-3">
+                            <img src="{{ url_for('static', filename='uploads/gallery/' + item.main_image) }}" 
+                                 alt="Current main image"
+                                 class="w-full h-48 object-cover rounded-lg shadow-md">
+                        </div>
+                        {% endif %}
+                        <input type="file" 
+                               name="main_image" 
+                               accept="image/*"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Carica per sostituire l'immagine principale
+                        </p>
+                    </div>
+                    
+                    <!-- PCB Background (solo elettronica) -->
+                    <div id="pcb-section" {% if item.category != 'electronics' %}style="display: none;"{% endif %}>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-microchip mr-1"></i>PCB Background (Electronics Only)
+                        </label>
+                        {% if item.pcb_background %}
+                        <div class="mb-3">
+                            <img src="{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}" 
+                                 alt="Current PCB background"
+                                 class="w-full h-48 object-cover rounded-lg shadow-md opacity-20">
+                            <p class="text-xs text-gray-500 mt-1">Preview at low opacity (come apparirà nello sfondo)</p>
+                        </div>
+                        {% endif %}
+                        <input type="file" 
+                               name="pcb_background" 
+                               accept="image/*"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Screenshot dello sbroglio PCB per effetto parallax
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats (readonly) -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-chart-bar mr-2"></i>Statistiche
+                </h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="text-3xl font-bold text-primary mb-1">{{ item.view_count or 0 }}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Visualizzazioni</div>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="text-3xl font-bold text-green-600 mb-1">{{ item.products|length }}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Prodotti Correlati</div>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="text-3xl font-bold text-blue-600 mb-1">
+                            {% if item.created_at %}{{ item.created_at.strftime('%d/%m/%Y') }}{% else %}N/A{% endif %}
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Creato</div>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="text-3xl font-bold text-purple-600 mb-1">
+                            {% if item.is_active %}<i class="fas fa-check-circle"></i>{% else %}<i class="fas fa-times-circle"></i>{% endif %}
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Status</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="flex gap-4 justify-end">
+                <a href="{{ url_for('main.admin') }}#gallery" 
+                   class="px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-semibold transition-colors">
+                    Annulla
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-save mr-2"></i>Salva Modifiche
+                </button>
+            </div>
+        </form>
+        
+    </div>
+</section>
+
+<script>
+// Initialize Quill editors
+var quillEN = new Quill('#editor-en', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['link', 'image'],
+            ['clean']
+        ]
+    }
+});
+
+var quillIT = new Quill('#editor-it', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['link', 'image'],
+            ['clean']
+        ]
+    }
+});
+
+// Load existing content
+var contentEN = document.getElementById('content_en').value;
+var contentIT = document.getElementById('content_it').value;
+if (contentEN) quillEN.root.innerHTML = contentEN;
+if (contentIT) quillIT.root.innerHTML = contentIT;
+
+// Save editor content to hidden inputs on form submit
+document.querySelector('form').addEventListener('submit', function() {
+    document.getElementById('content_en').value = quillEN.root.innerHTML;
+    document.getElementById('content_it').value = quillIT.root.innerHTML;
+});
+
+// Toggle PCB section based on category
+function togglePCBSection() {
+    var category = document.getElementById('category').value;
+    var pcbSection = document.getElementById('pcb-section');
+    if (category === 'electronics') {
+        pcbSection.style.display = 'block';
+    } else {
+        pcbSection.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
