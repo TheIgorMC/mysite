@@ -6,7 +6,7 @@
 <style>
     /* Fix Quill editor dark mode */
     .dark .ql-toolbar {
-        background-color: rgb(55, 65, 81) !important;
+        background-color: rgb(31, 41, 55) !important;
         border-color: rgb(75, 85, 99) !important;
     }
     
@@ -25,23 +25,31 @@
     }
     
     .dark .ql-stroke {
-        stroke: rgb(209, 213, 219) !important;
+        stroke: rgb(229, 231, 235) !important;
     }
     
     .dark .ql-fill {
-        fill: rgb(209, 213, 219) !important;
+        fill: rgb(229, 231, 235) !important;
     }
     
     .dark .ql-picker-label {
-        color: rgb(209, 213, 219) !important;
+        color: rgb(229, 231, 235) !important;
     }
     
     .dark .ql-picker-options {
-        background-color: rgb(55, 65, 81) !important;
+        background-color: rgb(31, 41, 55) !important;
         border-color: rgb(75, 85, 99) !important;
     }
     
-    /* Light mode - ensure white background */
+    .dark .ql-snow .ql-stroke {
+        stroke: rgb(229, 231, 235) !important;
+    }
+    
+    .dark .ql-snow .ql-fill {
+        fill: rgb(229, 231, 235) !important;
+    }
+    
+    /* Light mode - ensure white background and visible icons */
     .ql-container {
         background-color: white !important;
         border: 1px solid #ccc !important;
@@ -50,6 +58,71 @@
     .ql-toolbar {
         background-color: rgb(249, 250, 251) !important;
         border: 1px solid #ccc !important;
+    }
+    
+    .ql-stroke {
+        stroke: rgb(55, 65, 81) !important;
+    }
+    
+    .ql-fill {
+        fill: rgb(55, 65, 81) !important;
+    }
+    
+    .ql-picker-label {
+        color: rgb(55, 65, 81) !important;
+    }
+
+    /* Preview styling to match blog content */
+    .blog-content {
+        line-height: 1.8;
+    }
+    .blog-content h1, .blog-content h2, .blog-content h3 {
+        font-weight: bold;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .blog-content h1 { font-size: 2rem; }
+    .blog-content h2 { font-size: 1.5rem; }
+    .blog-content h3 { font-size: 1.25rem; }
+    .blog-content p {
+        margin-bottom: 1rem;
+    }
+    .blog-content ul, .blog-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .blog-content ul { list-style-type: disc; }
+    .blog-content ol { list-style-type: decimal; }
+    .blog-content code {
+        background-color: rgb(243, 244, 246);
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: monospace;
+    }
+    .dark .blog-content code {
+        background-color: rgb(55, 65, 81);
+    }
+    .blog-content pre {
+        background-color: rgb(243, 244, 246);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+    .dark .blog-content pre {
+        background-color: rgb(55, 65, 81);
+    }
+    .blog-content blockquote {
+        border-left: 4px solid rgb(59, 130, 246);
+        padding-left: 1rem;
+        margin-left: 0;
+        margin-bottom: 1rem;
+        font-style: italic;
+    }
+    .blog-content img {
+        max-width: 100%;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
     }
     
     /* Ensure editors are visible */
@@ -249,6 +322,39 @@
                         </p>
                     </div>
                 </div>
+                
+                <!-- Live Preview -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                            <i class="fas fa-eye mr-2"></i>Anteprima Live
+                        </h3>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="switchPreview('it')" id="preview-btn-it"
+                                    class="px-3 py-1 text-sm rounded bg-primary text-white">
+                                Italiano
+                            </button>
+                            <button type="button" onclick="switchPreview('en')" id="preview-btn-en"
+                                    class="px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+                                English
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Content -->
+                    <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto">
+                        <div id="preview-content-it" class="blog-content prose dark:prose-invert max-w-none">
+                            <p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>
+                        </div>
+                        <div id="preview-content-en" class="blog-content prose dark:prose-invert max-w-none hidden">
+                            <p class="text-gray-500 italic">Preview will appear here as you type...</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Aggiornamento automatico ogni 2 secondi
+                    </p>
+                </div>
             </div>
             
             <!-- Images Card -->
@@ -307,6 +413,58 @@
                                 <li>• Screenshot dello sbroglio PCB a risoluzione alta per effetto parallax fluido</li>
                             </ul>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Images Gallery -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        <i class="fas fa-images mr-2"></i>Galleria Immagini Aggiuntive
+                    </label>
+                    
+                    {% if item.images %}
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        {% set image_list = item.images|from_json if item.images is string else item.images %}
+                        {% for image in image_list %}
+                        <div class="relative group" id="gallery-image-{{ loop.index0 }}">
+                            <img src="{{ url_for('static', filename='uploads/gallery/' + image) }}" 
+                                 alt="Gallery image {{ loop.index }}"
+                                 class="w-full h-32 object-cover rounded-lg shadow-md">
+                            <button type="button" 
+                                    onclick="removeGalleryImage({{ loop.index0 }}, '{{ image }}')"
+                                    class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <div class="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                {{ loop.index }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div id="no-gallery-images" class="text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 mb-4">
+                        <i class="fas fa-images text-4xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500 dark:text-gray-400">Nessuna immagine nella galleria</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Hidden input to store images to remove -->
+                    <input type="hidden" name="remove_images" id="remove_images" value="">
+                    
+                    <!-- Add new images -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Aggiungi Nuove Immagini
+                        </label>
+                        <input type="file" 
+                               name="additional_images" 
+                               accept="image/*"
+                               multiple
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Puoi selezionare più immagini contemporaneamente. Le nuove immagini verranno aggiunte alla galleria esistente.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -407,6 +565,42 @@ document.addEventListener('DOMContentLoaded', function() {
     if (contentEN) quillEN.root.innerHTML = contentEN;
     if (contentIT) quillIT.root.innerHTML = contentIT;
 
+    // Live preview functionality
+    var currentPreviewLang = 'it';
+    var previewUpdateTimer = null;
+
+    function updatePreview() {
+        var contentToShow = currentPreviewLang === 'it' ? quillIT.root.innerHTML : quillEN.root.innerHTML;
+        var previewElement = document.getElementById('preview-content-' + currentPreviewLang);
+        
+        if (contentToShow && contentToShow.trim() !== '') {
+            previewElement.innerHTML = contentToShow;
+        } else {
+            var placeholder = currentPreviewLang === 'it' 
+                ? '<p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>'
+                : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
+            previewElement.innerHTML = placeholder;
+        }
+    }
+
+    // Update preview on editor change
+    quillEN.on('text-change', function() {
+        if (currentPreviewLang === 'en') {
+            clearTimeout(previewUpdateTimer);
+            previewUpdateTimer = setTimeout(updatePreview, 500);
+        }
+    });
+
+    quillIT.on('text-change', function() {
+        if (currentPreviewLang === 'it') {
+            clearTimeout(previewUpdateTimer);
+            previewUpdateTimer = setTimeout(updatePreview, 500);
+        }
+    });
+
+    // Initial preview update
+    updatePreview();
+
     // Save editor content to hidden inputs on form submit
     document.querySelector('form').addEventListener('submit', function() {
         document.getElementById('content_en').value = quillEN.root.innerHTML;
@@ -422,6 +616,48 @@ function togglePCBSection() {
         pcbSection.style.display = 'block';
     } else {
         pcbSection.style.display = 'none';
+    }
+}
+
+// Switch preview language
+function switchPreview(lang) {
+    currentPreviewLang = lang;
+    
+    // Update button styles
+    document.getElementById('preview-btn-it').className = lang === 'it'
+        ? 'px-3 py-1 text-sm rounded bg-primary text-white'
+        : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+    document.getElementById('preview-btn-en').className = lang === 'en'
+        ? 'px-3 py-1 text-sm rounded bg-primary text-white'
+        : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+    
+    // Toggle preview content visibility
+    document.getElementById('preview-content-it').classList.toggle('hidden', lang !== 'it');
+    document.getElementById('preview-content-en').classList.toggle('hidden', lang !== 'en');
+    
+    // Update preview content
+    updatePreview();
+}
+
+// Gallery image management
+var imagesToRemove = [];
+
+function removeGalleryImage(index, filename) {
+    if (confirm('Sei sicuro di voler rimuovere questa immagine dalla galleria?')) {
+        // Add to removal list
+        imagesToRemove.push(filename);
+        document.getElementById('remove_images').value = JSON.stringify(imagesToRemove);
+        
+        // Hide the image element
+        var imageElement = document.getElementById('gallery-image-' + index);
+        imageElement.style.opacity = '0.3';
+        imageElement.style.pointerEvents = 'none';
+        
+        // Add a "removed" overlay
+        var overlay = document.createElement('div');
+        overlay.className = 'absolute inset-0 bg-red-600/50 rounded-lg flex items-center justify-center';
+        overlay.innerHTML = '<span class="text-white font-bold text-sm">RIMOSSA</span>';
+        imageElement.appendChild(overlay);
     }
 }
 </script>

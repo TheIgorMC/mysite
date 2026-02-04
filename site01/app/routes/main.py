@@ -322,6 +322,50 @@ def edit_project(item_id):
                     pcb_bg.save(os.path.join(upload_folder, unique_filename))
                     item.pcb_background = unique_filename
         
+        # Handle gallery images removal
+        remove_images_json = request.form.get('remove_images')
+        if remove_images_json:
+            import json
+            try:
+                images_to_remove = json.loads(remove_images_json)
+                current_images = json.loads(item.images) if item.images else []
+                
+                # Remove images from list and delete files
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
+                for img_filename in images_to_remove:
+                    if img_filename in current_images:
+                        current_images.remove(img_filename)
+                        # Delete file
+                        img_path = os.path.join(upload_folder, img_filename)
+                        if os.path.exists(img_path):
+                            os.remove(img_path)
+                
+                # Update item images
+                item.images = json.dumps(current_images) if current_images else None
+            except Exception as e:
+                flash(f'Error removing images: {str(e)}', 'error')
+        
+        # Handle new gallery images upload
+        additional_images = request.files.getlist('additional_images')
+        if additional_images and additional_images[0].filename:
+            import json
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            current_images = json.loads(item.images) if item.images else []
+            
+            upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            for img in additional_images:
+                if img and img.filename and '.' in img.filename:
+                    ext = img.filename.rsplit('.', 1)[1].lower()
+                    if ext in allowed_extensions:
+                        unique_filename = f"{uuid.uuid4().hex}.{ext}"
+                        img.save(os.path.join(upload_folder, unique_filename))
+                        current_images.append(unique_filename)
+            
+            if current_images:
+                item.images = json.dumps(current_images)
+        
         db.session.commit()
         flash('Project updated successfully!', 'success')
         return redirect(url_for('main.edit_project', item_id=item.id))
