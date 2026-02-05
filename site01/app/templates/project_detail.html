@@ -12,12 +12,14 @@
         width: 100%;
         height: 100%;
         z-index: -2;
-        opacity: 0.25;
+        opacity: 0.5; /* Aumentato per test - dovrebbe essere MOLTO visibile */
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         will-change: transform;
         transition: transform 0.1s ease-out;
+        /* Debug border */
+        border: 5px solid red;
     }
     
     /* Gradient overlay per migliorare leggibilità */
@@ -31,18 +33,20 @@
         pointer-events: none;
         background: linear-gradient(
             to bottom,
-            rgba(255, 255, 255, 0.6) 0%,
-            rgba(255, 255, 255, 0.4) 50%,
-            rgba(255, 255, 255, 0.6) 100%
+            rgba(255, 255, 255, 0.3) 0%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.3) 100%
         );
+        /* Debug border */
+        border: 5px solid blue;
     }
     
     .dark .pcb-overlay {
         background: linear-gradient(
             to bottom,
-            rgba(17, 24, 39, 0.6) 0%,
-            rgba(17, 24, 39, 0.4) 50%,
-            rgba(17, 24, 39, 0.6) 100%
+            rgba(17, 24, 39, 0.3) 0%,
+            rgba(17, 24, 39, 0.2) 50%,
+            rgba(17, 24, 39, 0.3) 100%
         );
     }
     
@@ -106,6 +110,31 @@
 <script>
 console.log('PCB Background enabled for electronics project');
 console.log('PCB image path:', '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}');
+
+// Check if image loads
+var testImg = new Image();
+testImg.onload = function() {
+    console.log('✅ PCB image loaded successfully!', testImg.width + 'x' + testImg.height);
+};
+testImg.onerror = function() {
+    console.error('❌ PCB image failed to load! Check if file exists at:', '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}');
+};
+testImg.src = '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}';
+
+// Check if element is visible
+setTimeout(function() {
+    var pcbEl = document.getElementById('pcb-bg');
+    if (pcbEl) {
+        var styles = window.getComputedStyle(pcbEl);
+        console.log('PCB element styles:', {
+            display: styles.display,
+            opacity: styles.opacity,
+            zIndex: styles.zIndex,
+            position: styles.position,
+            backgroundImage: styles.backgroundImage
+        });
+    }
+}, 500);
 </script>
 {% else %}
 <script>
