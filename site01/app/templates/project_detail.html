@@ -111,14 +111,13 @@
     width: 100% !important;
     height: 100% !important;
     z-index: -2 !important;
-    opacity: 0.5 !important;
+    opacity: 0.12 !important;
     background-image: url('{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
     will-change: transform !important;
     transition: transform 0.1s ease-out !important;
-    border: 5px solid red !important;
 "></div>
 <div class="pcb-overlay" style="
     position: fixed !important;
@@ -128,8 +127,6 @@
     height: 100% !important;
     z-index: -1 !important;
     pointer-events: none !important;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.3) 100%) !important;
-    border: 5px solid blue !important;
 "></div>
 <!-- Debug info (rimuovi dopo aver verificato) -->
 <script>
@@ -184,8 +181,8 @@ console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has P
         </nav>
         
         <!-- Header -->
-        <header class="mb-12">
-            <div class="flex items-center gap-4 mb-4">
+        <header class="mb-8 md:mb-12 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 md:p-8 rounded-xl md:rounded-2xl shadow-xl">
+            <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-4">
                 {% if item.category == '3dprinting' %}
                 <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm font-semibold">
                     <i class="fas fa-cube mr-1"></i>Stampa 3D
@@ -205,11 +202,11 @@ console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has P
                 {% endif %}
             </div>
             
-            <h1 class="text-5xl font-bold mb-4 text-gray-900 dark:text-white">
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white break-words">
                 {{ item['title_' + session.get('language', 'it')] }}
             </h1>
             
-            <div class="flex items-center gap-6 text-gray-600 dark:text-gray-400 text-sm">
+            <div class="flex flex-wrap items-center gap-3 md:gap-6 text-gray-600 dark:text-gray-400 text-xs md:text-sm">
                 <span><i class="far fa-calendar mr-2"></i>{{ item.created_at.strftime('%d %B %Y') if item.created_at else 'Data sconosciuta' }}</span>
                 {% if item.updated_at and item.updated_at != item.created_at %}
                 <span><i class="far fa-clock mr-2"></i>Aggiornato: {{ item.updated_at.strftime('%d %B %Y') }}</span>
@@ -229,13 +226,13 @@ console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has P
         
         <!-- Description (lead paragraph) -->
         {% if item['description_' + session.get('language', 'it')] %}
-        <div class="mb-8 text-xl text-gray-700 dark:text-gray-300 leading-relaxed border-l-4 border-primary pl-6 italic">
+        <div class="mb-8 text-base md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed border-l-4 border-primary pl-4 md:pl-6 italic bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-4 md:p-6 rounded-lg shadow-lg">
             {{ item['description_' + session.get('language', 'it')] }}
         </div>
         {% endif %}
         
         <!-- Main Content -->
-        <div class="blog-content bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-12">
+        <div class="blog-content bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 mb-12 text-sm md:text-base">
             {% if item['content_' + session.get('language', 'it')] %}
                 {{ item['content_' + session.get('language', 'it')] | safe }}
             {% else %}
@@ -268,14 +265,14 @@ console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has P
         
         <!-- External Link -->
         {% if item.external_url %}
-        <div class="mb-12 bg-gradient-to-r from-primary to-primary-dark p-6 rounded-2xl shadow-lg">
-            <div class="flex items-center justify-between text-white">
-                <div>
-                    <h3 class="text-xl font-bold mb-2">Vuoi saperne di più?</h3>
-                    <p class="opacity-90">Visita la pagina del progetto su GitHub o Printables</p>
+        <div class="mb-12 bg-gradient-to-r from-primary to-primary-dark p-4 md:p-6 rounded-xl md:rounded-2xl shadow-lg">
+            <div class="flex flex-col md:flex-row items-center justify-between text-white gap-4">
+                <div class="text-center md:text-left">
+                    <h3 class="text-lg md:text-xl font-bold mb-2">Vuoi saperne di più?</h3>
+                    <p class="opacity-90 text-sm md:text-base">Visita la pagina del progetto su GitHub o Printables</p>
                 </div>
                 <a href="{{ item.external_url }}" target="_blank" rel="noopener noreferrer"
-                   class="px-6 py-3 bg-white text-primary rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                   class="w-full md:w-auto px-6 py-3 bg-white text-primary rounded-lg font-semibold hover:bg-gray-100 transition-colors text-center whitespace-nowrap">
                     <i class="fas fa-external-link-alt mr-2"></i>Vai al progetto
                 </a>
             </div>

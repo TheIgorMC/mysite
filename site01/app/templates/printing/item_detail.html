@@ -84,12 +84,21 @@
                 </div>
                 {% endif %}
                 
-                {% if item.external_url %}
+                {% if item.slug %}
                 <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{{ url_for('main.project_detail', slug=item.slug) }}"
+                       class="inline-flex items-center justify-center w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold">
+                        <i class="fas fa-book-open mr-2"></i>{{ 'Leggi il Blog Post' if session.get('language') == 'it' else 'Read Blog Post' }}
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if item.external_url %}
+                <div class="pt-4">
                     <a href="{{ item.external_url }}" 
                        target="_blank"
-                       class="inline-flex items-center justify-center w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold">
-                        <i class="fas fa-external-link-alt mr-2"></i>{{ t('common.view_project') }}
+                       class="inline-flex items-center justify-center w-full px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition font-semibold">
+                        <i class="fas fa-external-link-alt mr-2"></i>{{ 'Vedi su GitHub/Printables' if session.get('language') == 'it' else 'View on GitHub/Printables' }}
                     </a>
                 </div>
                 {% endif %}

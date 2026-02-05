@@ -1,7 +1,7 @@
 """
 Main routes blueprint
 """
-from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
 from app.models import User, GalleryItem, Product, AuthorizedAthlete, CompetitionSubscription
 from app import db
@@ -395,6 +395,21 @@ def delete_gallery_item(item_id):
     db.session.commit()
     flash('Gallery item deleted', 'success')
     return redirect(url_for('main.admin') + '#gallery')
+
+
+@bp.route('/admin/reset_project_stats/<int:item_id>', methods=['POST'])
+@login_required
+def reset_project_stats(item_id):
+    """Reset project view statistics"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    item = GalleryItem.query.get_or_404(item_id)
+    item.view_count = 0
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Statistics reset successfully'})
+
 
 @bp.route('/admin/add_product', methods=['POST'])
 @login_required

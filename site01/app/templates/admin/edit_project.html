@@ -511,6 +511,20 @@
                         <div class="text-sm text-gray-600 dark:text-gray-400">Status</div>
                     </div>
                 </div>
+                
+                <!-- Reset Stats Button -->
+                <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" 
+                            onclick="resetStats({{ item.id }})"
+                            class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-chart-line"></i>
+                        Reset Statistiche Visualizzazioni
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Questo azzererà il contatore delle visualizzazioni. Azione non reversibile.
+                    </p>
+                </div>
             </div>
             
             <!-- Submit Buttons -->
@@ -750,6 +764,30 @@ function removeGalleryImage(index, filename) {
         overlay.className = 'absolute inset-0 bg-red-600/50 rounded-lg flex items-center justify-center';
         overlay.innerHTML = '<span class="text-white font-bold text-sm">RIMOSSA</span>';
         imageElement.appendChild(overlay);
+    }
+}
+
+// Reset statistics
+function resetStats(itemId) {
+    if (confirm('⚠️ Sei sicuro di voler azzerare le statistiche di visualizzazione?\n\nQuesta azione NON può essere annullata.')) {
+        fetch('/admin/reset_project_stats/' + itemId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Statistiche azzerate con successo!');
+                location.reload();
+            } else {
+                alert('❌ Errore: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('❌ Errore nella richiesta: ' + error);
+        });
     }
 }
 </script>
