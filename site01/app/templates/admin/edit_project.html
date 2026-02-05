@@ -298,9 +298,15 @@
                 <div class="space-y-4">
                     <!-- Content EN -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Full Content (English)
-                        </label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Full Content (English)
+                            </label>
+                            <button type="button" id="raw-html-btn-en" onclick="toggleRawHTML('en')"
+                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-code mr-1"></i>Modalità HTML
+                            </button>
+                        </div>
                         <div id="editor-en" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
                         <input type="hidden" name="content_en" id="content_en" value="{{ item.content_en or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -311,9 +317,15 @@
                     
                     <!-- Content IT -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Full Content (Italian)
-                        </label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Full Content (Italian)
+                            </label>
+                            <button type="button" id="raw-html-btn-it" onclick="toggleRawHTML('it')"
+                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-code mr-1"></i>Modalità HTML
+                            </button>
+                        </div>
                         <div id="editor-it" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
                         <input type="hidden" name="content_it" id="content_it" value="{{ item.content_it or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -573,7 +585,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var contentToShow = currentPreviewLang === 'it' ? quillIT.root.innerHTML : quillEN.root.innerHTML;
         var previewElement = document.getElementById('preview-content-' + currentPreviewLang);
         
-        if (contentToShow && contentToShow.trim() !== '') {
+        if (contentToShow && contentToShow.trim() !== '' && contentToShow.trim() !== '<p><br></p>') {
+            // Render HTML directly
             previewElement.innerHTML = contentToShow;
         } else {
             var placeholder = currentPreviewLang === 'it' 
@@ -581,6 +594,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
             previewElement.innerHTML = placeholder;
         }
+    }
+
+    // Add raw HTML mode toggle
+    var rawHTMLMode = { en: false, it: false };
+    
+    function toggleRawHTML(lang) {
+        rawHTMLMode[lang] = !rawHTMLMode[lang];
+        var editor = lang === 'it' ? quillIT : quillEN;
+        var btn = document.getElementById('raw-html-btn-' + lang);
+        
+        if (rawHTMLMode[lang]) {
+            // Switch to HTML mode
+            var html = editor.root.innerHTML;
+            editor.enable(false);
+            editor.root.innerText = html;
+            btn.innerHTML = '<i class="fas fa-eye mr-1"></i>Modalità Visuale';
+            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+            btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700');
+        } else {
+            // Switch to visual mode
+            var html = editor.root.innerText;
+            editor.root.innerHTML = html;
+            editor.enable(true);
+            btn.innerHTML = '<i class="fas fa-code mr-1"></i>Modalità HTML';
+            btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700');
+            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+        }
+        updatePreview();
     }
 
     // Update preview on editor change
@@ -602,7 +643,19 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePreview();
 
     // Save editor content to hidden inputs on form submit
-    document.querySelector('form').addEventListener('submit', function() {
+    document.querySelector('form').addEventListener('submit', function(e) {
+        // If in HTML mode, restore to visual first to get proper HTML
+        if (rawHTMLMode.en) {
+            var html = quillEN.root.innerText;
+            quillEN.root.innerHTML = html;
+            quillEN.enable(true);
+        }
+        if (rawHTMLMode.it) {
+            var html = quillIT.root.innerText;
+            quillIT.root.innerHTML = html;
+            quillIT.enable(true);
+        }
+        
         document.getElementById('content_en').value = quillEN.root.innerHTML;
         document.getElementById('content_it').value = quillIT.root.innerHTML;
     });

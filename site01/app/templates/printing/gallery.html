@@ -9,7 +9,7 @@
         
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {% for item in items %}
-            <a href="{{ url_for('printing.item_detail', item_id=item.id) }}" 
+            <a href="{{ url_for('main.project_detail', slug=item.slug) if item.slug else url_for('printing.item_detail', item_id=item.id) }}" 
                class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 block">
                 <img src="{{ url_for('static', filename='uploads/gallery/' + (item.main_image or '')) if item.main_image else url_for('static', filename='media/3dprinting.jpg') }}" 
                      alt="{{ item.title_it if session.get('language') == 'it' else item.title_en }}" 
