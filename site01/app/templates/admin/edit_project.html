@@ -599,7 +599,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add raw HTML mode toggle
     var rawHTMLMode = { en: false, it: false };
     
-    function toggleRawHTML(lang) {
+    // Make function globally accessible
+    window.toggleRawHTML = function(lang) {
         rawHTMLMode[lang] = !rawHTMLMode[lang];
         var editor = lang === 'it' ? quillIT : quillEN;
         var btn = document.getElementById('raw-html-btn-' + lang);
@@ -611,14 +612,14 @@ document.addEventListener('DOMContentLoaded', function() {
             editor.root.innerText = html;
             btn.innerHTML = '<i class="fas fa-eye mr-1"></i>Modalità Visuale';
             btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
-            btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700');
+            btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
         } else {
             // Switch to visual mode
             var html = editor.root.innerText;
             editor.root.innerHTML = html;
             editor.enable(true);
             btn.innerHTML = '<i class="fas fa-code mr-1"></i>Modalità HTML';
-            btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700');
+            btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
             btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
         }
         updatePreview();
