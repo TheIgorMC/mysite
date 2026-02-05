@@ -308,6 +308,7 @@
                             </button>
                         </div>
                         <div id="editor-en" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
+                        <textarea id="html-editor-en" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
                         <input type="hidden" name="content_en" id="content_en" value="{{ item.content_en or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             <i class="fas fa-info-circle mr-1"></i>
@@ -327,6 +328,7 @@
                             </button>
                         </div>
                         <div id="editor-it" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
+                        <textarea id="html-editor-it" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
                         <input type="hidden" name="content_it" id="content_it" value="{{ item.content_it or '' }}">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             <i class="fas fa-info-circle mr-1"></i>
@@ -604,25 +606,58 @@ document.addEventListener('DOMContentLoaded', function() {
         rawHTMLMode[lang] = !rawHTMLMode[lang];
         var editor = lang === 'it' ? quillIT : quillEN;
         var btn = document.getElementById('raw-html-btn-' + lang);
+        var quillEditor = document.getElementById('editor-' + lang);
+        var htmlEditor = document.getElementById('html-editor-' + lang);
         
         if (rawHTMLMode[lang]) {
-            // Switch to HTML mode
+            // Switch to HTML mode - show textarea, hide Quill
             var html = editor.root.innerHTML;
-            editor.enable(false);
-            editor.root.innerText = html;
+            htmlEditor.value = html;
+            htmlEditor.style.display = 'block';
+            quillEditor.style.display = 'none';
+            
             btn.innerHTML = '<i class="fas fa-eye mr-1"></i>Modalità Visuale';
             btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
             btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
+            
+            // Update preview with raw HTML
+            updatePreviewFromHTML(lang);
+            
+            // Listen for changes in textarea
+            htmlEditor.oninput = function() {
+                updatePreviewFromHTML(lang);
+            };
         } else {
-            // Switch to visual mode
-            var html = editor.root.innerText;
+            // Switch to visual mode - show Quill, hide textarea
+            var html = htmlEditor.value;
             editor.root.innerHTML = html;
-            editor.enable(true);
+            htmlEditor.style.display = 'none';
+            quillEditor.style.display = 'block';
+            
             btn.innerHTML = '<i class="fas fa-code mr-1"></i>Modalità HTML';
             btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
             btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+            
+            htmlEditor.oninput = null;
         }
         updatePreview();
+    }
+    
+    function updatePreviewFromHTML(lang) {
+        if (currentPreviewLang === lang) {
+            var htmlEditor = document.getElementById('html-editor-' + lang);
+            var previewElement = document.getElementById('preview-content-' + lang);
+            var html = htmlEditor.value;
+            
+            if (html && html.trim() !== '') {
+                previewElement.innerHTML = html;
+            } else {
+                var placeholder = lang === 'it' 
+                    ? '<p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>'
+                    : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
+                previewElement.innerHTML = placeholder;
+            }
+        }
     }
 
     // Update preview on editor change
@@ -645,20 +680,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Save editor content to hidden inputs on form submit
     document.querySelector('form').addEventListener('submit', function(e) {
-        // If in HTML mode, restore to visual first to get proper HTML
+        // Get content from appropriate source (HTML textarea or Quill editor)
+        var contentEN, contentIT;
+        
         if (rawHTMLMode.en) {
-            var html = quillEN.root.innerText;
-            quillEN.root.innerHTML = html;
-            quillEN.enable(true);
-        }
-        if (rawHTMLMode.it) {
-            var html = quillIT.root.innerText;
-            quillIT.root.innerHTML = html;
-            quillIT.enable(true);
+            contentEN = document.getElementById('html-editor-en').value;
+        } else {
+            contentEN = quillEN.root.innerHTML;
         }
         
-        document.getElementById('content_en').value = quillEN.root.innerHTML;
-        document.getElementById('content_it').value = quillIT.root.innerHTML;
+        if (rawHTMLMode.it) {
+            contentIT = document.getElementById('html-editor-it').value;
+        } else {
+            contentIT = quillIT.root.innerHTML;
+        }
+        
+        document.getElementById('content_en').value = contentEN;
+        document.getElementById('content_it').value = contentIT;
     });
 });
 
