@@ -183,6 +183,21 @@
                 {% endif %}
                 <span><i class="far fa-eye mr-2"></i>{{ item.view_count or 0 }} visualizzazioni</span>
             </div>
+            
+            <!-- Blog Posts Link -->
+            {% if item.blog_posts %}
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('main.project_blog_posts', slug=item.slug) }}"
+                   class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                    <i class="fas fa-newspaper text-xl"></i>
+                    <div class="text-left">
+                        <div class="font-bold">Articoli Blog</div>
+                        <div class="text-sm opacity-90">{{ item.blog_posts|length }} articol{{ 'o' if item.blog_posts|length == 1 else 'i' }} disponibil{{ 'e' if item.blog_posts|length == 1 else 'i' }}</div>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% endif %}
         </header>
         
         <!-- Main Image -->
