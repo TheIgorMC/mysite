@@ -105,7 +105,7 @@
 <!-- PCB Parallax Background (solo se elettronica E ha pcb_background) -->
 {% if item.category == 'electronics' and item.pcb_background %}
 <div class="pcb-parallax" id="pcb-bg" style="
-    position: fixed !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
@@ -113,58 +113,28 @@
     z-index: -2 !important;
     opacity: 0.12 !important;
     background-image: url('{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}') !important;
-    background-size: 100% auto !important;
-    background-position: bottom center !important;
+    background-size: cover !important;
+    background-position: center center !important;
     background-repeat: no-repeat !important;
     will-change: transform !important;
     transition: transform 0.1s ease-out !important;
 "></div>
 <div class="pcb-overlay" style="
-    position: fixed !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
     z-index: -1 !important;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
     pointer-events: none !important;
 "></div>
-<!-- Debug info (rimuovi dopo aver verificato) -->
-<script>
-console.log('PCB Background enabled for electronics project');
-console.log('PCB image path:', '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}');
-
-// Check if image loads
-var testImg = new Image();
-testImg.onload = function() {
-    console.log('✅ PCB image loaded successfully!', testImg.width + 'x' + testImg.height);
-};
-testImg.onerror = function() {
-    console.error('❌ PCB image failed to load! Check if file exists at:', '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}');
-};
-testImg.src = '{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}';
-
-// Check if element is visible
-setTimeout(function() {
-    var pcbEl = document.getElementById('pcb-bg');
-    if (pcbEl) {
-        var styles = window.getComputedStyle(pcbEl);
-        console.log('PCB element styles:', {
-            display: styles.display,
-            opacity: styles.opacity,
-            zIndex: styles.zIndex,
-            position: styles.position,
-            backgroundImage: styles.backgroundImage
-        });
-    }
-}, 500);
-</script>
 {% else %}
-<script>
-console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has PCB:', {{ 'true' if item.pcb_background else 'false' }});
-</script>
+<!-- No PCB background for this project -->
 {% endif %}
 
-<article class="py-12 bg-transparent relative">
+<!-- Main Article - position: relative per contenere gli sfondi absolute -->
+<article class="py-12 bg-transparent" {% if item.category == 'electronics' and item.pcb_background %}style="position: relative; min-height: 100vh;"{% else %}style="position: relative;"{% endif %}>
     <div class="container mx-auto px-4 max-w-4xl">
         
         <!-- Breadcrumb -->
@@ -349,15 +319,37 @@ console.log('PCB Background NOT shown. Category:', '{{ item.category }}', 'Has P
 <script>
 // PCB Parallax effect
 {% if item.category == 'electronics' and item.pcb_background %}
-document.addEventListener('scroll', function() {
+function initPCBParallax() {
     const pcbBg = document.getElementById('pcb-bg');
-    if (pcbBg) {
-        const scrolled = window.pageYOffset;
-        const parallaxSpeed = 0.3; // Adjust for more/less movement
-        // Negative value to move UP as you scroll DOWN
-        pcbBg.style.transform = `translateY(${-scrolled * parallaxSpeed}px)`;
+    if (!pcbBg) return;
+    
+    // Imposta dimensioni contenitore per coprire tutta la pagina
+    function updateDimensions() {
+        const pageHeight = document.body.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        // Aggiungi extra height per il parallax (30% del scroll range)
+        const extraHeight = (pageHeight - viewportHeight) * 0.3;
+        pcbBg.style.height = `${pageHeight + extraHeight}px`;
     }
-});
+    
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    
+    // Effetto parallax: muove in base allo scroll
+    document.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        const parallaxSpeed = 0.3; // Velocità ridotta per effetto smooth
+        // Muove verso l'alto mentre scrolli
+        pcbBg.style.transform = `translateY(${-scrolled * parallaxSpeed}px)`;
+    });
+}
+
+// Inizializza dopo che DOM è caricato
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPCBParallax);
+} else {
+    initPCBParallax();
+}
 {% endif %}
 
 // Image modal functions
