@@ -3,7 +3,7 @@ Main routes blueprint
 """
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
-from app.models import User, GalleryItem, Product, AuthorizedAthlete, CompetitionSubscription
+from app.models import User, GalleryItem, Product, AuthorizedAthlete, CompetitionSubscription, BlogPost
 from app import db
 from app.utils import t, load_translations
 from datetime import datetime
@@ -587,4 +587,204 @@ def projects_by_category(category):
     ).order_by(GalleryItem.created_at.desc()).all()
     
     return render_template('projects_list.html', items=items, category=category)
+
+
+# ============= NEW BLOG SYSTEM =============
+
+@bp.route('/blog')
+def blog_list():
+    """List all published blog posts"""
+    posts = BlogPost.query.filter_by(is_published=True).order_by(BlogPost.published_at.desc()).all()
+    return render_template('blog/blog_list.html', posts=posts)
+
+
+@bp.route('/blog/<slug>')
+def blog_post(slug):
+    """Display a single blog post"""
+    post = BlogPost.query.filter_by(slug=slug).first_or_404()
+    
+    # Only show if published or user is admin
+    if not post.is_published and (not current_user.is_authenticated or not current_user.is_admin):
+        flash('This post is not published yet.', 'error')
+        return redirect(url_for('main.blog_list'))
+    
+    # Increment view count
+    post.view_count = (post.view_count or 0) + 1
+    db.session.commit()
+    
+    # Get related posts (same project or same tags)
+    related = []
+    if post.project_id:
+        related = BlogPost.query.filter(
+            BlogPost.project_id == post.project_id,
+            BlogPost.id != post.id,
+            BlogPost.is_published == True
+        ).order_by(BlogPost.published_at.desc()).limit(3).all()
+    
+    return render_template('blog/blog_post.html', post=post, related=related)
+
+
+@bp.route('/project/<slug>/posts')
+def project_blog_posts(slug):
+    """List all blog posts for a specific project"""
+    project = GalleryItem.query.filter_by(slug=slug).first_or_404()
+    posts = BlogPost.query.filter_by(
+        project_id=project.id,
+        is_published=True
+    ).order_by(BlogPost.published_at.desc()).all()
+    
+    return render_template('blog/project_posts.html', project=project, posts=posts)
+
+
+@bp.route('/admin/blog/new', methods=['GET', 'POST'])
+@login_required
+def create_blog_post():
+    """Create a new blog post"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        # Get form data
+        title_it = request.form.get('title_it')
+        title_en = request.form.get('title_en')
+        excerpt_it = request.form.get('excerpt_it')
+        excerpt_en = request.form.get('excerpt_en')
+        content_it = request.form.get('content_it')
+        content_en = request.form.get('content_en')
+        slug = request.form.get('slug')
+        project_id = request.form.get('project_id')
+        tags = request.form.get('tags')
+        is_published = request.form.get('is_published') == 'on'
+        
+        # Generate slug if not provided
+        if not slug:
+            import re
+            slug = re.sub(r'[^a-z0-9]+', '-', title_it.lower()).strip('-')
+        
+        # Check slug uniqueness
+        existing = BlogPost.query.filter_by(slug=slug).first()
+        if existing:
+            flash(f'Slug "{slug}" already exists. Please choose another.', 'error')
+            return redirect(request.url)
+        
+        # Create post
+        post = BlogPost(
+            title_it=title_it,
+            title_en=title_en,
+            excerpt_it=excerpt_it,
+            excerpt_en=excerpt_en,
+            content_it=content_it,
+            content_en=content_en,
+            slug=slug,
+            project_id=int(project_id) if project_id else None,
+            tags=tags,
+            is_published=is_published,
+            published_at=datetime.utcnow() if is_published else None,
+            author_id=current_user.id
+        )
+        
+        # Handle cover image upload
+        if 'cover_image' in request.files:
+            file = request.files['cover_image']
+            if file and file.filename:
+                import os
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'blog')
+                os.makedirs(upload_folder, exist_ok=True)
+                file.save(os.path.join(upload_folder, filename))
+                post.cover_image = filename
+        
+        db.session.add(post)
+        db.session.commit()
+        
+        flash('Blog post created successfully!', 'success')
+        return redirect(url_for('main.edit_blog_post', post_id=post.id))
+    
+    # GET request - show form
+    projects = GalleryItem.query.filter_by(is_active=True).order_by(GalleryItem.title_it).all()
+    return render_template('admin/edit_blog_post.html', post=None, projects=projects)
+
+
+@bp.route('/admin/blog/edit/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def edit_blog_post(post_id):
+    """Edit an existing blog post"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    post = BlogPost.query.get_or_404(post_id)
+    
+    if request.method == 'POST':
+        # Update fields
+        post.title_it = request.form.get('title_it')
+        post.title_en = request.form.get('title_en')
+        post.excerpt_it = request.form.get('excerpt_it')
+        post.excerpt_en = request.form.get('excerpt_en')
+        post.content_it = request.form.get('content_it')
+        post.content_en = request.form.get('content_en')
+        post.slug = request.form.get('slug')
+        post.project_id = request.form.get('project_id')
+        post.tags = request.form.get('tags')
+        
+        was_published = post.is_published
+        post.is_published = request.form.get('is_published') == 'on'
+        
+        # Set published_at if newly published
+        if post.is_published and not was_published:
+            post.published_at = datetime.utcnow()
+        
+        # Handle cover image upload
+        if 'cover_image' in request.files:
+            file = request.files['cover_image']
+            if file and file.filename:
+                import os
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'blog')
+                os.makedirs(upload_folder, exist_ok=True)
+                file.save(os.path.join(upload_folder, filename))
+                post.cover_image = filename
+        
+        post.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        flash('Blog post updated successfully!', 'success')
+        return redirect(url_for('main.edit_blog_post', post_id=post.id))
+    
+    # GET request - show form
+    projects = GalleryItem.query.filter_by(is_active=True).order_by(GalleryItem.title_it).all()
+    return render_template('admin/edit_blog_post.html', post=post, projects=projects)
+
+
+@bp.route('/admin/blog/delete/<int:post_id>', methods=['POST'])
+@login_required
+def delete_blog_post(post_id):
+    """Delete a blog post"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    post = BlogPost.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Blog post deleted'})
+
+
+@bp.route('/admin/blog')
+@login_required
+def manage_blog_posts():
+    """Manage all blog posts"""
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    posts = BlogPost.query.order_by(BlogPost.created_at.desc()).all()
+    return render_template('admin/manage_blog.html', posts=posts)
 

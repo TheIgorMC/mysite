@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post['title_' + session.get('language', 'it')] }} - Blog - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16">
+    <article class="container mx-auto px-4 max-w-4xl">
+        
+        <!-- Breadcrumb -->
+        <nav class="mb-8 text-sm">
+            <ol class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                <li><a href="{{ url_for('main.index') }}" class="hover:text-primary">Home</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{{ url_for('main.blog_list') }}" class="hover:text-primary">Blog</a></li>
+                {% if post.project %}
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{{ url_for('main.project_blog_posts', slug=post.project.slug) }}" class="hover:text-primary">
+                    {{ post.project['title_' + session.get('language', 'it')] }}
+                </a></li>
+                {% endif %}
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900 dark:text-white">{{ post['title_' + session.get('language', 'it')] }}</li>
+            </ol>
+        </nav>
+        
+        <!-- Header -->
+        <header class="mb-12 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-8 rounded-2xl shadow-xl">
+            <!-- Tags -->
+            {% if post.tags %}
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% for tag in post.tags.split(',') %}
+                <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-semibold">
+                    {{ tag.strip() }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Title -->
+            <h1 class="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+                {{ post['title_' + session.get('language', 'it')] }}
+            </h1>
+            
+            <!-- Meta Info -->
+            <div class="flex flex-wrap items-center gap-6 text-gray-600 dark:text-gray-400">
+                <span><i class="far fa-calendar mr-2"></i>{{ post.published_at.strftime('%d %B %Y') if post.published_at else post.created_at.strftime('%d %B %Y') }}</span>
+                {% if post.author %}
+                <span><i class="far fa-user mr-2"></i>{{ post.author.username }}</span>
+                {% endif %}
+                <span><i class="far fa-eye mr-2"></i>{{ post.view_count or 0 }} visualizzazioni</span>
+                {% if post.updated_at and post.updated_at != post.created_at %}
+                <span><i class="far fa-clock mr-2"></i>Aggiornato: {{ post.updated_at.strftime('%d %B %Y') }}</span>
+                {% endif %}
+            </div>
+            
+            <!-- Project Link -->
+            {% if post.project %}
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('main.project_detail', slug=post.project.slug) }}"
+                   class="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-folder-open text-primary"></i>
+                    <span class="font-semibold">Progetto: {{ post.project['title_' + session.get('language', 'it')] }}</span>
+                    <i class="fas fa-arrow-right text-sm text-gray-400"></i>
+                </a>
+            </div>
+            {% endif %}
+        </header>
+        
+        <!-- Cover Image -->
+        {% if post.cover_image %}
+        <div class="mb-12">
+            <img src="{{ url_for('static', filename='uploads/blog/' + post.cover_image) }}"
+                 alt="{{ post['title_' + session.get('language', 'it')] }}"
+                 class="w-full rounded-2xl shadow-2xl">
+        </div>
+        {% endif %}
+        
+        <!-- Excerpt -->
+        {% if post['excerpt_' + session.get('language', 'it')] %}
+        <div class="mb-8 text-xl text-gray-700 dark:text-gray-300 leading-relaxed border-l-4 border-primary pl-6 italic bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-6 rounded-lg shadow-lg">
+            {{ post['excerpt_' + session.get('language', 'it')] }}
+        </div>
+        {% endif %}
+        
+        <!-- Main Content -->
+        <div class="blog-content bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg p-8 mb-12">
+            {{ post['content_' + session.get('language', 'it')] | safe }}
+        </div>
+        
+        <!-- Admin Actions -->
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <div class="mb-12 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-6">
+            <h3 class="text-lg font-bold mb-4 text-yellow-800 dark:text-yellow-300">
+                <i class="fas fa-tools mr-2"></i>Admin Actions
+            </h3>
+            <div class="flex gap-4">
+                <a href="{{ url_for('main.edit_blog_post', post_id=post.id) }}"
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Modifica Post
+                </a>
+                <button onclick="deletePost({{ post.id }})"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-trash mr-2"></i>Elimina Post
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Related Posts -->
+        {% if related %}
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Articoli Correlati</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for rel_post in related %}
+                <a href="{{ url_for('main.blog_post', slug=rel_post.slug) }}"
+                   class="block bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    {% if rel_post.cover_image %}
+                    <img src="{{ url_for('static', filename='uploads/blog/' + rel_post.cover_image) }}"
+                         alt="{{ rel_post['title_' + session.get('language', 'it')] }}"
+                         class="w-full h-48 object-cover rounded-t-xl">
+                    {% endif %}
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-900 dark:text-white mb-2">
+                            {{ rel_post['title_' + session.get('language', 'it')] }}
+                        </h3>
+                        {% if rel_post['excerpt_' + session.get('language', 'it')] %}
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            {{ rel_post['excerpt_' + session.get('language', 'it')][:100] }}...
+                        </p>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+    </article>
+</div>
+
+<script>
+function deletePost(postId) {
+    if (confirm('Sei sicuro di voler eliminare questo post? Questa azione non può essere annullata.')) {
+        fetch(`/admin/blog/delete/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Post eliminato con successo');
+                window.location.href = '{{ url_for("main.blog_list") }}';
+            } else {
+                alert('Errore: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Errore durante l\'eliminazione: ' + error);
+        });
+    }
+}
+</script>
+
+<style>
+    /* Blog post content styling */
+    .blog-content {
+        font-size: 1.125rem;
+        line-height: 1.8;
+    }
+    
+    .blog-content h2 {
+        @apply text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-white;
+    }
+    
+    .blog-content h3 {
+        @apply text-2xl font-bold mt-6 mb-3 text-gray-800 dark:text-gray-100;
+    }
+    
+    .blog-content p {
+        @apply mb-4 text-gray-700 dark:text-gray-300;
+    }
+    
+    .blog-content ul, .blog-content ol {
+        @apply mb-4 ml-6 text-gray-700 dark:text-gray-300;
+    }
+    
+    .blog-content li {
+        @apply mb-2;
+    }
+    
+    .blog-content code {
+        @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono;
+    }
+    
+    .blog-content pre {
+        @apply bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4 overflow-x-auto;
+    }
+    
+    .blog-content img {
+        @apply rounded-lg shadow-lg my-6 w-full;
+    }
+    
+    .blog-content a {
+        @apply text-primary hover:text-primary-dark underline;
+    }
+</style>
+{% endblock %}

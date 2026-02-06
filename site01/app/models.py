@@ -325,6 +325,9 @@ class GalleryItem(db.Model):
     # Relationship to products (one gallery item can have multiple products)
     products = db.relationship('Product', backref='gallery_item', lazy=True, foreign_keys='Product.gallery_item_id')
     
+    # Relationship to blog posts (one project can have multiple blog posts)
+    blog_posts = db.relationship('BlogPost', backref='project', lazy=True, cascade='all, delete-orphan')
+    
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -334,3 +337,49 @@ class GalleryItem(db.Model):
     
     def __repr__(self):
         return f'<GalleryItem {self.title_en}>'
+
+
+class BlogPost(db.Model):
+    """Blog posts associated with gallery projects"""
+    __tablename__ = 'blog_posts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Relationship to gallery project (optional - can be standalone)
+    project_id = db.Column(db.Integer, db.ForeignKey('gallery_items.id'), nullable=True)
+    
+    # Author
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    author = db.relationship('User', backref='blog_posts')
+    
+    # Content in Italian
+    title_it = db.Column(db.String(256), nullable=False)
+    excerpt_it = db.Column(db.Text)  # Short summary for cards
+    content_it = db.Column(db.Text, nullable=False)  # Full HTML content
+    
+    # Content in English  
+    title_en = db.Column(db.String(256), nullable=False)
+    excerpt_en = db.Column(db.Text)  # Short summary for cards
+    content_en = db.Column(db.Text, nullable=False)  # Full HTML content
+    
+    # SEO
+    slug = db.Column(db.String(256), unique=True, index=True, nullable=False)
+    
+    # Media
+    cover_image = db.Column(db.String(256))  # Main cover image
+    images = db.Column(db.Text)  # JSON array of additional images
+    
+    # Categorization
+    tags = db.Column(db.Text)  # Comma-separated tags
+    
+    # Publishing
+    is_published = db.Column(db.Boolean, default=False)
+    published_at = db.Column(db.DateTime)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    view_count = db.Column(db.Integer, default=0)
+    
+    def __repr__(self):
+        return f'<BlogPost {self.title_en}>'
