@@ -105,11 +105,11 @@
 <!-- PCB Parallax Background (solo se elettronica E ha pcb_background) -->
 {% if item.category == 'electronics' and item.pcb_background %}
 <div class="pcb-parallax" id="pcb-bg" style="
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
     z-index: -2 !important;
     opacity: 0.12 !important;
     background-image: url('{{ url_for('static', filename='uploads/pcb/' + item.pcb_background) }}') !important;
@@ -120,11 +120,11 @@
     transition: transform 0.1s ease-out !important;
 "></div>
 <div class="pcb-overlay" style="
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
     z-index: -1 !important;
     background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85)) !important;
     pointer-events: none !important;
@@ -133,8 +133,8 @@
 <!-- No PCB background for this project -->
 {% endif %}
 
-<!-- Main Article - position: relative per contenere gli sfondi absolute -->
-<article class="py-12 bg-transparent" {% if item.category == 'electronics' and item.pcb_background %}style="position: relative; min-height: 100vh;"{% else %}style="position: relative;"{% endif %}>
+<!-- Main Article -->
+<article class="py-12 bg-transparent relative">
     <div class="container mx-auto px-4 max-w-4xl">
         
         <!-- Breadcrumb -->
@@ -319,37 +319,20 @@
 <script>
 // PCB Parallax effect
 {% if item.category == 'electronics' and item.pcb_background %}
-function initPCBParallax() {
+// Effetto parallax per PCB background
+document.addEventListener('scroll', function() {
     const pcbBg = document.getElementById('pcb-bg');
-    if (!pcbBg) return;
-    
-    // Imposta dimensioni contenitore per coprire tutta la pagina
-    function updateDimensions() {
-        const pageHeight = document.body.scrollHeight;
-        const viewportHeight = window.innerHeight;
-        // Aggiungi extra height per il parallax (30% del scroll range)
-        const extraHeight = (pageHeight - viewportHeight) * 0.3;
-        pcbBg.style.height = `${pageHeight + extraHeight}px`;
-    }
-    
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    
-    // Effetto parallax: muove in base allo scroll
-    document.addEventListener('scroll', function() {
+    if (pcbBg) {
         const scrolled = window.pageYOffset;
-        const parallaxSpeed = 0.3; // Velocità ridotta per effetto smooth
-        // Muove verso l'alto mentre scrolli
-        pcbBg.style.transform = `translateY(${-scrolled * parallaxSpeed}px)`;
-    });
-}
-
-// Inizializza dopo che DOM è caricato
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPCBParallax);
-} else {
-    initPCBParallax();
-}
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+        const scrollPercent = scrolled / maxScroll;
+        
+        // Muove il background da 0% a 20% della sua altezza mentre scrolli
+        // Questo crea l'effetto che "si scopre" senza mai mostrare bordi
+        const movement = scrollPercent * 20;
+        pcbBg.style.backgroundPosition = `center ${50 + movement}%`;
+    }
+});
 {% endif %}
 
 // Image modal functions
