@@ -208,8 +208,20 @@ python run.py
 - 🔒 Password hashing
 - 🎫 Remember me
 - 👥 Roles: Admin, Club Member
+- 🔄 Password reset system
 
-### 7. API Integration ✅
+### 7. Gallery Blog System ✅
+- 📝 **Full Blog Posts**: Rich HTML content for projects
+- 🎨 **PCB Parallax**: Scrolling backgrounds for electronics
+- ✏️ **Dual Editor**: WYSIWYG (Quill.js) + HTML raw mode
+- 👁️ **Live Preview**: Real-time preview in IT/EN
+- 🖼️ **Gallery Management**: Multiple image upload/removal
+- 📊 **Statistics**: View tracking with reset button
+- 🔗 **SEO-Friendly**: Custom slugs and URLs
+- 💎 **Glassmorphism**: Semi-transparent design
+- 📱 **Mobile-First**: Fully responsive
+
+### 8. API Integration ✅
 - ☁️ Cloudflare Access Token support
 - 🔌 All APIspec.json endpoints
 - 🏃 Athlete search
@@ -249,11 +261,16 @@ Product                # Shop items
 ├── price, category
 └── in_stock, images
 
-GalleryItem           # Project showcase
+GalleryItem           # Project showcase + Blog
 ├── title_it, title_en
 ├── description_it, description_en
+├── content_it, content_en          # Full HTML blog content
+├── slug                            # SEO-friendly URL (unique, indexed)
+├── pcb_background                  # PCB parallax image path
 ├── category, images
-└── external_url
+├── external_url
+├── updated_at                      # Last modification timestamp
+└── view_count                      # Statistics tracking
 
 Newsletter            # Email subscriptions
 ├── email

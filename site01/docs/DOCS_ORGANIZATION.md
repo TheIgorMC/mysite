@@ -31,13 +31,20 @@ Files in root:
 - `OVERVIEW.md` - High-level overview
 - `SETUP_GUIDE.md` - Development setup
 - `FILE_INDEX.md` - File structure
+- `GALLERY_BLOG_SYSTEM.md` - Gallery blog feature (Feb 2026)
+- `PASSWORD_RESET_GUIDE.md` - Password reset system (Jan 2026)
+- `ADMIN_PANEL_GUIDE.md` - Admin interface guide
+- `AUTHORIZED_ATHLETES_GUIDE.md` - Athlete management
+- `AUTOMATIC_MIGRATIONS.md` - Database migrations
 
 ### Features
 - `features/` - Feature-specific docs
-  - `statistics.md`
-  - `date-handling.md`
+  - `STATISTICS_FEATURES.md`
+  - `DATE_HANDLING_GUIDE.md`
   - `loading-states.md`
   - `internationalization.md`
+  - `MOBILE_IMPROVEMENTS.md`
+  - `NOTIFICATION_UPDATE.md`
 
 ### API
 - `api/` - API documentation

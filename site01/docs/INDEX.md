@@ -54,6 +54,32 @@ Welcome to the Orion Project documentation! All documentation has been organized
   - [Internationalization](features/internationalization.md)
   - [i18n Testing](features/i18n-testing.md)
   - [i18n Summary](features/i18n-summary.md)
+  
+### 📝 Gallery & Blog System
+- [Gallery Blog System](GALLERY_BLOG_SYSTEM.md) - Complete blog transformation guide
+  - Full HTML blog posts with SEO-friendly URLs
+  - PCB parallax backgrounds for electronics projects
+  - WYSIWYG editor with HTML raw mode
+  - Live preview in real-time
+  - Gallery image management
+  - Statistics tracking and reset
+  
+### 🔐 Authentication & Security
+- [Password Reset Guide](PASSWORD_RESET_GUIDE.md) - User password management
+  - Self-service password reset flow
+  - Admin password management tools
+  - Token-based security (24-hour expiration)
+
+### 🏆 Competition & Athlete Management
+- [Authorized Athletes Guide](AUTHORIZED_ATHLETES_GUIDE.md) - Athlete management
+- [Locked Section Guide](LOCKED_SECTION_GUIDE.md) - Premium content access
+
+### ⚙️ Electronics Portal
+- [Electronics Portal](ELECTRONICS_PORTAL.md) - PCB management and production
+
+### 🛍️ E-commerce Features
+- [Product Variants](PRODUCT_VARIANTS.md) - Product variation system
+- [Product Customization](PRODUCT_CUSTOMIZATION.md) - Customization options
 
 ### 🔌 API Documentation
 - **[API](api/)** - API specifications and usage guides
@@ -89,6 +115,19 @@ Welcome to the Orion Project documentation! All documentation has been organized
 
 ## 🎯 Feature Highlights
 
+### Gallery Blog System (Latest - Feb 2026)
+Transform gallery projects into full blog posts with:
+- **PCB Parallax Backgrounds**: Stunning scrolling effects for electronics projects
+- **Dual Editor Modes**: WYSIWYG (Quill.js) + Raw HTML mode
+- **Live Preview**: Real-time preview in Italian/English
+- **Gallery Management**: Add/remove multiple images
+- **Statistics**: View tracking with admin reset
+- **SEO-Friendly**: Custom slugs and optimized URLs
+- **Glassmorphism**: Semi-transparent boxes with backdrop blur
+- **Mobile-First**: Fully responsive design
+
+**Learn more:** [Gallery Blog System](GALLERY_BLOG_SYSTEM.md)
+
 ### Advanced Statistics
 The system provides comprehensive statistics with:
 - **Dual View**: Career statistics + Filtered period statistics
@@ -97,7 +136,7 @@ The system provides comprehensive statistics with:
 - **Flexible Filters**: Date range, competition type, category
 - **Loading Indicators**: Visual feedback during API calls
 
-**Learn more:** [Statistics Features](features/statistics.md)
+**Learn more:** [Statistics Features](features/STATISTICS_FEATURES.md)
 
 ### Date Handling
 Robust date processing ensuring:
@@ -165,7 +204,25 @@ Root docs (general):
 
 ## 🚀 Recent Updates
 
-### Statistics Enhancement & Loading States (Latest)
+### Gallery Blog System (February 2026)
+- ✅ Complete blog post transformation for gallery projects
+- ✅ PCB parallax scrolling backgrounds (inverted movement, fit-to-width)
+- ✅ WYSIWYG editor with HTML raw mode toggle
+- ✅ Live preview with Italian/English switch
+- ✅ Gallery image management (multiple upload, individual removal)
+- ✅ Statistics tracking with admin reset button
+- ✅ Glassmorphism design (semi-transparent boxes)
+- ✅ Mobile-responsive with adaptive layouts
+- ✅ SEO-friendly slugs and URLs
+
+### Password Reset System (January 2026)
+- ✅ Self-service password reset for users
+- ✅ Admin tools for password management
+- ✅ Email-based token system (24-hour expiration)
+- ✅ Unified user management page
+- ✅ Improved UI clarity for reset buttons
+
+### Statistics Enhancement & Loading States
 - ✅ Career vs Filtered statistics view
 - ✅ Multi-athlete comparison (up to 5)
 - ✅ Dynamic auto-refresh on athlete changes

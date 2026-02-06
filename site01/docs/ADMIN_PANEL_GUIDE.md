@@ -202,7 +202,114 @@ UPDATE users SET is_admin = 1 WHERE username = 'your_username';
 
 ---
 
-## 🚀 Next Steps (Optional Enhancements)
+## �️ Gallery Blog Editor
+
+### Overview
+Admins can transform gallery projects (3D Printing and Electronics) into full blog posts with rich HTML content.
+
+### Access the Editor
+1. Navigate to **Gallery** section
+2. Click **"Edit"** on any project
+3. Scroll to **"Blog Content"** section
+
+### Features
+
+#### 1. Dual Editor Modes
+- **WYSIWYG Mode**: Rich text editor (Quill.js) with toolbar
+  - Bold, italic, underline, strikethrough
+  - Headers (H1, H2, H3)
+  - Lists (ordered/unordered)
+  - Links, images, code blocks
+  - Color picker
+- **HTML Raw Mode**: Direct HTML editing
+  - Click **"Modalità HTML"** button to toggle
+  - Paste raw HTML code
+  - Full control over markup
+
+#### 2. Live Preview
+- Real-time preview of blog content
+- Switch between Italian and English
+- Preview updates automatically (500ms debounce)
+- See exactly how the post will look
+
+#### 3. PCB Parallax Background (Electronics Only)
+- Upload PCB screenshot for parallax effect
+- Recommended: 2:3 or 3:4 vertical aspect ratio (e.g., 1200x1800px)
+- Effect: Background moves slowly when scrolling (inverted parallax)
+- Semi-transparent glassmorphism boxes over background
+
+#### 4. Gallery Image Management
+- **Add Multiple Images**: Select multiple files at once
+- **Remove Images**: Click trash icon on each image
+- **Reorder**: Primary image first, then additional images
+- **JSON Tracking**: Internally tracked as JSON array
+
+#### 5. Statistics
+- **View Count**: Track how many times the blog post was viewed
+- **Reset Button**: Admin can reset statistics (with confirmation)
+
+#### 6. SEO-Friendly Slugs
+- Auto-generated from project title
+- Editable for custom URLs
+- Unique validation (prevents duplicates)
+- Format: lowercase, hyphens, no special characters
+
+### Editor Workflow
+
+```
+1. Admin clicks "Edit" on gallery project
+   ↓
+2. Fills in blog content (IT and EN)
+   ↓
+3. Chooses editor mode (WYSIWYG or HTML)
+   ↓
+4. Checks live preview
+   ↓
+5. Uploads PCB background (electronics only)
+   ↓
+6. Adds/removes gallery images
+   ↓
+7. Reviews slug (auto-generated or custom)
+   ↓
+8. Saves project
+   ↓
+9. Blog post available at /project/[slug]
+```
+
+### Button Hierarchy on Gallery Pages
+After creating blog content:
+- **Primary Button**: "Read Blog Post" (leads to full blog)
+- **Secondary Button**: "View on GitHub/Printables" (external link)
+- Both buttons appear when both slug and external_url exist
+
+### Technical Notes
+- **Database Fields**: `content_it`, `content_en`, `slug`, `pcb_background`, `updated_at`, `view_count`
+- **Migration Required**: Run `migrations/add_blog_fields_to_gallery.py` once
+- **Editor Library**: Quill.js 1.3.6 with Snow theme
+- **Dark Mode**: Full support with custom CSS
+- **File Uploads**: Main image, PCB background, multiple gallery images
+
+### Routes
+```python
+GET  /admin/gallery/edit/<id>     # Edit gallery project (shows blog editor)
+POST /admin/gallery/edit/<id>     # Save blog content and images
+POST /admin/gallery/reset-stats/<id>  # Reset view count
+GET  /project/<slug>               # Public blog post view (increments view count)
+```
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Preview shows escaped HTML | Use "Modalità HTML" button to toggle raw mode |
+| PCB background not visible | Check opacity (0.12), ensure image uploaded to correct path |
+| Slug already exists | Change slug to make it unique |
+| Images not uploading | Check file size limits, verify upload directory permissions |
+| Dark mode editor hard to read | Refresh page, check custom CSS loaded correctly |
+
+---
+
+## �🚀 Next Steps (Optional Enhancements)
 
 1. **Bulk operations** - Assign multiple athletes at once
 2. **Import from CSV** - Upload athlete assignments in bulk

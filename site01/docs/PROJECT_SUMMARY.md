@@ -287,6 +287,60 @@ This scaffold fully implements ALL requirements from your `specifications.md`:
 - [ ] Logout clears session
 - [ ] Protected routes redirect
 
+## ✨ Recent Enhancements (2026)
+
+### Gallery Blog System (February 2026)
+Transform gallery items into full blog posts with rich content:
+- **📝 Rich Content Editor**: Dual-mode editor (WYSIWYG + HTML raw)
+  - Quill.js 1.3.6 with Snow theme
+  - Toggle between visual editor and raw HTML
+  - Dark mode support
+- **🎨 PCB Parallax Backgrounds**: Stunning scrolling effects for electronics projects
+  - Inverted parallax movement (reveals top as you scroll)
+  - Background-size: 100% auto (fit-to-width with vertical overflow)
+  - Bottom-anchored positioning
+  - 12% opacity with glassmorphism overlay
+- **👁️ Live Preview**: Real-time rendering in both languages
+  - Italian/English switch
+  - 500ms debounce for performance
+  - Accurate representation of final output
+- **🖼️ Gallery Management**: Multiple image uploads with individual removal
+- **📊 Statistics Tracking**: View counts with admin reset button
+- **🔗 SEO-Friendly**: Custom slugs with automatic generation
+- **💎 Glassmorphism Design**: Semi-transparent boxes with backdrop blur
+  - Header: 90% opacity
+  - Description: 80% opacity
+  - Content: 90% opacity
+- **📱 Mobile-First**: Fully responsive with Tailwind breakpoints
+  - Adaptive typography (text-3xl md:text-5xl)
+  - Flexible layouts (flex-col md:flex-row)
+  - Mobile-optimized spacing
+
+**Database Changes**: 6 new fields added to `gallery_items` table
+- `content_it` (TEXT) - Italian blog content
+- `content_en` (TEXT) - English blog content
+- `slug` (VARCHAR 256, UNIQUE, INDEXED) - SEO-friendly URL
+- `pcb_background` (VARCHAR 256) - Path to PCB parallax image
+- `updated_at` (DATETIME) - Last modification timestamp
+- `view_count` (INTEGER, DEFAULT 0) - Page view statistics
+
+**Migration**: Run `migrations/add_blog_fields_to_gallery.py` once
+
+### Password Reset System (January 2026)
+Self-service password management:
+- **Email-based reset tokens** (24-hour expiration)
+- **Admin password management tools**
+- **Unified user management page**
+- **Improved UI clarity** for reset actions
+
+### Statistics & Loading States
+Enhanced user experience for analytics:
+- **Career vs Filtered statistics** view toggle
+- **Multi-athlete comparison** (up to 5 athletes)
+- **Dynamic auto-refresh** on athlete changes
+- **Loading indicators** for all API calls
+- **Visual feedback** during data fetching
+
 ## 📈 Next Steps
 
 ### Phase 1 - Setup (Now):

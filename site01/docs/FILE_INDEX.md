@@ -359,6 +359,45 @@ site01/
 
 ---
 
+## 🆕 RECENT ADDITIONS (2026)
+
+### Gallery Blog System (February 2026)
+
+| File | Purpose | Contains |
+|------|---------|----------|
+| `docs/GALLERY_BLOG_SYSTEM.md` | Complete blog system documentation | Feature guide, editor instructions, parallax setup |
+| `templates/project_detail.html` | Blog post detail page | PCB parallax effect, glassmorphism, mobile-responsive |
+| `templates/admin/edit_project.html` | Admin blog editor | Dual-mode editor (WYSIWYG + HTML), live preview, gallery management |
+| `templates/printing/item_detail.html` | Updated gallery item (3D printing) | Button hierarchy (blog post + external link) |
+| `templates/electronics/item_detail.html` | Updated gallery item (electronics) | Button hierarchy (blog post + external link) |
+| `migrations/add_blog_fields_to_gallery.py` | Database migration script | Adds 6 new fields to gallery_items table |
+
+**Database Changes:**
+- Added `content_it` (TEXT) - Italian blog content
+- Added `content_en` (TEXT) - English blog content
+- Added `slug` (VARCHAR 256, UNIQUE, INDEXED) - SEO-friendly URL
+- Added `pcb_background` (VARCHAR 256) - PCB parallax image path
+- Added `updated_at` (DATETIME) - Last modification timestamp
+- Added `view_count` (INTEGER, DEFAULT 0) - View statistics
+
+**Routes Added:**
+- `GET /project/<slug>` - Display blog post (increments view count)
+- `GET /projects/<category>` - List projects by category
+- `GET /admin/gallery/edit/<id>` - Blog editor
+- `POST /admin/gallery/edit/<id>` - Save blog content
+- `POST /admin/gallery/reset-stats/<id>` - Reset view count
+
+### Password Reset System (January 2026)
+
+| File | Purpose | Contains |
+|------|---------|----------|
+| `docs/PASSWORD_RESET_GUIDE.md` | Password reset documentation | User guide, admin tools, token system |
+| `templates/auth/reset_password.html` | Password reset page | Token-based reset form |
+| `templates/auth/request_reset.html` | Reset request page | Email submission form |
+| `templates/admin/user_management.html` | User management page | Admin password reset tools |
+
+---
+
 ## ✅ CHECKLIST: DID YOU GET ALL FILES?
 
 Use this to verify your site01 folder has everything:
