@@ -129,8 +129,8 @@ class OrionAPIClient:
         """Get list of available competition types"""
         return self._make_request('GET', '/api/event_types')
     
-    def get_competitions(self, status=None):
-        """Get list of competitions"""
+    def get_competitions_by_status(self, status=None):
+        """Get list of competitions filtered by status (legacy endpoint)"""
         params = {}
         if status:
             params['status'] = status

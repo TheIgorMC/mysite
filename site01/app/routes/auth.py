@@ -25,7 +25,10 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember=remember)
             user.last_login = db.func.now()
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.index'))
@@ -67,7 +70,12 @@ def register():
         user.set_password(password)
         
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Registration error: {str(e)}', 'error')
+            return render_template('auth/register.html')
         
         flash(t('auth.registration_success'), 'success')
         return redirect(url_for('auth.login'))
@@ -125,8 +133,12 @@ def update_profile():
         current_user.avatar = unique_filename
     # If no file uploaded, avatar stays the same (preserved automatically)
     
-    db.session.commit()
-    flash('Profile updated successfully', 'success')
+    try:
+        db.session.commit()
+        flash('Profile updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating profile: {str(e)}', 'error')
     return redirect(url_for('auth.settings'))
 
 @bp.route('/change_password', methods=['POST'])
@@ -150,8 +162,12 @@ def change_password():
         return redirect(url_for('auth.settings'))
     
     current_user.set_password(new_password)
-    db.session.commit()
-    flash('Password changed successfully', 'success')
+    try:
+        db.session.commit()
+        flash('Password changed successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error changing password: {str(e)}', 'error')
     return redirect(url_for('auth.settings'))
 
 
@@ -168,7 +184,12 @@ def forgot_password():
         if user:
             # Generate reset token
             token = user.generate_reset_token()
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                flash('Error generating reset token. Please try again.', 'error')
+                return redirect(url_for('auth.forgot_password'))
             
             # Send reset email
             from flask import current_app, url_for
@@ -176,7 +197,7 @@ def forgot_password():
             
             try:
                 # Try to use OrionAPIClient if available
-                from app.utils import OrionAPIClient
+                from app.api import OrionAPIClient
                 client = OrionAPIClient()
                 
                 email_body = f"""
@@ -242,9 +263,12 @@ def reset_password(token):
         
         user.set_password(password)
         user.clear_reset_token()
-        db.session.commit()
-        
-        flash(t('auth.password_reset_success'), 'success')
+        try:
+            db.session.commit()
+            flash(t('auth.password_reset_success'), 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error resetting password: {str(e)}', 'error')
         return redirect(url_for('auth.login'))
     
     return render_template('auth/reset_password.html', token=token)

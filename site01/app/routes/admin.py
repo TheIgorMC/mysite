@@ -66,7 +66,12 @@ def force_reset_password(user_id):
     
     # Generate reset token
     token = user.generate_reset_token()
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error generating reset token: {str(e)}', 'error')
+        return redirect(url_for('admin.users'))
     
     # Create reset URL
     reset_url = url_for('auth.reset_password', token=token, _external=True)
@@ -74,7 +79,7 @@ def force_reset_password(user_id):
     # Try to send email
     try:
         from flask import current_app
-        from app.utils import OrionAPIClient
+        from app.api import OrionAPIClient
         client = OrionAPIClient()
         
         email_body = f"""
@@ -123,7 +128,10 @@ def admin_set_password(user_id):
     
     user.set_password(new_password)
     user.clear_reset_token()  # Clear any pending reset tokens
-    db.session.commit()
-    
-    flash(f'Password updated for {user.username}', 'success')
+    try:
+        db.session.commit()
+        flash(f'Password updated for {user.username}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating password: {str(e)}', 'error')
     return redirect(url_for('admin.users'))

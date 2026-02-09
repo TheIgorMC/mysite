@@ -210,7 +210,11 @@ def admin_add_athletes():
         db.session.add(athlete)
         added_count += 1
     
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     
     response = {
         'success': True,
@@ -234,8 +238,12 @@ def admin_remove_athlete(athlete_id):
     
     athlete = AuthorizedAthlete.query.get_or_404(athlete_id)
     
-    db.session.delete(athlete)
-    db.session.commit()
+    try:
+        db.session.delete(athlete)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     
     return jsonify({
         'success': True,

@@ -7,7 +7,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 from app.api import OrionAPIClient
-from app.models import AuthorizedAthlete
+from app.models import AuthorizedAthlete, User
 from app.utils import t
 from app.archery_utils import (
     get_categories,
@@ -16,7 +16,6 @@ from app.archery_utils import (
     filter_by_category,
     get_statistics_summary
 )
-from app.models import AuthorizedAthlete, User
 from app.ranking_positions import get_ranking_positions
 from app.email_grouping import send_grouped_emails
 from app import db
@@ -577,7 +576,7 @@ def get_competitions():
     
     status = request.args.get('status')
     client = OrionAPIClient()
-    competitions = client.get_competitions(status=status)
+    competitions = client.get_competitions_by_status(status=status)
     
     return jsonify(competitions or [])
 
@@ -616,7 +615,7 @@ def subscribe_to_competition(competition_id):
             subscription_open=comp_data.get('subscription_open', False)
         )
         db.session.add(competition)
-        db.session.commit()
+        db.session.flush()  # Flush to get the competition.id without committing
     
     # Create subscription
     subscription = CompetitionSubscription(
@@ -629,7 +628,11 @@ def subscribe_to_competition(competition_id):
     )
     
     db.session.add(subscription)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     
     return jsonify({'success': True, 'subscription_id': subscription.id})
 

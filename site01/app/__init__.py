@@ -105,7 +105,7 @@ def register_error_handlers(app):
     
     @app.errorhandler(403)
     def forbidden_error(error):
-        return render_template('errors/404.html'), 403  # Use 404 template for 403
+        return render_template('errors/403.html'), 403
     return app
 
 def register_cli_commands(app):
@@ -192,5 +192,9 @@ def register_cli_commands(app):
             return
         
         user.is_admin = True
-        db.session.commit()
-        click.echo(f'✅ User "{user.username}" is now an admin!')
+        try:
+            db.session.commit()
+            click.echo(f'✅ User "{user.username}" is now an admin!')
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f'❌ Error making admin: {e}')

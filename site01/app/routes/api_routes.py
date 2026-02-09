@@ -24,12 +24,20 @@ def subscribe_newsletter():
             return jsonify({'message': 'Already subscribed'}), 200
         else:
             existing.is_active = True
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'error': f'Database error: {str(e)}'}), 500
             return jsonify({'message': 'Resubscribed successfully'}), 200
     
     # Create new subscription
     subscription = Newsletter(email=email)
     db.session.add(subscription)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     
     return jsonify({'message': 'Subscribed successfully'}), 201

@@ -55,7 +55,10 @@ def admin_dashboard():
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('main.index'))
     
-    return render_template('admin.html')
+    users = User.query.all()
+    gallery_items = GalleryItem.query.all()
+    products = Product.query.all()
+    return render_template('admin.html', users=users, gallery_items=gallery_items, products=products)
 
 @bp.route('/admin/manage-athletes')
 @login_required
@@ -87,8 +90,12 @@ def toggle_club_member(user_id):
     
     user = User.query.get_or_404(user_id)
     user.is_club_member = not user.is_club_member
-    db.session.commit()
-    flash(f'Club member status updated for {user.username}', 'success')
+    try:
+        db.session.commit()
+        flash(f'Club member status updated for {user.username}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating club member status: {str(e)}', 'error')
     return redirect(url_for('main.admin'))
 
 @bp.route('/admin/toggle_admin/<int:user_id>', methods=['POST'])
@@ -101,8 +108,12 @@ def toggle_admin(user_id):
     
     user = User.query.get_or_404(user_id)
     user.is_admin = not user.is_admin
-    db.session.commit()
-    flash(f'Admin status updated for {user.username}', 'success')
+    try:
+        db.session.commit()
+        flash(f'Admin status updated for {user.username}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating admin status: {str(e)}', 'error')
     return redirect(url_for('main.admin'))
 
 @bp.route('/admin/toggle_locked_section/<int:user_id>', methods=['POST'])
@@ -115,10 +126,13 @@ def toggle_locked_section(user_id):
     
     user = User.query.get_or_404(user_id)
     user.has_locked_section_access = not user.has_locked_section_access
-    db.session.commit()
-    
-    status = 'granted' if user.has_locked_section_access else 'revoked'
-    flash(f'Locked section access {status} for {user.username}', 'success')
+    try:
+        db.session.commit()
+        status = 'granted' if user.has_locked_section_access else 'revoked'
+        flash(f'Locked section access {status} for {user.username}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating locked section access: {str(e)}', 'error')
     return redirect(url_for('main.admin'))
 
 @bp.route('/admin/delete_user/<int:user_id>', methods=['POST'])
@@ -197,7 +211,7 @@ def add_gallery_item():
         filename = secure_filename(image.filename)
         # Create unique filename
         import uuid
-        ext = filename.rsplit('.', 1)[1].lower()
+        ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
         unique_filename = f"{uuid.uuid4().hex}.{ext}"
         
         upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery')
@@ -218,8 +232,12 @@ def add_gallery_item():
         is_active=True
     )
     db.session.add(item)
-    db.session.commit()
-    flash('Gallery item added successfully', 'success')
+    try:
+        db.session.commit()
+        flash('Gallery item added successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding gallery item: {str(e)}', 'error')
     
     return redirect(url_for('main.admin') + '#gallery')
 
@@ -233,8 +251,12 @@ def toggle_gallery_item(item_id):
     
     item = GalleryItem.query.get_or_404(item_id)
     item.is_active = not item.is_active
-    db.session.commit()
-    flash('Gallery item status updated', 'success')
+    try:
+        db.session.commit()
+        flash('Gallery item status updated', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating gallery item: {str(e)}', 'error')
     return redirect(url_for('main.admin') + '#gallery')
 
 
@@ -366,8 +388,12 @@ def edit_project(item_id):
             if current_images:
                 item.images = json.dumps(current_images)
         
-        db.session.commit()
-        flash('Project updated successfully!', 'success')
+        try:
+            db.session.commit()
+            flash('Project updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating project: {str(e)}', 'error')
         return redirect(url_for('main.edit_project', item_id=item.id))
     
     return render_template('admin/edit_project.html', item=item)
@@ -391,9 +417,13 @@ def delete_gallery_item(item_id):
         if os.path.exists(image_path):
             os.remove(image_path)
     
-    db.session.delete(item)
-    db.session.commit()
-    flash('Gallery item deleted', 'success')
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash('Gallery item deleted', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting gallery item: {str(e)}', 'error')
     return redirect(url_for('main.admin') + '#gallery')
 
 
@@ -406,9 +436,12 @@ def reset_project_stats(item_id):
     
     item = GalleryItem.query.get_or_404(item_id)
     item.view_count = 0
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Statistics reset successfully'})
+    try:
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Statistics reset successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/admin/add_product', methods=['POST'])
@@ -469,8 +502,12 @@ def add_product():
     )
     
     db.session.add(product)
-    db.session.commit()
-    flash('Product added successfully', 'success')
+    try:
+        db.session.commit()
+        flash('Product added successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding product: {str(e)}', 'error')
     return redirect(url_for('main.admin') + '#shop')
 
 @bp.route('/admin/toggle_product/<int:product_id>', methods=['POST'])
@@ -483,8 +520,12 @@ def toggle_product(product_id):
     
     product = Product.query.get_or_404(product_id)
     product.is_active = not product.is_active
-    db.session.commit()
-    flash('Product status updated', 'success')
+    try:
+        db.session.commit()
+        flash('Product status updated', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating product: {str(e)}', 'error')
     return redirect(url_for('main.admin') + '#shop')
 
 @bp.route('/admin/delete_product/<int:product_id>', methods=['POST'])
@@ -497,17 +538,27 @@ def delete_product(product_id):
     
     product = Product.query.get_or_404(product_id)
     
-    # Delete the image file
+    # Delete the image file (products use gallery subfolder)
     import os
     from flask import current_app
     if product.main_image:
-        image_path = os.path.join(current_app.root_path, 'static', 'uploads', product.main_image)
+        # Try gallery subfolder first (where images are saved), then root uploads
+        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'gallery', product.main_image)
+        if not os.path.exists(image_path):
+            image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], product.main_image)
         if os.path.exists(image_path):
-            os.remove(image_path)
+            try:
+                os.remove(image_path)
+            except Exception as e:
+                current_app.logger.warning(f'Could not delete product image: {e}')
     
-    db.session.delete(product)
-    db.session.commit()
-    flash('Product deleted', 'success')
+    try:
+        db.session.delete(product)
+        db.session.commit()
+        flash('Product deleted', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting product: {str(e)}', 'error')
     return redirect(url_for('main.admin') + '#shop')
 
 
@@ -560,7 +611,10 @@ def project_detail(slug):
     
     # Increment view count
     item.view_count = (item.view_count or 0) + 1
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     
     # Get related projects (same category, excluding current)
     related = GalleryItem.query.filter(
@@ -610,7 +664,10 @@ def blog_post(slug):
     
     # Increment view count
     post.view_count = (post.view_count or 0) + 1
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     
     # Get related posts (same project or same tags)
     related = []
@@ -699,10 +756,14 @@ def create_blog_post():
                 post.cover_image = filename
         
         db.session.add(post)
-        db.session.commit()
-        
-        flash('Blog post created successfully!', 'success')
-        return redirect(url_for('main.edit_blog_post', post_id=post.id))
+        try:
+            db.session.commit()
+            flash('Blog post created successfully!', 'success')
+            return redirect(url_for('main.edit_blog_post', post_id=post.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating blog post: {str(e)}', 'error')
+            return redirect(request.url)
     
     # GET request - show form
     projects = GalleryItem.query.filter_by(is_active=True).order_by(GalleryItem.title_it).all()
@@ -753,9 +814,12 @@ def edit_blog_post(post_id):
                 post.cover_image = filename
         
         post.updated_at = datetime.utcnow()
-        db.session.commit()
-        
-        flash('Blog post updated successfully!', 'success')
+        try:
+            db.session.commit()
+            flash('Blog post updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating blog post: {str(e)}', 'error')
         return redirect(url_for('main.edit_blog_post', post_id=post.id))
     
     # GET request - show form
@@ -771,10 +835,13 @@ def delete_blog_post(post_id):
         return jsonify({'success': False, 'message': 'Access denied'}), 403
     
     post = BlogPost.query.get_or_404(post_id)
-    db.session.delete(post)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Blog post deleted'})
+    try:
+        db.session.delete(post)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Blog post deleted'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @bp.route('/admin/blog')

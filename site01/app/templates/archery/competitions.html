@@ -2286,8 +2286,16 @@ async function deleteSubscription(subscription, competition) {
             throw new Error(error.message || 'Delete failed');
         }
         
-        // Remove from local cache
-        userSubscriptions.delete(competition.codice);
+        // Remove from local cache - only remove the specific subscription, not all
+        if (userSubscriptions.has(competition.codice)) {
+            const remaining = userSubscriptions.get(competition.codice)
+                .filter(s => s.id !== subscription.id);
+            if (remaining.length > 0) {
+                userSubscriptions.set(competition.codice, remaining);
+            } else {
+                userSubscriptions.delete(competition.codice);
+            }
+        }
         
         showNotification(window.translations.competitions?.delete_success || 'Subscription deleted successfully', 'success');
         

@@ -52,7 +52,7 @@ def item_detail(item_id):
         
         # Sort by number of matching tags
         items_with_score.sort(key=lambda x: x[1], reverse=True)
-        related_items = [item for item, score in items_with_score[:4]]
+        related_items = [ri for ri, score in items_with_score[:4]]
     
     return render_template('electronics/item_detail.html', item=item, related_items=related_items)
 
