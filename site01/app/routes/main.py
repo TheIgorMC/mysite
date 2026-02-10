@@ -280,8 +280,12 @@ def edit_project(item_id):
         item.title_it = request.form.get('title_it')
         item.description_en = request.form.get('description_en')
         item.description_it = request.form.get('description_it')
-        item.content_en = request.form.get('content_en')
-        item.content_it = request.form.get('content_it')
+        # Only update content fields if they exist in the form
+        # (content editors have moved to the blog post editor)
+        if 'content_en' in request.form:
+            item.content_en = request.form.get('content_en')
+        if 'content_it' in request.form:
+            item.content_it = request.form.get('content_it')
         item.category = request.form.get('category')
         item.tags = request.form.get('tags')
         item.external_url = request.form.get('external_url')
@@ -683,14 +687,9 @@ def blog_post(slug):
 
 @bp.route('/project/<slug>/posts')
 def project_blog_posts(slug):
-    """List all blog posts for a specific project"""
+    """Redirect to project detail — articles are now shown inline"""
     project = GalleryItem.query.filter_by(slug=slug).first_or_404()
-    posts = BlogPost.query.filter_by(
-        project_id=project.id,
-        is_published=True
-    ).order_by(BlogPost.published_at.desc()).all()
-    
-    return render_template('blog/project_posts.html', project=project, posts=posts)
+    return redirect(url_for('main.project_detail', slug=project.slug))
 
 
 @bp.route('/admin/blog/new', methods=['GET', 'POST'])

@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}{% if post %}Edit Article - {{ post.title_en }}{% else %}New Article{% endif %} - Admin{% endblock %}
+
+{% block head %}
+<style>
+    /* Quill editor dark mode */
+    .dark .ql-toolbar {
+        background-color: rgb(31, 41, 55) !important;
+        border-color: rgb(75, 85, 99) !important;
+    }
+    .dark .ql-container {
+        background-color: rgb(31, 41, 55) !important;
+        border-color: rgb(75, 85, 99) !important;
+        color: rgb(243, 244, 246) !important;
+    }
+    .dark .ql-editor {
+        color: rgb(243, 244, 246) !important;
+    }
+    .dark .ql-editor.ql-blank::before {
+        color: rgb(156, 163, 175) !important;
+    }
+    .dark .ql-stroke { stroke: rgb(229, 231, 235) !important; }
+    .dark .ql-fill { fill: rgb(229, 231, 235) !important; }
+    .dark .ql-picker-label { color: rgb(229, 231, 235) !important; }
+    .dark .ql-picker-options {
+        background-color: rgb(31, 41, 55) !important;
+        border-color: rgb(75, 85, 99) !important;
+    }
+    .dark .ql-snow .ql-stroke { stroke: rgb(229, 231, 235) !important; }
+    .dark .ql-snow .ql-fill { fill: rgb(229, 231, 235) !important; }
+
+    /* Light mode */
+    .ql-container { background-color: white !important; border: 1px solid #ccc !important; }
+    .ql-toolbar { background-color: rgb(249, 250, 251) !important; border: 1px solid #ccc !important; }
+    .ql-stroke { stroke: rgb(55, 65, 81) !important; }
+    .ql-fill { fill: rgb(55, 65, 81) !important; }
+    .ql-picker-label { color: rgb(55, 65, 81) !important; }
+
+    /* Preview styling */
+    .blog-content { line-height: 1.8; }
+    .blog-content h1, .blog-content h2, .blog-content h3 { font-weight: bold; margin-top: 1.5rem; margin-bottom: 1rem; }
+    .blog-content h1 { font-size: 2rem; }
+    .blog-content h2 { font-size: 1.5rem; }
+    .blog-content h3 { font-size: 1.25rem; }
+    .blog-content p { margin-bottom: 1rem; }
+    .blog-content ul, .blog-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+    .blog-content ul { list-style-type: disc; }
+    .blog-content ol { list-style-type: decimal; }
+    .blog-content code { background-color: rgb(243, 244, 246); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; }
+    .dark .blog-content code { background-color: rgb(55, 65, 81); }
+    .blog-content pre { background-color: rgb(243, 244, 246); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; }
+    .dark .blog-content pre { background-color: rgb(55, 65, 81); }
+    .blog-content blockquote { border-left: 4px solid rgb(59, 130, 246); padding-left: 1rem; margin-left: 0; margin-bottom: 1rem; font-style: italic; }
+    .blog-content img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
+
+    /* Editor containers */
+    #editor-en, #editor-it { min-height: 400px; border: 1px solid #ccc; border-radius: 0.5rem; }
+    .dark #editor-en, .dark #editor-it { border-color: rgb(75, 85, 99); }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
+    <div class="container mx-auto px-4 max-w-5xl">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-newspaper mr-2"></i>
+                    {% if post %}Modifica Articolo{% else %}Nuovo Articolo{% endif %}
+                </h1>
+                {% if post and post.project %}
+                <p class="text-gray-600 dark:text-gray-400 mt-1">
+                    Progetto: <a href="{{ url_for('main.edit_project', item_id=post.project.id) }}" class="text-primary hover:underline">{{ post.project.title_it }}</a>
+                </p>
+                {% endif %}
+            </div>
+            <div class="flex gap-3">
+                {% if post and post.slug %}
+                <a href="{{ url_for('main.blog_post', slug=post.slug) }}" target="_blank"
+                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-external-link-alt mr-2"></i>Anteprima
+                </a>
+                {% endif %}
+                {% if post and post.project %}
+                <a href="{{ url_for('main.edit_project', item_id=post.project.id) }}"
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Torna al Progetto
+                </a>
+                {% else %}
+                <a href="{{ url_for('main.admin') }}"
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Admin
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-8" id="blog-post-form">
+            
+            <!-- Basic Info Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-info-circle mr-2"></i>Informazioni Base
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Title IT -->
+                    <div>
+                        <label for="title_it" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Titolo (Italiano) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="title_it" id="title_it" required
+                               value="{{ post.title_it if post else '' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="Titolo dell'articolo">
+                    </div>
+                    
+                    <!-- Title EN -->
+                    <div>
+                        <label for="title_en" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Titolo (English) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="title_en" id="title_en" required
+                               value="{{ post.title_en if post else '' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="Article title">
+                    </div>
+                    
+                    <!-- Slug -->
+                    <div>
+                        <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Slug (URL)
+                        </label>
+                        <input type="text" name="slug" id="slug"
+                               value="{{ post.slug if post else '' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="auto-generato-dal-titolo">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Lascia vuoto per generare automaticamente dal titolo italiano
+                        </p>
+                    </div>
+                    
+                    <!-- Project -->
+                    <div>
+                        <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Progetto Associato
+                        </label>
+                        <select name="project_id" id="project_id"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">— Nessun progetto (standalone) —</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" 
+                                    {% if (post and post.project_id == project.id) or (not post and request.args.get('project_id')|int == project.id) %}selected{% endif %}>
+                                {{ project.title_it }} ({{ project.category }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div>
+                        <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tags
+                        </label>
+                        <input type="text" name="tags" id="tags"
+                               value="{{ post.tags if post else '' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="tag1, tag2, tag3">
+                    </div>
+                    
+                    <!-- Published toggle -->
+                    <div class="flex items-center gap-3 pt-6">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="is_published" id="is_published" class="sr-only peer"
+                                   {% if post and post.is_published %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/50 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        </label>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Pubblicato
+                        </span>
+                        {% if post and post.published_at %}
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                            (pubblicato il {{ post.published_at.strftime('%d/%m/%Y %H:%M') }})
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cover Image Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-image mr-2"></i>Immagine di Copertina
+                </h2>
+                
+                {% if post and post.cover_image %}
+                <div class="mb-4">
+                    <img src="{{ url_for('static', filename='uploads/blog/' + post.cover_image) }}" 
+                         alt="Cover image"
+                         class="w-full max-w-md h-48 object-cover rounded-lg shadow-md">
+                </div>
+                {% endif %}
+                <input type="file" name="cover_image" accept="image/*"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Immagine di copertina mostrata nelle cards e nell'header dell'articolo. Formato consigliato: 16:9, min. 1200x675px
+                </p>
+            </div>
+            
+            <!-- Excerpts Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-align-left mr-2"></i>Estratti (Anteprima)
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Brevi riassunti mostrati nelle cards della pagina progetto e nella lista blog.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="excerpt_it" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Estratto (Italiano)
+                        </label>
+                        <textarea name="excerpt_it" id="excerpt_it" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Breve descrizione dell'articolo...">{{ post.excerpt_it if post else '' }}</textarea>
+                    </div>
+                    <div>
+                        <label for="excerpt_en" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Excerpt (English)
+                        </label>
+                        <textarea name="excerpt_en" id="excerpt_en" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Brief article description...">{{ post.excerpt_en if post else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Full Content Card — Quill Editor -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                    <i class="fas fa-file-alt mr-2"></i>Contenuto Completo
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- Content EN -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Content (English) <span class="text-red-500">*</span>
+                            </label>
+                            <button type="button" id="raw-html-btn-en" onclick="toggleRawHTML('en')"
+                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-code mr-1"></i>Modalità HTML
+                            </button>
+                        </div>
+                        <div id="editor-en" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
+                        <textarea id="html-editor-en" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
+                        <input type="hidden" name="content_en" id="content_en" value="{{ post.content_en if post else '' }}">
+                    </div>
+                    
+                    <!-- Content IT -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Contenuto (Italiano) <span class="text-red-500">*</span>
+                            </label>
+                            <button type="button" id="raw-html-btn-it" onclick="toggleRawHTML('it')"
+                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-code mr-1"></i>Modalità HTML
+                            </button>
+                        </div>
+                        <div id="editor-it" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
+                        <textarea id="html-editor-it" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
+                        <input type="hidden" name="content_it" id="content_it" value="{{ post.content_it if post else '' }}">
+                    </div>
+                </div>
+                
+                <!-- Live Preview -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                            <i class="fas fa-eye mr-2"></i>Anteprima Live
+                        </h3>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="switchPreview('it')" id="preview-btn-it"
+                                    class="px-3 py-1 text-sm rounded bg-primary text-white">
+                                Italiano
+                            </button>
+                            <button type="button" onclick="switchPreview('en')" id="preview-btn-en"
+                                    class="px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+                                English
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto">
+                        <div id="preview-content-it" class="blog-content prose dark:prose-invert max-w-none">
+                            <p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>
+                        </div>
+                        <div id="preview-content-en" class="blog-content prose dark:prose-invert max-w-none hidden">
+                            <p class="text-gray-500 italic">Preview will appear here as you type...</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>Aggiornamento automatico mentre scrivi
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-end">
+                {% if post and post.project %}
+                <a href="{{ url_for('main.edit_project', item_id=post.project.id) }}" 
+                   class="px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-semibold transition-colors">
+                    Annulla
+                </a>
+                {% else %}
+                <a href="{{ url_for('main.admin') }}" 
+                   class="px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-semibold transition-colors">
+                    Annulla
+                </a>
+                {% endif %}
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if post %}Salva Modifiche{% else %}Crea Articolo{% endif %}
+                </button>
+            </div>
+        </form>
+        
+    </div>
+</section>
+
+<!-- Quill Editor CSS and JS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Quill === 'undefined') {
+        console.error('Quill is not loaded!');
+        return;
+    }
+    
+    var toolbarOptions = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['link', 'image'],
+        ['clean']
+    ];
+    
+    var quillEN = new Quill('#editor-en', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    var quillIT = new Quill('#editor-it', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+
+    // Load existing content
+    var contentEN = document.getElementById('content_en').value;
+    var contentIT = document.getElementById('content_it').value;
+    if (contentEN) quillEN.root.innerHTML = contentEN;
+    if (contentIT) quillIT.root.innerHTML = contentIT;
+
+    // Live preview
+    var currentPreviewLang = 'it';
+    var previewUpdateTimer = null;
+
+    function updatePreview() {
+        var contentToShow = currentPreviewLang === 'it' ? quillIT.root.innerHTML : quillEN.root.innerHTML;
+        var previewElement = document.getElementById('preview-content-' + currentPreviewLang);
+        
+        if (contentToShow && contentToShow.trim() !== '' && contentToShow.trim() !== '<p><br></p>') {
+            previewElement.innerHTML = contentToShow;
+        } else {
+            var placeholder = currentPreviewLang === 'it' 
+                ? '<p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>'
+                : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
+            previewElement.innerHTML = placeholder;
+        }
+    }
+
+    // Raw HTML mode
+    var rawHTMLMode = { en: false, it: false };
+    
+    window.toggleRawHTML = function(lang) {
+        rawHTMLMode[lang] = !rawHTMLMode[lang];
+        var editor = lang === 'it' ? quillIT : quillEN;
+        var btn = document.getElementById('raw-html-btn-' + lang);
+        var quillEditor = document.getElementById('editor-' + lang);
+        var htmlEditor = document.getElementById('html-editor-' + lang);
+        
+        if (rawHTMLMode[lang]) {
+            htmlEditor.value = editor.root.innerHTML;
+            htmlEditor.style.display = 'block';
+            quillEditor.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-eye mr-1"></i>Modalità Visuale';
+            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+            btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
+            
+            htmlEditor.oninput = function() {
+                if (currentPreviewLang === lang) {
+                    var previewElement = document.getElementById('preview-content-' + lang);
+                    previewElement.innerHTML = htmlEditor.value || '<p class="text-gray-500 italic">...</p>';
+                }
+            };
+        } else {
+            editor.root.innerHTML = htmlEditor.value;
+            htmlEditor.style.display = 'none';
+            quillEditor.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-code mr-1"></i>Modalità HTML';
+            btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
+            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+            htmlEditor.oninput = null;
+        }
+        updatePreview();
+    };
+
+    // Preview language switch
+    window.switchPreview = function(lang) {
+        currentPreviewLang = lang;
+        document.getElementById('preview-btn-it').className = lang === 'it'
+            ? 'px-3 py-1 text-sm rounded bg-primary text-white'
+            : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+        document.getElementById('preview-btn-en').className = lang === 'en'
+            ? 'px-3 py-1 text-sm rounded bg-primary text-white'
+            : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+        document.getElementById('preview-content-it').classList.toggle('hidden', lang !== 'it');
+        document.getElementById('preview-content-en').classList.toggle('hidden', lang !== 'en');
+        updatePreview();
+    };
+
+    // Update preview on editor change
+    quillEN.on('text-change', function() {
+        if (currentPreviewLang === 'en') {
+            clearTimeout(previewUpdateTimer);
+            previewUpdateTimer = setTimeout(updatePreview, 500);
+        }
+    });
+    quillIT.on('text-change', function() {
+        if (currentPreviewLang === 'it') {
+            clearTimeout(previewUpdateTimer);
+            previewUpdateTimer = setTimeout(updatePreview, 500);
+        }
+    });
+
+    // Initial preview
+    updatePreview();
+
+    // Save Quill content to hidden inputs on form submit
+    document.getElementById('blog-post-form').addEventListener('submit', function(e) {
+        document.getElementById('content_en').value = rawHTMLMode.en 
+            ? document.getElementById('html-editor-en').value 
+            : quillEN.root.innerHTML;
+        document.getElementById('content_it').value = rawHTMLMode.it 
+            ? document.getElementById('html-editor-it').value 
+            : quillIT.root.innerHTML;
+    });
+
+    // Auto-generate slug from Italian title
+    var titleInput = document.getElementById('title_it');
+    var slugInput = document.getElementById('slug');
+    
+    {% if not post %}
+    titleInput.addEventListener('input', function() {
+        if (!slugInput.dataset.userEdited) {
+            slugInput.value = titleInput.value.toLowerCase()
+                .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e')
+                .replace(/[ìíîï]/g, 'i').replace(/[òóôõö]/g, 'o')
+                .replace(/[ùúûü]/g, 'u')
+                .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+    });
+    slugInput.addEventListener('input', function() {
+        slugInput.dataset.userEdited = 'true';
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

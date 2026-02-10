@@ -238,11 +238,14 @@
                 <form id="add-subscription-form" class="space-y-4">
                     <input type="hidden" id="add-sub-codice-gara">
                     
-                    <div>
+                    <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('admin.subscriptions.athlete_id') }}</label>
-                        <input type="text" id="add-sub-tessera" required
+                        <input type="text" id="add-sub-tessera" required autocomplete="off"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                               placeholder="{{ t('admin.subscriptions.select_athlete') }}">
+                               placeholder="{{ t('admin.subscriptions.select_athlete') }}"
+                               oninput="filterAthleteAutocomplete(this.value)"
+                               onfocus="filterAthleteAutocomplete(this.value)">
+                        <div id="athlete-autocomplete-dropdown" class="hidden absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg"></div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
@@ -443,6 +446,7 @@ let allCompetitions = {};
 let allInviti = {};
 let allAthletes = {};
 let allSocieta = {};
+let allKnownAthletes = [];  // Unified athlete list for autocomplete
 
 // Tab switching
 function switchTab(tab) {
@@ -514,6 +518,33 @@ async function loadData() {
             console.log('Loaded società:', Object.keys(allSocieta).length);
         }
 
+        // Load all authorized athletes for autocomplete
+        try {
+            const athletesResp = await fetch('/admin/api/authorized-athletes');
+            if (athletesResp.ok) {
+                const athleteData = await athletesResp.json();
+                // Flatten grouped-by-user data into a single list
+                (athleteData.assignments || []).forEach(assignment => {
+                    (assignment.athletes || []).forEach(a => {
+                        if (a.tessera && !allAthletes[a.tessera]) {
+                            allAthletes[a.tessera] = {
+                                tessera: a.tessera,
+                                nome: a.nome_completo || '',
+                                categoria: a.categoria || '',
+                                classe: a.classe || ''
+                            };
+                        }
+                    });
+                });
+                console.log('Loaded authorized athletes:', Object.keys(allAthletes).length);
+            }
+        } catch (e) {
+            console.log('Could not load authorized athletes:', e);
+        }
+
+        // Build unified athlete list from all sources
+        buildAthleteList();
+
         renderSubscriptions();
         renderInterest();
     } catch (error) {
@@ -521,7 +552,148 @@ async function loadData() {
     }
 }
 
+// Save which competition detail panels are currently expanded
+function getExpandedPanels(prefix) {
+    const expanded = [];
+    document.querySelectorAll(`[id^="details-${prefix}"]`).forEach(el => {
+        if (!el.classList.contains('hidden')) {
+            expanded.push(el.id);
+        }
+    });
+    return expanded;
+}
+
+// Restore expanded panels after re-render
+function restoreExpandedPanels(expandedIds) {
+    expandedIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('hidden');
+            const iconId = id.replace('details-', 'icon-');
+            const icon = document.getElementById(iconId);
+            if (icon) {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+    });
+}
+
+// Build unified athlete list for autocomplete from all data sources
+function buildAthleteList() {
+    const athleteMap = {};
+    
+    // From authorized athletes (loaded from admin endpoint)
+    Object.values(allAthletes).forEach(a => {
+        if (a.tessera) {
+            athleteMap[a.tessera] = {
+                tessera: a.tessera,
+                nome: a.nome || '',
+                categoria: a.categoria || '',
+                classe: a.classe || ''
+            };
+        }
+    });
+    
+    // Merge from subscriptions (may have additional athletes or more recent data)
+    allSubscriptions.forEach(sub => {
+        if (sub.tessera_atleta) {
+            if (!athleteMap[sub.tessera_atleta]) {
+                athleteMap[sub.tessera_atleta] = {
+                    tessera: sub.tessera_atleta,
+                    nome: sub.nome_atleta || '',
+                    categoria: sub.categoria || '',
+                    classe: sub.classe || ''
+                };
+            } else if (!athleteMap[sub.tessera_atleta].nome && sub.nome_atleta) {
+                // Fill in name if missing from authorized data
+                athleteMap[sub.tessera_atleta].nome = sub.nome_atleta;
+            }
+        }
+    });
+    
+    // Merge from interests
+    allInterests.forEach(int => {
+        if (int.tessera_atleta && !athleteMap[int.tessera_atleta]) {
+            athleteMap[int.tessera_atleta] = {
+                tessera: int.tessera_atleta,
+                nome: int.nome_atleta || '',
+                categoria: int.categoria || '',
+                classe: int.classe || ''
+            };
+        }
+    });
+    
+    allKnownAthletes = Object.values(athleteMap).sort((a, b) => 
+        (a.nome || '').localeCompare(b.nome || '')
+    );
+    console.log('Built athlete autocomplete list:', allKnownAthletes.length, 'athletes');
+}
+
+// Athlete autocomplete for Add Subscription modal
+function filterAthleteAutocomplete(query) {
+    const dropdown = document.getElementById('athlete-autocomplete-dropdown');
+    
+    if (!query || query.length < 1) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+    
+    const q = query.toLowerCase();
+    const matches = allKnownAthletes.filter(a => 
+        a.tessera.toLowerCase().includes(q) || (a.nome || '').toLowerCase().includes(q)
+    ).slice(0, 10);
+    
+    if (matches.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+    
+    dropdown.innerHTML = matches.map(a => {
+        const escapedNome = (a.nome || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return `
+            <div class="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white text-sm border-b border-gray-100 dark:border-gray-600 last:border-0"
+                 onclick="selectAthleteFromAutocomplete('${a.tessera}', '${escapedNome}', '${a.categoria || ''}', '${a.classe || ''}')">
+                <span class="font-mono font-semibold">${a.tessera}</span>
+                <span class="ml-2">${a.nome || 'N/A'}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">${a.categoria || ''} / ${a.classe || ''}</span>
+            </div>
+        `;
+    }).join('');
+    
+    dropdown.classList.remove('hidden');
+}
+
+function selectAthleteFromAutocomplete(tessera, nome, categoria, classe) {
+    document.getElementById('add-sub-tessera').value = tessera;
+    if (categoria) document.getElementById('add-sub-categoria').value = categoria;
+    if (classe) {
+        const classeSelect = document.getElementById('add-sub-classe');
+        // Only set if it's a valid option
+        const validOptions = Array.from(classeSelect.options).map(o => o.value);
+        if (validOptions.includes(classe)) {
+            classeSelect.value = classe;
+        }
+    }
+    document.getElementById('athlete-autocomplete-dropdown').classList.add('hidden');
+    
+    // Trigger tripla visibility check
+    toggleTriplaVisibility('add', document.getElementById('add-sub-classe').value);
+}
+
+// Close autocomplete dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('athlete-autocomplete-dropdown');
+    const input = document.getElementById('add-sub-tessera');
+    if (dropdown && input && !dropdown.contains(e.target) && e.target !== input) {
+        dropdown.classList.add('hidden');
+    }
+});
+
 function renderSubscriptions() {
+    // Remember which competition cards are expanded
+    const expandedSubs = getExpandedPanels('subs-');
+    
     const loading = document.getElementById('subscriptions-loading');
     const list = document.getElementById('subscriptions-list');
     const empty = document.getElementById('subscriptions-empty');
@@ -733,9 +905,15 @@ function renderSubscriptions() {
     });
     
     list.classList.remove('hidden');
+    
+    // Restore previously expanded competition cards
+    restoreExpandedPanels(expandedSubs);
 }
 
 function renderInterest() {
+    // Remember which competition cards are expanded
+    const expandedInterests = getExpandedPanels('interest-');
+    
     const loading = document.getElementById('interest-loading');
     const list = document.getElementById('interest-list');
     const empty = document.getElementById('interest-empty');
@@ -911,6 +1089,9 @@ function renderInterest() {
     });
     
     list.classList.remove('hidden');
+    
+    // Restore previously expanded competition cards
+    restoreExpandedPanels(expandedInterests);
 }
 
 function toggleAllInterests(codiceGara, checked) {
@@ -1268,6 +1449,9 @@ function showAddSubscriptionModal(codiceGara) {
     document.getElementById('add-sub-codice-gara').value = codiceGara;
     document.getElementById('add-subscription-form').reset();
     
+    // Clear autocomplete dropdown
+    document.getElementById('athlete-autocomplete-dropdown').classList.add('hidden');
+    
     // Set default values
     document.getElementById('add-sub-turno').value = '1';
     document.getElementById('add-sub-stato').value = 'confermato';
@@ -1289,6 +1473,8 @@ function closeAddSubscriptionModal() {
     document.getElementById('add-subscription-modal').classList.add('hidden');
     document.getElementById('add-subscription-modal').classList.remove('flex');
     document.getElementById('add-subscription-form').reset();
+    // Clear autocomplete dropdown
+    document.getElementById('athlete-autocomplete-dropdown').classList.add('hidden');
 }
 
 document.getElementById('add-subscription-form')?.addEventListener('submit', async function(e) {

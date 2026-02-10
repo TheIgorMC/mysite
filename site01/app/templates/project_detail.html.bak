@@ -12,12 +12,14 @@
         width: 100%;
         height: 100%;
         z-index: -2;
-        opacity: 0.12;
+        opacity: 0.5; /* Aumentato per test - dovrebbe essere MOLTO visibile */
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         will-change: transform;
         transition: transform 0.1s ease-out;
+        /* Debug border */
+        border: 5px solid red;
     }
     
     /* Gradient overlay per migliorare leggibilità */
@@ -35,6 +37,8 @@
             rgba(255, 255, 255, 0.2) 50%,
             rgba(255, 255, 255, 0.3) 100%
         );
+        /* Debug border */
+        border: 5px solid blue;
     }
     
     .dark .pcb-overlay {
@@ -94,13 +98,6 @@
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 1rem;
     }
-    
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
 </style>
 {% endblock %}
 
@@ -132,13 +129,9 @@
     background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.05)) !important;
     pointer-events: none !important;
 "></div>
+{% else %}
+<!-- No PCB background for this project -->
 {% endif %}
-
-{# Determine how many published blog posts this project has #}
-{% set published_posts = item.blog_posts|selectattr('is_published')|list if item.blog_posts else [] %}
-{% set post_count = published_posts|length %}
-{# For single-article projects, grab the one post #}
-{% set single_post = published_posts[0] if post_count == 1 else None %}
 
 <!-- Main Article -->
 <article class="py-12 bg-transparent relative">
@@ -177,12 +170,6 @@
                     </span>
                     {% endfor %}
                 {% endif %}
-                
-                {% if post_count > 1 %}
-                <span class="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-semibold">
-                    <i class="fas fa-newspaper mr-1"></i>{{ post_count }} articoli
-                </span>
-                {% endif %}
             </div>
             
             <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white break-words">
@@ -195,27 +182,19 @@
                 <span><i class="far fa-clock mr-2"></i>Aggiornato: {{ item.updated_at.strftime('%d %B %Y') }}</span>
                 {% endif %}
                 <span><i class="far fa-eye mr-2"></i>{{ item.view_count or 0 }} visualizzazioni</span>
-                {% if single_post and single_post.author %}
-                <span><i class="far fa-user mr-2"></i>{{ single_post.author.username }}</span>
-                {% endif %}
             </div>
             
-            <!-- Admin Quick Actions -->
-            {% if current_user.is_authenticated and current_user.is_admin %}
-            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
-                <a href="{{ url_for('main.edit_project', item_id=item.id) }}"
-                   class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-edit mr-1.5"></i>Modifica Progetto
-                </a>
-                {% if single_post %}
-                <a href="{{ url_for('main.edit_blog_post', post_id=single_post.id) }}"
-                   class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors">
-                    <i class="fas fa-pen mr-1.5"></i>Modifica Articolo
-                </a>
-                {% endif %}
-                <a href="{{ url_for('main.create_blog_post') }}?project_id={{ item.id }}"
-                   class="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors">
-                    <i class="fas fa-plus mr-1.5"></i>Nuovo Articolo
+            <!-- Blog Posts Link -->
+            {% if item.blog_posts %}
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('main.project_blog_posts', slug=item.slug) }}"
+                   class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                    <i class="fas fa-newspaper text-xl"></i>
+                    <div class="text-left">
+                        <div class="font-bold">Articoli Blog</div>
+                        <div class="text-sm opacity-90">{{ item.blog_posts|length }} articol{{ 'o' if item.blog_posts|length == 1 else 'i' }} disponibil{{ 'e' if item.blog_posts|length == 1 else 'i' }}</div>
+                    </div>
+                    <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
             {% endif %}
@@ -230,111 +209,24 @@
         </div>
         {% endif %}
         
-        <!-- Description (lead paragraph / project intro) -->
+        <!-- Description (lead paragraph) -->
         {% if item['description_' + session.get('language', 'it')] %}
         <div class="mb-8 text-base md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed border-l-4 border-primary pl-4 md:pl-6 italic bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-4 md:p-6 rounded-lg shadow-lg">
             {{ item['description_' + session.get('language', 'it')] }}
         </div>
         {% endif %}
         
-        {# ============================================================ #}
-        {# CASE 1: Single blog post — render its content inline         #}
-        {# ============================================================ #}
-        {% if post_count == 1 %}
-        
-            {# Cover image from the blog post (if different from project main_image) #}
-            {% if single_post.cover_image %}
-            <div class="mb-8">
-                <img src="{{ url_for('static', filename='uploads/blog/' + single_post.cover_image) }}" 
-                     alt="{{ single_post['title_' + session.get('language', 'it')] }}"
-                     class="w-full rounded-2xl shadow-xl">
-            </div>
-            {% endif %}
-            
-            {# Excerpt as lead-in if available #}
-            {% if single_post['excerpt_' + session.get('language', 'it')] %}
-            <div class="mb-6 text-lg text-gray-600 dark:text-gray-400 italic">
-                {{ single_post['excerpt_' + session.get('language', 'it')] }}
-            </div>
-            {% endif %}
-            
-            {# Full article content #}
-            <div class="blog-content bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 mb-12 text-sm md:text-base">
-                {{ single_post['content_' + session.get('language', 'it')] | safe }}
-            </div>
-        
-        {# ============================================================ #}
-        {# CASE 2: Multiple blog posts — show article cards             #}
-        {# ============================================================ #}
-        {% elif post_count > 1 %}
-        
-            {# Articles section #}
-            <div class="mb-12">
-                <h2 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white flex items-center gap-3">
-                    <i class="fas fa-newspaper text-primary"></i>
-                    Articoli del Progetto
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {% for post in published_posts|sort(attribute='published_at', reverse=true) %}
-                    <a href="{{ url_for('main.blog_post', slug=post.slug) }}"
-                       class="block bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden group">
-                        {% if post.cover_image %}
-                        <div class="relative overflow-hidden">
-                            <img src="{{ url_for('static', filename='uploads/blog/' + post.cover_image) }}"
-                                 alt="{{ post['title_' + session.get('language', 'it')] }}"
-                                 class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300">
-                        </div>
-                        {% endif %}
-                        <div class="p-5">
-                            {# Tags #}
-                            {% if post.tags %}
-                            <div class="flex flex-wrap gap-1.5 mb-2">
-                                {% for tag in post.tags.split(',')[:2] %}
-                                <span class="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">
-                                    {{ tag.strip() }}
-                                </span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary transition-colors">
-                                {{ post['title_' + session.get('language', 'it')] }}
-                            </h3>
-                            
-                            {% if post['excerpt_' + session.get('language', 'it')] %}
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                                {{ post['excerpt_' + session.get('language', 'it')][:150] }}...
-                            </p>
-                            {% endif %}
-                            
-                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
-                                <span><i class="far fa-calendar mr-1"></i>{{ post.published_at.strftime('%d %b %Y') if post.published_at else post.created_at.strftime('%d %b %Y') }}</span>
-                                <span class="text-primary font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                                    Leggi <i class="fas fa-arrow-right"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-        
-        {# ============================================================ #}
-        {# CASE 3: No blog posts — fallback to GalleryItem content      #}
-        {#         (legacy projects that have content in GalleryItem)    #}
-        {# ============================================================ #}
-        {% elif item['content_' + session.get('language', 'it')] %}
-        
-            <div class="blog-content bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 mb-12 text-sm md:text-base">
+        <!-- Main Content -->
+        <div class="blog-content bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 mb-12 text-sm md:text-base">
+            {% if item['content_' + session.get('language', 'it')] %}
                 {{ item['content_' + session.get('language', 'it')] | safe }}
-            </div>
-        
-        {% endif %}
-        
-        {# ============================================================ #}
-        {# SHARED SECTIONS (always shown regardless of blog post count) #}
-        {# ============================================================ #}
+            {% else %}
+                <p class="text-gray-600 dark:text-gray-400 italic">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    Contenuto completo non ancora disponibile. Torna presto!
+                </p>
+            {% endif %}
+        </div>
         
         <!-- Additional Images Gallery -->
         {% if item.images %}
@@ -442,12 +334,16 @@
 <script>
 // PCB Parallax effect
 {% if item.category == 'electronics' and item.pcb_background %}
+// Effetto parallax per PCB background
 document.addEventListener('scroll', function() {
     const pcbBg = document.getElementById('pcb-bg');
     if (pcbBg) {
         const scrolled = window.pageYOffset;
         const maxScroll = document.body.scrollHeight - window.innerHeight;
         const scrollPercent = scrolled / maxScroll;
+        
+        // Muove il background da 0% a 20% della sua altezza mentre scrolli
+        // Questo crea l'effetto che "si scopre" senza mai mostrare bordi
         const movement = scrollPercent * 20;
         pcbBg.style.backgroundPosition = `center ${50 + movement}%`;
     }
@@ -466,6 +362,7 @@ function closeImageModal() {
     document.body.style.overflow = 'auto';
 }
 
+// Close modal with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeImageModal();

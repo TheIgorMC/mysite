@@ -4,137 +4,7 @@
 
 {% block head %}
 <style>
-    /* Fix Quill editor dark mode */
-    .dark .ql-toolbar {
-        background-color: rgb(31, 41, 55) !important;
-        border-color: rgb(75, 85, 99) !important;
-    }
-    
-    .dark .ql-container {
-        background-color: rgb(31, 41, 55) !important;
-        border-color: rgb(75, 85, 99) !important;
-        color: rgb(243, 244, 246) !important;
-    }
-    
-    .dark .ql-editor {
-        color: rgb(243, 244, 246) !important;
-    }
-    
-    .dark .ql-editor.ql-blank::before {
-        color: rgb(156, 163, 175) !important;
-    }
-    
-    .dark .ql-stroke {
-        stroke: rgb(229, 231, 235) !important;
-    }
-    
-    .dark .ql-fill {
-        fill: rgb(229, 231, 235) !important;
-    }
-    
-    .dark .ql-picker-label {
-        color: rgb(229, 231, 235) !important;
-    }
-    
-    .dark .ql-picker-options {
-        background-color: rgb(31, 41, 55) !important;
-        border-color: rgb(75, 85, 99) !important;
-    }
-    
-    .dark .ql-snow .ql-stroke {
-        stroke: rgb(229, 231, 235) !important;
-    }
-    
-    .dark .ql-snow .ql-fill {
-        fill: rgb(229, 231, 235) !important;
-    }
-    
-    /* Light mode - ensure white background and visible icons */
-    .ql-container {
-        background-color: white !important;
-        border: 1px solid #ccc !important;
-    }
-    
-    .ql-toolbar {
-        background-color: rgb(249, 250, 251) !important;
-        border: 1px solid #ccc !important;
-    }
-    
-    .ql-stroke {
-        stroke: rgb(55, 65, 81) !important;
-    }
-    
-    .ql-fill {
-        fill: rgb(55, 65, 81) !important;
-    }
-    
-    .ql-picker-label {
-        color: rgb(55, 65, 81) !important;
-    }
-
-    /* Preview styling to match blog content */
-    .blog-content {
-        line-height: 1.8;
-    }
-    .blog-content h1, .blog-content h2, .blog-content h3 {
-        font-weight: bold;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-    }
-    .blog-content h1 { font-size: 2rem; }
-    .blog-content h2 { font-size: 1.5rem; }
-    .blog-content h3 { font-size: 1.25rem; }
-    .blog-content p {
-        margin-bottom: 1rem;
-    }
-    .blog-content ul, .blog-content ol {
-        margin-left: 1.5rem;
-        margin-bottom: 1rem;
-    }
-    .blog-content ul { list-style-type: disc; }
-    .blog-content ol { list-style-type: decimal; }
-    .blog-content code {
-        background-color: rgb(243, 244, 246);
-        padding: 0.2rem 0.4rem;
-        border-radius: 0.25rem;
-        font-family: monospace;
-    }
-    .dark .blog-content code {
-        background-color: rgb(55, 65, 81);
-    }
-    .blog-content pre {
-        background-color: rgb(243, 244, 246);
-        padding: 1rem;
-        border-radius: 0.5rem;
-        overflow-x: auto;
-        margin-bottom: 1rem;
-    }
-    .dark .blog-content pre {
-        background-color: rgb(55, 65, 81);
-    }
-    .blog-content blockquote {
-        border-left: 4px solid rgb(59, 130, 246);
-        padding-left: 1rem;
-        margin-left: 0;
-        margin-bottom: 1rem;
-        font-style: italic;
-    }
-    .blog-content img {
-        max-width: 100%;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-    }
-    
-    /* Ensure editors are visible */
-    #editor-en, #editor-it {
-        min-height: 400px;
-        border: 1px solid #ccc;
-        border-radius: 0.5rem;
-    }
-    
-    .dark #editor-en, .dark #editor-it {
-        border-color: rgb(75, 85, 99);
-    }
+    /* No Quill editor on this page — content lives in Blog Post articles */
 </style>
 {% endblock %}
 
@@ -289,84 +159,84 @@
                 </div>
             </div>
             
-            <!-- Full Content Card -->
+            <!-- Full Content Card — REPLACED by Blog Articles management -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                    <i class="fas fa-file-alt mr-2"></i>Contenuto Completo (Blog Post)
+                    <i class="fas fa-newspaper mr-2"></i>Articoli Blog
                 </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Gli articoli vengono mostrati nella pagina del progetto. Un solo articolo viene visualizzato direttamente inline; più articoli vengono elencati come cards.
+                </p>
                 
-                <div class="space-y-4">
-                    <!-- Content EN -->
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Full Content (English)
-                            </label>
-                            <button type="button" id="raw-html-btn-en" onclick="toggleRawHTML('en')"
-                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                                <i class="fas fa-code mr-1"></i>Modalità HTML
+                {% set published_posts = item.blog_posts|selectattr('is_published')|list if item.blog_posts else [] %}
+                {% set draft_posts = item.blog_posts|rejectattr('is_published')|list if item.blog_posts else [] %}
+                
+                {% if item.blog_posts and item.blog_posts|length > 0 %}
+                <div class="space-y-3 mb-6">
+                    {% for post in item.blog_posts|sort(attribute='created_at', reverse=true) %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                {% if post.is_published %}
+                                <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded text-xs font-semibold">
+                                    <i class="fas fa-check mr-1"></i>Pubblicato
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 rounded text-xs font-semibold">
+                                    <i class="fas fa-pencil-alt mr-1"></i>Bozza
+                                </span>
+                                {% endif %}
+                                {% if post.published_at %}
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ post.published_at.strftime('%d/%m/%Y') }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <h4 class="font-semibold text-gray-900 dark:text-white truncate">
+                                {{ post.title_it or post.title_en }}
+                            </h4>
+                            {% if post.excerpt_it %}
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{{ post.excerpt_it[:80] }}...</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2 ml-4 shrink-0">
+                            {% if post.slug %}
+                            <a href="{{ url_for('main.blog_post', slug=post.slug) }}" target="_blank"
+                               class="p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Anteprima">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('main.edit_blog_post', post_id=post.id) }}"
+                               class="p-2 text-gray-500 hover:text-green-600 transition-colors" title="Modifica">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" onclick="deleteBlogPost({{ post.id }}, '{{ post.title_it|e }}')"
+                                    class="p-2 text-gray-500 hover:text-red-600 transition-colors" title="Elimina">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
-                        <div id="editor-en" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
-                        <textarea id="html-editor-en" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
-                        <input type="hidden" name="content_en" id="content_en" value="{{ item.content_en or '' }}">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Puoi usare HTML. Questo è il contenuto principale dell'articolo.
-                        </p>
                     </div>
-                    
-                    <!-- Content IT -->
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Full Content (Italian)
-                            </label>
-                            <button type="button" id="raw-html-btn-it" onclick="toggleRawHTML('it')"
-                                    class="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                                <i class="fas fa-code mr-1"></i>Modalità HTML
-                            </button>
-                        </div>
-                        <div id="editor-it" class="bg-white dark:bg-gray-800" style="height: 400px;"></div>
-                        <textarea id="html-editor-it" class="w-full h-96 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg" style="display: none;"></textarea>
-                        <input type="hidden" name="content_it" id="content_it" value="{{ item.content_it or '' }}">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Puoi usare HTML. Questo è il contenuto principale dell'articolo.
-                        </p>
-                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 mb-6">
+                    <i class="fas fa-file-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400 mb-1">Nessun articolo per questo progetto</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">Crea il primo articolo per aggiungere contenuto al progetto</p>
+                </div>
+                {% endif %}
                 
-                <!-- Live Preview -->
-                <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                            <i class="fas fa-eye mr-2"></i>Anteprima Live
-                        </h3>
-                        <div class="flex gap-2">
-                            <button type="button" onclick="switchPreview('it')" id="preview-btn-it"
-                                    class="px-3 py-1 text-sm rounded bg-primary text-white">
-                                Italiano
-                            </button>
-                            <button type="button" onclick="switchPreview('en')" id="preview-btn-en"
-                                    class="px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
-                                English
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Preview Content -->
-                    <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto">
-                        <div id="preview-content-it" class="blog-content prose dark:prose-invert max-w-none">
-                            <p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>
-                        </div>
-                        <div id="preview-content-en" class="blog-content prose dark:prose-invert max-w-none hidden">
-                            <p class="text-gray-500 italic">Preview will appear here as you type...</p>
-                        </div>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <a href="{{ url_for('main.create_blog_post') }}?project_id={{ item.id }}"
+                   class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Nuovo Articolo
+                </a>
+                
+                <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p class="text-xs text-blue-800 dark:text-blue-300">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Aggiornamento automatico ogni 2 secondi
+                        <strong>Suggerimento:</strong> 
+                        Un solo articolo viene mostrato direttamente nella pagina del progetto.
+                        Più articoli vengono visualizzati come elenco di cards cliccabili.
                     </p>
                 </div>
             </div>
@@ -543,177 +413,9 @@
     </div>
 </section>
 
-<!-- Quill Editor CSS and JS -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<!-- No Quill editor needed — content lives in Blog Post articles -->
 
 <script>
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if Quill is loaded
-    if (typeof Quill === 'undefined') {
-        console.error('Quill is not loaded!');
-        return;
-    }
-    
-    // Initialize Quill editors
-    var quillEN = new Quill('#editor-en', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'color': [] }, { 'background': [] }],
-                ['link', 'image'],
-                ['clean']
-            ]
-        }
-    });
-
-    var quillIT = new Quill('#editor-it', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'color': [] }, { 'background': [] }],
-                ['link', 'image'],
-                ['clean']
-            ]
-        }
-    });
-
-    // Load existing content
-    var contentEN = document.getElementById('content_en').value;
-    var contentIT = document.getElementById('content_it').value;
-    if (contentEN) quillEN.root.innerHTML = contentEN;
-    if (contentIT) quillIT.root.innerHTML = contentIT;
-
-    // Live preview functionality
-    var currentPreviewLang = 'it';
-    var previewUpdateTimer = null;
-
-    function updatePreview() {
-        var contentToShow = currentPreviewLang === 'it' ? quillIT.root.innerHTML : quillEN.root.innerHTML;
-        var previewElement = document.getElementById('preview-content-' + currentPreviewLang);
-        
-        if (contentToShow && contentToShow.trim() !== '' && contentToShow.trim() !== '<p><br></p>') {
-            // Render HTML directly
-            previewElement.innerHTML = contentToShow;
-        } else {
-            var placeholder = currentPreviewLang === 'it' 
-                ? '<p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>'
-                : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
-            previewElement.innerHTML = placeholder;
-        }
-    }
-
-    // Add raw HTML mode toggle
-    var rawHTMLMode = { en: false, it: false };
-    
-    // Make function globally accessible
-    window.toggleRawHTML = function(lang) {
-        rawHTMLMode[lang] = !rawHTMLMode[lang];
-        var editor = lang === 'it' ? quillIT : quillEN;
-        var btn = document.getElementById('raw-html-btn-' + lang);
-        var quillEditor = document.getElementById('editor-' + lang);
-        var htmlEditor = document.getElementById('html-editor-' + lang);
-        
-        if (rawHTMLMode[lang]) {
-            // Switch to HTML mode - show textarea, hide Quill
-            var html = editor.root.innerHTML;
-            htmlEditor.value = html;
-            htmlEditor.style.display = 'block';
-            quillEditor.style.display = 'none';
-            
-            btn.innerHTML = '<i class="fas fa-eye mr-1"></i>Modalità Visuale';
-            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
-            btn.classList.add('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
-            
-            // Update preview with raw HTML
-            updatePreviewFromHTML(lang);
-            
-            // Listen for changes in textarea
-            htmlEditor.oninput = function() {
-                updatePreviewFromHTML(lang);
-            };
-        } else {
-            // Switch to visual mode - show Quill, hide textarea
-            var html = htmlEditor.value;
-            editor.root.innerHTML = html;
-            htmlEditor.style.display = 'none';
-            quillEditor.style.display = 'block';
-            
-            btn.innerHTML = '<i class="fas fa-code mr-1"></i>Modalità HTML';
-            btn.classList.remove('bg-yellow-200', 'dark:bg-yellow-700', 'text-gray-900', 'dark:text-gray-100');
-            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
-            
-            htmlEditor.oninput = null;
-        }
-        updatePreview();
-    }
-    
-    function updatePreviewFromHTML(lang) {
-        if (currentPreviewLang === lang) {
-            var htmlEditor = document.getElementById('html-editor-' + lang);
-            var previewElement = document.getElementById('preview-content-' + lang);
-            var html = htmlEditor.value;
-            
-            if (html && html.trim() !== '') {
-                previewElement.innerHTML = html;
-            } else {
-                var placeholder = lang === 'it' 
-                    ? '<p class="text-gray-500 italic">La preview apparirà qui mentre scrivi...</p>'
-                    : '<p class="text-gray-500 italic">Preview will appear here as you type...</p>';
-                previewElement.innerHTML = placeholder;
-            }
-        }
-    }
-
-    // Update preview on editor change
-    quillEN.on('text-change', function() {
-        if (currentPreviewLang === 'en') {
-            clearTimeout(previewUpdateTimer);
-            previewUpdateTimer = setTimeout(updatePreview, 500);
-        }
-    });
-
-    quillIT.on('text-change', function() {
-        if (currentPreviewLang === 'it') {
-            clearTimeout(previewUpdateTimer);
-            previewUpdateTimer = setTimeout(updatePreview, 500);
-        }
-    });
-
-    // Initial preview update
-    updatePreview();
-
-    // Save editor content to hidden inputs on form submit
-    document.querySelector('form').addEventListener('submit', function(e) {
-        // Get content from appropriate source (HTML textarea or Quill editor)
-        var contentEN, contentIT;
-        
-        if (rawHTMLMode.en) {
-            contentEN = document.getElementById('html-editor-en').value;
-        } else {
-            contentEN = quillEN.root.innerHTML;
-        }
-        
-        if (rawHTMLMode.it) {
-            contentIT = document.getElementById('html-editor-it').value;
-        } else {
-            contentIT = quillIT.root.innerHTML;
-        }
-        
-        document.getElementById('content_en').value = contentEN;
-        document.getElementById('content_it').value = contentIT;
-    });
-});
-
 // Toggle PCB section based on category
 function togglePCBSection() {
     var category = document.getElementById('category').value;
@@ -725,45 +427,46 @@ function togglePCBSection() {
     }
 }
 
-// Switch preview language
-function switchPreview(lang) {
-    currentPreviewLang = lang;
-    
-    // Update button styles
-    document.getElementById('preview-btn-it').className = lang === 'it'
-        ? 'px-3 py-1 text-sm rounded bg-primary text-white'
-        : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
-    document.getElementById('preview-btn-en').className = lang === 'en'
-        ? 'px-3 py-1 text-sm rounded bg-primary text-white'
-        : 'px-3 py-1 text-sm rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
-    
-    // Toggle preview content visibility
-    document.getElementById('preview-content-it').classList.toggle('hidden', lang !== 'it');
-    document.getElementById('preview-content-en').classList.toggle('hidden', lang !== 'en');
-    
-    // Update preview content
-    updatePreview();
-}
-
 // Gallery image management
 var imagesToRemove = [];
 
 function removeGalleryImage(index, filename) {
     if (confirm('Sei sicuro di voler rimuovere questa immagine dalla galleria?')) {
-        // Add to removal list
         imagesToRemove.push(filename);
         document.getElementById('remove_images').value = JSON.stringify(imagesToRemove);
         
-        // Hide the image element
         var imageElement = document.getElementById('gallery-image-' + index);
         imageElement.style.opacity = '0.3';
         imageElement.style.pointerEvents = 'none';
         
-        // Add a "removed" overlay
         var overlay = document.createElement('div');
         overlay.className = 'absolute inset-0 bg-red-600/50 rounded-lg flex items-center justify-center';
         overlay.innerHTML = '<span class="text-white font-bold text-sm">RIMOSSA</span>';
         imageElement.appendChild(overlay);
+    }
+}
+
+// Delete blog post via AJAX
+function deleteBlogPost(postId, postTitle) {
+    if (confirm('⚠️ Sei sicuro di voler eliminare l\'articolo "' + postTitle + '"?\n\nQuesta azione NON può essere annullata.')) {
+        fetch('/admin/blog/delete/' + postId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Articolo eliminato!');
+                location.reload();
+            } else {
+                alert('❌ Errore: ' + (data.error || 'Errore sconosciuto'));
+            }
+        })
+        .catch(error => {
+            alert('❌ Errore nella richiesta: ' + error);
+        });
     }
 }
 
