@@ -1112,12 +1112,27 @@ def manage_interesse(interest_id):
                     if user_emails:
                         current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                         
-                        details = {
-                            'ID Interesse': str(interest_id),
-                            'Tessera Atleta': tessera_atleta,
-                            'Codice Gara': interest_data.get('codice_gara', ''),
-                            'Stato': 'Cancellata'
-                        }
+                        codice_gara = interest_data.get('codice_gara', '')
+                        comp_details = get_competition_details(codice_gara, client) if codice_gara else None
+                        athlete_name = get_athlete_name(tessera_atleta)
+                        
+                        details = {}
+                        
+                        if comp_details and comp_details.get('nome'):
+                            details['Nome Gara'] = comp_details['nome']
+                        
+                        details['Codice Gara'] = codice_gara
+                        
+                        athlete_display = tessera_atleta
+                        if athlete_name:
+                            athlete_display += f" - {athlete_name}"
+                        details['Atleta'] = athlete_display
+                        
+                        details['Stato'] = 'Cancellata'
+                        
+                        subject = "Interesse cancellato"
+                        if comp_details and comp_details.get('nome'):
+                            subject += f" - {comp_details['nome']}"
                         
                         # Use grouped email sending
                         send_grouped_emails(
@@ -1126,7 +1141,7 @@ def manage_interesse(interest_id):
                                 'details': details
                             }],
                             mail_type='cancellation_confirmed',
-                            subject_prefix='Interesse cancellato',
+                            subject_prefix=subject,
                             body_text='Espressione di interesse cancellata con successo.',
                             client=client
                         )
@@ -1154,16 +1169,31 @@ def manage_interesse(interest_id):
                     if user_emails:
                         current_app.logger.info(f'[EMAIL] Found {len(user_emails)} user(s) to notify: {user_emails}')
                         
+                        codice_gara = data.get('codice_gara', '')
+                        comp_details = get_competition_details(codice_gara, client) if codice_gara else None
+                        athlete_name = get_athlete_name(tessera_atleta)
+                        
                         # Build list of changes
                         changes = [f'{k}: {v}' for k, v in data.items() 
                                  if k not in ['tessera_atleta', 'codice_gara', 'athlete_email']]
                         
-                        details = {
-                            'ID Interesse': str(interest_id),
-                            'Tessera Atleta': tessera_atleta,
-                            'Codice Gara': data.get('codice_gara', ''),
-                            'Modifiche': ', '.join(changes) if changes else 'Nessuna modifica specifica'
-                        }
+                        details = {}
+                        
+                        if comp_details and comp_details.get('nome'):
+                            details['Nome Gara'] = comp_details['nome']
+                        
+                        details['Codice Gara'] = codice_gara
+                        
+                        athlete_display = tessera_atleta
+                        if athlete_name:
+                            athlete_display += f" - {athlete_name}"
+                        details['Atleta'] = athlete_display
+                        
+                        details['Modifiche'] = ', '.join(changes) if changes else 'Nessuna modifica specifica'
+                        
+                        subject = "Interesse modificato"
+                        if comp_details and comp_details.get('nome'):
+                            subject += f" - {comp_details['nome']}"
                         
                         # Use grouped email sending
                         send_grouped_emails(
@@ -1172,7 +1202,7 @@ def manage_interesse(interest_id):
                                 'details': details
                             }],
                             mail_type='modification_confirmed',
-                            subject_prefix='Interesse modificato',
+                            subject_prefix=subject,
                             body_text='Espressione di interesse modificata con successo.',
                             client=client
                         )

@@ -1908,7 +1908,9 @@ async function submitSubscription() {
                         stato: 'in attesa',
                         categoria: bowType,         // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
                         classe: ageCategory,        // Age category: SM, SF, MM, MF, etc.
-                        note: notes
+                        note: notes,
+                        tessera_atleta: tessera,
+                        codice_gara: codiceGara
                     })
                 });
             } else {
@@ -1943,7 +1945,9 @@ async function submitSubscription() {
                         categoria: bowType,         // Bow type: CO (Compound), OL (Olympic), AN (Barebow)
                         classe: ageCategory,        // Age category: SM, SF, MM, MF, GM, GF, RM, RF, AM, AF, JM, JF
                         turno: parseInt(turn),
-                        note: notes
+                        note: notes,
+                        tessera_atleta: tessera,
+                        codice_gara: codiceGara
                     })
                 });
             } else {
@@ -2154,12 +2158,18 @@ async function confirmDeleteSelected() {
     try {
         // Delete non-confirmed subscriptions directly
         if (nonConfirmedIds.length > 0) {
-            await Promise.all(nonConfirmedIds.map(id => deleteSubscriptionInternal(id)));
+            await Promise.all(nonConfirmedIds.map(id => {
+                const sub = subscriptions.find(s => s.id === id);
+                return deleteSubscriptionInternal(id, sub?.tessera_atleta, competitionCode);
+            }));
         }
         
         // Request cancellation for confirmed subscriptions
         if (confirmedIds.length > 0) {
-            await Promise.all(confirmedIds.map(id => requestCancellationInternal(id)));
+            await Promise.all(confirmedIds.map(id => {
+                const sub = subscriptions.find(s => s.id === id);
+                return requestCancellationInternal(id, sub?.tessera_atleta, competitionCode);
+            }));
         }
         
         // Update local cache
@@ -2215,8 +2225,14 @@ async function confirmDeleteSelected() {
     }
 }
 
-async function deleteSubscriptionInternal(subscriptionId) {
-    const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
+async function deleteSubscriptionInternal(subscriptionId, tessera_atleta, codice_gara) {
+    let url = `/archery/api/iscrizioni/${subscriptionId}`;
+    const params = new URLSearchParams();
+    if (tessera_atleta) params.set('tessera_atleta', tessera_atleta);
+    if (codice_gara) params.set('codice_gara', codice_gara);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await fetch(url, {
         method: 'DELETE'
     });
     
@@ -2228,11 +2244,15 @@ async function deleteSubscriptionInternal(subscriptionId) {
     return response.json();
 }
 
-async function requestCancellationInternal(subscriptionId) {
+async function requestCancellationInternal(subscriptionId, tessera_atleta, codice_gara) {
+    const body = { stato: 'cancellazione richiesta' };
+    if (tessera_atleta) body.tessera_atleta = tessera_atleta;
+    if (codice_gara) body.codice_gara = codice_gara;
+    
     const response = await fetch(`/archery/api/iscrizioni/${subscriptionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stato: 'cancellazione richiesta' })
+        body: JSON.stringify(body)
     });
     
     if (!response.ok) {
@@ -2253,7 +2273,7 @@ async function deleteSubscription(subscription, competition) {
         }
         
         try {
-            await requestCancellationInternal(subscription.id);
+            await requestCancellationInternal(subscription.id, subscription.tessera_atleta, competition.codice);
             
             // Update local cache
             subscription.stato = 'cancellazione richiesta';
@@ -2277,7 +2297,8 @@ async function deleteSubscription(subscription, competition) {
     }
     
     try {
-        const response = await fetch(`/archery/api/iscrizioni/${subscription.id}`, {
+        const deleteUrl = `/archery/api/iscrizioni/${subscription.id}?tessera_atleta=${encodeURIComponent(subscription.tessera_atleta)}&codice_gara=${encodeURIComponent(competition.codice)}`;
+        const response = await fetch(deleteUrl, {
             method: 'DELETE'
         });
         
@@ -2377,7 +2398,11 @@ async function confirmDeleteSelectedInterests() {
     
     try {
         // Delete all selected interests
-        await Promise.all(idsToDelete.map(id => deleteInterestInternal(id)));
+        const interests = userInterests.get(competitionCode) || [];
+        await Promise.all(idsToDelete.map(id => {
+            const interest = interests.find(i => i.id === id);
+            return deleteInterestInternal(id, interest?.tessera_atleta, competitionCode);
+        }));
         
         // Update local cache - remove deleted interests
         if (userInterests.has(competitionCode)) {
@@ -2424,7 +2449,7 @@ async function deleteInterest(interest, competition) {
     }
     
     try {
-        await deleteInterestInternal(interest.id);
+        await deleteInterestInternal(interest.id, interest.tessera_atleta, competition.codice);
         
         // Remove from local cache
         if (userInterests.has(competition.codice)) {
@@ -2445,8 +2470,14 @@ async function deleteInterest(interest, competition) {
     }
 }
 
-async function deleteInterestInternal(interestId) {
-    const response = await fetch(`/archery/api/interesse/${interestId}`, {
+async function deleteInterestInternal(interestId, tessera_atleta, codice_gara) {
+    let url = `/archery/api/interesse/${interestId}`;
+    const params = new URLSearchParams();
+    if (tessera_atleta) params.set('tessera_atleta', tessera_atleta);
+    if (codice_gara) params.set('codice_gara', codice_gara);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await fetch(url, {
         method: 'DELETE'
     });
     
@@ -2844,6 +2875,10 @@ async function submitUserSubscriptionEdit() {
     
     newData.note = notesWithTripla;
     
+    // Include tessera and codice_gara for email notifications
+    newData.tessera_atleta = editingSubscription.tessera_atleta;
+    newData.codice_gara = editingSubscription.codice_gara;
+    
     // Set status to "modifica richiesta" if there are changes
     if (changes.length > 0) {
         newData.stato = 'modifica richiesta';
@@ -2952,7 +2987,9 @@ async function submitUserInterestEdit() {
     const newData = {
         categoria: newBowType,      // Send bow type as categoria
         classe: newAgeCategory,     // Send age category as classe
-        note: document.getElementById('edit-user-int-note').value || ''
+        note: document.getElementById('edit-user-int-note').value || '',
+        tessera_atleta: editingInterest.tessera_atleta,
+        codice_gara: editingInterest.codice_gara
     };
     
     try {
@@ -3007,7 +3044,7 @@ async function deleteSingleSubscription(subscriptionId, codiceGara, event) {
         if (!confirm(confirmMsg)) return;
         
         try {
-            await requestCancellationInternal(subscriptionId);
+            await requestCancellationInternal(subscriptionId, sub.tessera_atleta, codiceGara);
             showNotification('Richiesta di cancellazione inviata', 'success');
             await loadInitialData();
         } catch (error) {
@@ -3025,7 +3062,7 @@ async function deleteSingleSubscription(subscriptionId, codiceGara, event) {
     if (!confirm(confirmMsg)) return;
     
     try {
-        await deleteSubscriptionInternal(subscriptionId);
+        await deleteSubscriptionInternal(subscriptionId, sub.tessera_atleta, codiceGara);
         showNotification('Iscrizione eliminata con successo', 'success');
         await loadInitialData();
     } catch (error) {
@@ -3052,7 +3089,7 @@ async function deleteSingleInterest(interestId, codiceGara, event) {
     if (!confirm(confirmMsg)) return;
     
     try {
-        await deleteInterestInternal(interestId);
+        await deleteInterestInternal(interestId, interest.tessera_atleta, codiceGara);
         showNotification('Interesse rimosso con successo', 'success');
         await loadInitialData();
     } catch (error) {
@@ -3232,7 +3269,7 @@ async function performInterestConversion(interestId, codiceGara, interest, selec
         }
         
         // Delete the interest
-        await deleteInterestInternal(interestId);
+        await deleteInterestInternal(interestId, interest.tessera_atleta, codiceGara);
         
         showNotification('Interesse convertito in iscrizione con successo!', 'success');
         await loadInitialData();
