@@ -234,6 +234,15 @@ function renderManualMappingList() {
             ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
             : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
         
+        // Show "Create New" button for unmapped/non-ignored items
+        const createNewBtn = (!isMapped && !isIgnored) ? `
+            <button onclick="openBOMQuickAdd(${idx})" 
+                    class="px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded whitespace-nowrap"
+                    title="Create new component in database">
+                <i class="fas fa-plus mr-1"></i>New
+            </button>
+        ` : '';
+        
         return `
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4" data-mapping-idx="${idx}">
                 <div class="grid grid-cols-12 gap-3 items-center">
@@ -265,6 +274,7 @@ function renderManualMappingList() {
                     </div>
                     <div class="col-span-2 text-right flex items-center justify-end space-x-2">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">×${qty}</span>
+                        ${createNewBtn}
                         ${isIgnored ? `
                             <button onclick="unignoreComponent(${idx})" 
                                     class="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded"
@@ -385,6 +395,140 @@ function applyManualMappings() {
     if (resolveManualMapping) {
         resolveManualMapping(true);
         resolveManualMapping = null;
+    }
+}
+
+// ==================== BOM QUICK ADD COMPONENT ====================
+
+function openBOMQuickAdd(unmappedIdx) {
+    const item = unmappedComponents[unmappedIdx];
+    const raw = item._rawRow || {};
+    
+    document.getElementById('bom-qa-unmapped-index').value = unmappedIdx;
+    
+    // Pre-fill from mapped fields
+    document.getElementById('bom-qa-manufacturer-code').value = item.manufacturer_code || '';
+    document.getElementById('bom-qa-supplier-code').value = item.supplier_code || '';
+    
+    // Try to extract additional fields from raw CSV row (case-insensitive lookup)
+    const rawLower = {};
+    Object.entries(raw).forEach(([k, v]) => { rawLower[k.toLowerCase().trim()] = v; });
+    
+    // Manufacturer
+    const manufacturer = rawLower['manufacturer'] || rawLower['mfr'] || rawLower['mfg'] || '';
+    document.getElementById('bom-qa-manufacturer').value = manufacturer;
+    
+    // Supplier name
+    const supplier = rawLower['supplier'] || rawLower['seller'] || rawLower['vendor'] || rawLower['distributor'] || '';
+    document.getElementById('bom-qa-supplier').value = supplier;
+    
+    // Package / Footprint
+    const pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
+    document.getElementById('bom-qa-package').value = pkg;
+    
+    // SMD footprint (separate from package in some BOMs)
+    const footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+    document.getElementById('bom-qa-footprint').value = footprint;
+    
+    // Value
+    const value = rawLower['value'] || rawLower['comment'] || rawLower['description'] || '';
+    document.getElementById('bom-qa-value').value = value;
+    
+    // Product type / Category - try to guess from Description or Comment
+    const typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
+    document.getElementById('bom-qa-type').value = typeGuess;
+    
+    // Description
+    const description = rawLower['description'] || rawLower['desc'] || rawLower['comment'] || '';
+    document.getElementById('bom-qa-description').value = description;
+    
+    // Price
+    const priceStr = rawLower['unit price'] || rawLower['unit price(\u20ac)'] || rawLower['price'] || rawLower['unit_price'] || '0';
+    document.getElementById('bom-qa-price').value = parseFloat(priceStr) || 0;
+    
+    // Stock qty defaults to 0
+    document.getElementById('bom-qa-qty-stock').value = 0;
+    
+    // Show raw data preview
+    const rawPreview = Object.entries(raw)
+        .filter(([k, v]) => v && v.toString().trim())
+        .map(([k, v]) => `<span class="text-gray-500">${k}:</span> ${v}`)
+        .join(' &middot; ');
+    document.getElementById('bom-qa-raw-data').innerHTML = rawPreview || 'No raw data available';
+    
+    // Open modal
+    document.getElementById('bom-quick-add-modal').classList.remove('hidden');
+    document.getElementById('bom-quick-add-modal').classList.add('flex');
+}
+
+function closeBOMQuickAdd() {
+    document.getElementById('bom-quick-add-modal').classList.add('hidden');
+    document.getElementById('bom-quick-add-modal').classList.remove('flex');
+}
+
+async function saveBOMQuickAddComponent() {
+    const unmappedIdx = parseInt(document.getElementById('bom-qa-unmapped-index').value);
+    
+    const packageValue = document.getElementById('bom-qa-package').value.trim();
+    const truncatedPackage = packageValue.length > 50 ? packageValue.substring(0, 50) : packageValue;
+    const manufacturerCode = document.getElementById('bom-qa-manufacturer-code').value.trim();
+    const typeValue = document.getElementById('bom-qa-type').value.trim();
+    
+    // Validate required fields
+    if (!typeValue || !truncatedPackage || !manufacturerCode) {
+        showToast('Please fill in Type, Package, and Manufacturer Code', 'error');
+        return;
+    }
+    
+    const componentData = {
+        seller: document.getElementById('bom-qa-supplier').value.trim(),
+        seller_code: document.getElementById('bom-qa-supplier-code').value.trim(),
+        manufacturer: document.getElementById('bom-qa-manufacturer').value.trim(),
+        manufacturer_code: manufacturerCode,
+        smd_footprint: document.getElementById('bom-qa-footprint').value.trim(),
+        package: truncatedPackage,
+        product_type: typeValue,
+        value: document.getElementById('bom-qa-value').value.trim() || manufacturerCode,
+        price: parseFloat(document.getElementById('bom-qa-price').value) || 0,
+        qty_left: parseInt(document.getElementById('bom-qa-qty-stock').value) || 0
+    };
+    
+    console.log('[BOM Quick Add] Creating component:', componentData);
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(componentData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.detail || `HTTP ${response.status}`;
+            throw new Error(errorMsg);
+        }
+        
+        const newComponent = await response.json();
+        console.log('[BOM Quick Add] Created component ID:', newComponent.id);
+        
+        // Add to allComponents so it appears in dropdowns
+        allComponents.push({
+            id: newComponent.id,
+            ...componentData
+        });
+        
+        // Auto-map this unmapped item to the new component
+        manualMappings[unmappedIdx] = newComponent.id;
+        
+        closeBOMQuickAdd();
+        showToast(`Component created (ID: ${newComponent.id}) and mapped`, 'success');
+        
+        // Re-render mapping list to show updated status
+        renderManualMappingList();
+        
+    } catch (error) {
+        console.error('[BOM Quick Add] Error:', error);
+        showToast('Failed to create component: ' + error.message, 'error');
     }
 }
 

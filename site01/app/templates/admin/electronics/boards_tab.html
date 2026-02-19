@@ -245,6 +245,115 @@
     </div>
 </div>
 
+<!-- BOM Quick Add Component Modal -->
+<div id="bom-quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[70]">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    <i class="fas fa-plus-circle text-green-600 mr-2"></i>Add Component to Database
+                </h3>
+                <button onclick="closeBOMQuickAdd()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a new component from the BOM data and auto-map it</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="bom-qa-unmapped-index">
+
+            <!-- Raw CSV data preview -->
+            <div id="bom-qa-raw-preview" class="p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">CSV Row Data</p>
+                <div id="bom-qa-raw-data" class="text-xs font-mono text-gray-700 dark:text-gray-300"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier Code</label>
+                    <input type="text" id="bom-qa-supplier-code"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>
+                    <input type="text" id="bom-qa-supplier"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer</label>
+                    <input type="text" id="bom-qa-manufacturer"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer Code *</label>
+                    <input type="text" id="bom-qa-manufacturer-code" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type/Category *</label>
+                    <input type="text" id="bom-qa-type" required placeholder="e.g., RESISTOR" list="component-types-list"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Value</label>
+                    <input type="text" id="bom-qa-value" placeholder="e.g., 10k, 100nF"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Package *</label>
+                    <input type="text" id="bom-qa-package" required list="component-packages-list"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SMD Footprint</label>
+                    <input type="text" id="bom-qa-footprint" placeholder="e.g., RESC1005"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <input type="text" id="bom-qa-description" placeholder="Component description"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price per Unit (€)</label>
+                    <input type="number" step="0.0001" min="0" id="bom-qa-price" value="0"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity in Stock</label>
+                    <input type="number" min="0" id="bom-qa-qty-stock" value="0"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-4">
+            <button onclick="saveBOMQuickAddComponent()"
+                    class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+                <i class="fas fa-save mr-2"></i>Create & Map
+            </button>
+            <button onclick="closeBOMQuickAdd()"
+                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+
 <!-- Upload BOM Modal -->
 <div id="upload-bom-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
