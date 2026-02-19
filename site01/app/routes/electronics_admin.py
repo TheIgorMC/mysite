@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 import requests
 import csv
 import io
+import re
 from functools import wraps
 from app.api import OrionAPIClient
 
@@ -1198,4 +1199,72 @@ def fetch_storage_file():
     except Exception as e:
         current_app.logger.error(f"[Storage Fetch] Error: {e}")
         return jsonify({'error': f'Error fetching file: {str(e)}'}), 500
+
+
+@api_bp.route('/fetch-lcsc-price', methods=['GET'])
+@login_required
+def fetch_lcsc_price():
+    """Fetch unit price from LCSC product page"""
+    code = request.args.get('code', '').strip()
+    if not code:
+        return jsonify({'error': 'Missing code parameter'}), 400
+    
+    # Normalize: ensure it starts with C
+    if not code.upper().startswith('C'):
+        return jsonify({'error': 'Invalid LCSC code (must start with C)'}), 400
+    
+    url = f'https://www.lcsc.com/product-detail/{code}.html'
+    current_app.logger.info(f'[LCSC Price] Fetching {url}')
+    
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        
+        if resp.status_code != 200:
+            current_app.logger.error(f'[LCSC Price] HTTP {resp.status_code}')
+            return jsonify({'error': f'LCSC returned {resp.status_code}'}), 502
+        
+        html = resp.text
+        
+        # Extract prices from the price table
+        # Pattern: look for euro prices like "€ 0.5194" or "€0.5194" in the price table cells
+        price_pattern = re.compile(r'[€\u20ac]\s*([0-9]+\.?[0-9]*)\s*</span>')
+        prices = price_pattern.findall(html)
+        
+        if not prices:
+            # Try alternate pattern without euro sign (sometimes uses data attributes)
+            price_pattern2 = re.compile(r'"unitPrice"\s*:\s*"?([0-9]+\.?[0-9]*)"?')
+            prices = price_pattern2.findall(html)
+        
+        if not prices:
+            # Try yet another pattern - look in JSON-LD or script data
+            price_pattern3 = re.compile(r'price["\']?\s*[:=]\s*["\']?([0-9]+\.[0-9]{2,6})')
+            prices = price_pattern3.findall(html)
+        
+        if prices:
+            # Parse all price tiers
+            price_values = [float(p) for p in prices if float(p) > 0]
+            if price_values:
+                # Return the first (1+ qty) unit price
+                unit_price = price_values[0]
+                current_app.logger.info(f'[LCSC Price] Found price for {code}: €{unit_price} ({len(price_values)} tiers)')
+                return jsonify({
+                    'code': code,
+                    'unit_price': unit_price,
+                    'price_tiers': price_values
+                })
+        
+        current_app.logger.warning(f'[LCSC Price] No prices found in page for {code}')
+        return jsonify({'error': 'Could not extract price from page'}), 404
+        
+    except requests.RequestException as e:
+        current_app.logger.error(f'[LCSC Price] Request failed: {e}')
+        return jsonify({'error': f'Failed to fetch: {str(e)}'}), 502
+    except Exception as e:
+        current_app.logger.error(f'[LCSC Price] Error: {e}')
+        return jsonify({'error': f'Error: {str(e)}'}), 500
 

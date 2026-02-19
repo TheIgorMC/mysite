@@ -459,11 +459,70 @@ function openBOMQuickAdd(unmappedIdx) {
     // Open modal
     document.getElementById('bom-quick-add-modal').classList.remove('hidden');
     document.getElementById('bom-quick-add-modal').classList.add('flex');
+    
+    // Reset price info
+    document.getElementById('bom-qa-price-info').classList.add('hidden');
+    
+    // Auto-fetch price if supplier code looks like LCSC
+    const supplierCode = document.getElementById('bom-qa-supplier-code').value.trim();
+    const supplierName = document.getElementById('bom-qa-supplier').value.trim().toUpperCase();
+    if (supplierCode && (supplierCode.match(/^C\d+$/i) || supplierName.includes('LCSC'))) {
+        fetchBOMQuickAddPrice();
+    }
 }
 
 function closeBOMQuickAdd() {
     document.getElementById('bom-quick-add-modal').classList.add('hidden');
     document.getElementById('bom-quick-add-modal').classList.remove('flex');
+}
+
+async function fetchBOMQuickAddPrice() {
+    const supplierCode = document.getElementById('bom-qa-supplier-code').value.trim();
+    const btn = document.getElementById('bom-qa-fetch-price-btn');
+    const priceInfo = document.getElementById('bom-qa-price-info');
+    
+    if (!supplierCode) {
+        showToast('No supplier code to look up', 'error');
+        return;
+    }
+    
+    // Normalize code - ensure starts with C for LCSC
+    let code = supplierCode;
+    if (!code.match(/^C\d+$/i)) {
+        showToast('Price fetch only supported for LCSC codes (C...)', 'info');
+        return;
+    }
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>...';
+    priceInfo.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/fetch-lcsc-price?code=${encodeURIComponent(code)}`);
+        const data = await response.json();
+        
+        if (response.ok && data.unit_price) {
+            document.getElementById('bom-qa-price').value = data.unit_price;
+            
+            // Show price tiers info
+            if (data.price_tiers && data.price_tiers.length > 1) {
+                const tiersText = data.price_tiers.map((p, i) => `\u20ac${p}`).join(' / ');
+                priceInfo.textContent = `Price tiers: ${tiersText}`;
+                priceInfo.classList.remove('hidden');
+            }
+            
+            showToast(`Price fetched: \u20ac${data.unit_price}`, 'success');
+        } else {
+            showToast(data.error || 'Could not fetch price', 'error');
+        }
+    } catch (error) {
+        console.error('[LCSC Price] Error:', error);
+        showToast('Failed to fetch price', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i>Fetch';
+    }
 }
 
 async function saveBOMQuickAddComponent() {
