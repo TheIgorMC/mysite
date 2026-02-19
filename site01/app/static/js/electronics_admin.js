@@ -2404,38 +2404,46 @@ async function checkJobStock() {
         
         const tbody = document.getElementById('stock-check-table');
         
-        // Render OK components
-        const okRows = (data.ok || []).map(comp => `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    Component #${comp.component_id}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.need}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.have}</td>
-                <td class="px-4 py-3 text-sm">
-                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">OK</span>
-                </td>
-            </tr>
-        `);
+        // Helper: enrich component data from allComponents cache
+        function enrichComp(comp) {
+            const cached = allComponents.find(c => c.id === comp.component_id);
+            return {
+                component_id: comp.component_id,
+                seller_code: cached?.seller_code || comp.seller_code || '',
+                product_type: cached?.product_type || comp.product_type || '',
+                package: cached?.package || comp.package || '',
+                value: cached?.value || comp.value || '',
+                need: comp.need,
+                have: comp.have
+            };
+        }
         
-        // Render missing components
-        const missingRows = (data.missing || []).map(comp => `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    ${comp.product_type || ''} ${comp.value || ''} (${comp.package || ''})
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.need}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.have}</td>
-                <td class="px-4 py-3 text-sm">
-                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">Missing</span>
-                </td>
-            </tr>
-        `);
+        function renderStockRow(comp, status) {
+            const e = enrichComp(comp);
+            const badge = status === 'ok'
+                ? '<span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded">OK</span>'
+                : '<span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded">Missing</span>';
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${e.component_id}</td>
+                    <td class="px-4 py-3 text-sm font-mono text-gray-700 dark:text-gray-300">${e.seller_code || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${e.product_type || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${e.package || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${e.value || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${e.need}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${e.have}</td>
+                    <td class="px-4 py-3 text-sm">${badge}</td>
+                </tr>
+            `;
+        }
+        
+        const okRows = (data.ok || []).map(comp => renderStockRow(comp, 'ok'));
+        const missingRows = (data.missing || []).map(comp => renderStockRow(comp, 'missing'));
         
         tbody.innerHTML = [...okRows, ...missingRows].join('');
         
         if (okCount === 0 && missingCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No BOM data for this board</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">No BOM data for this board</td></tr>';
         }
     } catch (error) {
         console.error('Error checking stock:', error);
