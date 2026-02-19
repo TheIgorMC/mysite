@@ -2473,7 +2473,60 @@ async function reserveStock() {
 
 async function generateMissingBOM() {
     try {
-        window.open(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/missing_bom`, '_blank');
+        // Fetch fresh stock check data
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}/check_stock`);
+        const data = await response.json();
+        
+        const missing = data.missing || [];
+        if (missing.length === 0) {
+            showToast('No missing components to generate a shopping list for', 'info');
+            return;
+        }
+        
+        // Enrich with supplier info from allComponents and group by supplier
+        const bySupplier = {};
+        for (const comp of missing) {
+            const cached = allComponents.find(c => c.id === comp.component_id);
+            const seller = (cached?.seller || comp.seller || 'UNKNOWN').trim().toUpperCase();
+            const sellerCode = cached?.seller_code || comp.seller_code || '';
+            const mfrCode = cached?.manufacturer_code || comp.manufacturer_code || '';
+            const need = comp.need - comp.have; // only the shortage
+            
+            if (!bySupplier[seller]) bySupplier[seller] = [];
+            bySupplier[seller].push({
+                supplier_code: sellerCode,
+                manufacturer_code: mfrCode,
+                quantity: need > 0 ? need : comp.need
+            });
+        }
+        
+        // Generate and download a CSV per supplier
+        let fileCount = 0;
+        for (const [supplier, items] of Object.entries(bySupplier)) {
+            const csvLines = ['Supplier Code,Manufacturer Code,Quantity'];
+            for (const item of items) {
+                // Escape fields that might contain commas
+                const sc = item.supplier_code.includes(',') ? `"${item.supplier_code}"` : item.supplier_code;
+                const mc = item.manufacturer_code.includes(',') ? `"${item.manufacturer_code}"` : item.manufacturer_code;
+                csvLines.push(`${sc},${mc},${item.quantity}`);
+            }
+            
+            const csvContent = csvLines.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${supplier}_BOM_JOB_${currentJobId}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            fileCount++;
+        }
+        
+        showToast(`Downloaded ${fileCount} shopping list${fileCount > 1 ? 's' : ''} (${missing.length} components)`, 'success');
+        
     } catch (error) {
         console.error('Error generating missing BOM:', error);
         showToast('Failed to generate shopping list', 'error');
