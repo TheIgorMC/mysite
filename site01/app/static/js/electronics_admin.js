@@ -1719,9 +1719,9 @@ async function saveBOM() {
     try {
         // Format data according to API spec: array of {component_id, qty, designators}
         const bomData = currentBOMItems.map(item => ({
-            component_id: item.component_id,
-            qty: item.quantity,
-            designators: item.designators
+            component_id: parseInt(item.component_id),
+            qty: parseInt(item.quantity || item.qty) || 1,
+            designators: item.designators || null
         }));
         
         console.log('[BOM] Saving BOM data:', JSON.stringify(bomData, null, 2));

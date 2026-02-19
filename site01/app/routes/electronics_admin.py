@@ -90,14 +90,33 @@ def api_request(endpoint, method='GET', data=None, params=None):
         
         if response.status_code >= 400:
             current_app.logger.error(f"[Electronics API] Error response: {response.text}")
+            # Forward error details (especially 422 validation errors) instead of swallowing them
+            try:
+                error_body = response.json()
+            except Exception:
+                error_body = {'detail': response.text}
+            return {'_error': True, '_status': response.status_code, '_body': error_body}
         
-        response.raise_for_status()
         result = response.json()
         current_app.logger.info(f"[Electronics API] Success: {len(str(result))} bytes")
         return result
     except requests.exceptions.RequestException as e:
         current_app.logger.error(f"[Electronics API] Request failed: {str(e)}")
         return None
+
+def api_result(result, error_msg='API request failed'):
+    """Handle api_request result: return proper JSON response with correct status code.
+    
+    Handles three cases:
+    - None: connection/timeout error → 500
+    - Error dict (_error flag): API returned 4xx/5xx → forward status + body
+    - Success: return JSON 200
+    """
+    if result is None:
+        return jsonify({'error': error_msg}), 500
+    if isinstance(result, dict) and result.get('_error'):
+        return jsonify(result['_body']), result['_status']
+    return jsonify(result)
 
 @bp.route('/')
 @admin_required
@@ -128,13 +147,7 @@ def get_components():
     
     current_app.logger.info(f"[Electronics] Calling API with params: {params}")
     result = api_request('/api/elec/components', params=params)
-    
-    if result is not None:
-        current_app.logger.info(f"[Electronics] Returning {len(result.get('components', []))} components")
-        return jsonify(result)
-    
-    current_app.logger.error("[Electronics] API request failed, returning error")
-    return jsonify({'error': 'Failed to fetch components'}), 500
+    return api_result(result, 'Failed to fetch components')
 
 @bp.route('/api/components/search', methods=['GET'])
 @admin_required
@@ -142,9 +155,7 @@ def search_components():
     """Smart component search (e.g., R0402 -> all 0402 resistors)"""
     q = request.args.get('q', '')
     result = api_request('/api/elec/components/search', params={'q': q})
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Search failed'}), 500
+    return api_result(result, 'Search failed')
 
 @bp.route('/api/components', methods=['POST'])
 @admin_required
@@ -152,9 +163,7 @@ def create_component():
     """Create new component"""
     data = request.get_json()
     result = api_request('/api/elec/components', method='POST', data=data)
-    if result is not None:
-        return jsonify(result), 201
-    return jsonify({'error': 'Failed to create component'}), 500
+    return api_result(result, 'Failed to create component')
 
 @bp.route('/api/components/<component_id>', methods=['PATCH'])
 @admin_required
@@ -162,18 +171,14 @@ def update_component(component_id):
     """Update component (e.g., quantity, price)"""
     data = request.get_json()
     result = api_request(f'/api/elec/components/{component_id}', method='PATCH', data=data)
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to update component'}), 500
+    return api_result(result, 'Failed to update component')
 
 @bp.route('/api/components/<component_id>', methods=['DELETE'])
 @admin_required
 def delete_component(component_id):
     """Delete component"""
     result = api_request(f'/api/elec/components/{component_id}', method='DELETE')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to delete component'}), 500
+    return api_result(result, 'Failed to delete component')
 
 # ============================================================================
 # BOARDS API ENDPOINTS
@@ -184,9 +189,7 @@ def delete_component(component_id):
 def get_boards():
     """Get boards list"""
     result = api_request('/api/elec/boards')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch boards'}), 500
+    return api_result(result, 'Failed to fetch boards')
 
 @bp.route('/api/boards', methods=['POST'])
 @admin_required
@@ -194,9 +197,7 @@ def create_board():
     """Create new board"""
     data = request.get_json()
     result = api_request('/api/elec/boards', method='POST', data=data)
-    if result is not None:
-        return jsonify(result), 201
-    return jsonify({'error': 'Failed to create board'}), 500
+    return api_result(result, 'Failed to create board')
 
 @bp.route('/api/boards/<board_id>', methods=['PATCH'])
 @admin_required
@@ -204,27 +205,21 @@ def update_board(board_id):
     """Update board info"""
     data = request.get_json()
     result = api_request(f'/api/elec/boards/{board_id}', method='PATCH', data=data)
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to update board'}), 500
+    return api_result(result, 'Failed to update board')
 
 @bp.route('/api/boards/<board_id>', methods=['DELETE'])
 @admin_required
 def delete_board(board_id):
     """Delete board"""
     result = api_request(f'/api/elec/boards/{board_id}', method='DELETE')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to delete board'}), 500
+    return api_result(result, 'Failed to delete board')
 
 @bp.route('/api/boards/<board_id>/bom', methods=['GET'])
 @admin_required
 def get_board_bom(board_id):
     """Get board's BOM"""
     result = api_request(f'/api/elec/boards/{board_id}/bom')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch BOM'}), 500
+    return api_result(result, 'Failed to fetch BOM')
 
 @bp.route('/api/boards/<board_id>/bom', methods=['POST'])
 @admin_required
@@ -232,18 +227,14 @@ def update_board_bom(board_id):
     """Add/update components in board BOM"""
     data = request.get_json()
     result = api_request(f'/api/elec/boards/{board_id}/bom', method='POST', data=data)
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to update BOM'}), 500
+    return api_result(result, 'Failed to update BOM')
 
 @bp.route('/api/boards/<board_id>/bom/<component_id>', methods=['DELETE'])
 @admin_required
 def delete_bom_component(board_id, component_id):
     """Remove component from board BOM"""
     result = api_request(f'/api/elec/boards/{board_id}/bom/{component_id}', method='DELETE')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to remove component from BOM'}), 500
+    return api_result(result, 'Failed to remove component from BOM')
 
 @bp.route('/api/boards/<board_id>/upload_bom', methods=['POST'])
 @admin_required
@@ -253,9 +244,7 @@ def upload_board_bom(board_id):
     # Format: [{"component_id": "...", "qty": 10}, ...]
     data = request.get_json()
     result = api_request(f'/api/elec/boards/{board_id}/upload_bom', method='POST', data=data)
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to upload BOM'}), 500
+    return api_result(result, 'Failed to upload BOM')
 
 # ============================================================================
 # JOBS API ENDPOINTS
@@ -266,9 +255,7 @@ def upload_board_bom(board_id):
 def get_jobs():
     """Get production jobs list"""
     result = api_request('/api/elec/jobs')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch jobs'}), 500
+    return api_result(result, 'Failed to fetch jobs')
 
 @bp.route('/api/jobs', methods=['POST'])
 @admin_required
@@ -276,18 +263,14 @@ def create_job():
     """Create new production job"""
     data = request.get_json()
     result = api_request('/api/elec/jobs', method='POST', data=data)
-    if result is not None:
-        return jsonify(result), 201
-    return jsonify({'error': 'Failed to create job'}), 500
+    return api_result(result, 'Failed to create job')
 
 @bp.route('/api/jobs/<job_id>', methods=['GET'])
 @admin_required
 def get_job_details(job_id):
     """Get job details with BOM"""
     result = api_request(f'/api/elec/jobs/{job_id}')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch job details'}), 500
+    return api_result(result, 'Failed to fetch job details')
 
 @bp.route('/api/jobs/<job_id>', methods=['PATCH'])
 @admin_required
@@ -295,36 +278,28 @@ def update_job(job_id):
     """Update job status/quantity/due_date"""
     data = request.get_json()
     result = api_request(f'/api/elec/jobs/{job_id}', method='PATCH', data=data)
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to update job'}), 500
+    return api_result(result, 'Failed to update job')
 
 @bp.route('/api/jobs/<job_id>/check_stock', methods=['GET'])
 @admin_required
 def check_job_stock(job_id):
     """Check if sufficient stock for job"""
     result = api_request(f'/api/elec/jobs/{job_id}/check_stock')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to check stock'}), 500
+    return api_result(result, 'Failed to check stock')
 
 @bp.route('/api/jobs/<job_id>/reserve_stock', methods=['POST'])
 @admin_required
 def reserve_job_stock(job_id):
     """Reserve components for job (atomic operation)"""
     result = api_request(f'/api/elec/jobs/{job_id}/reserve_stock', method='POST')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to reserve stock'}), 500
+    return api_result(result, 'Failed to reserve stock')
 
 @bp.route('/api/jobs/<job_id>/missing_bom', methods=['GET'])
 @admin_required
 def get_missing_bom(job_id):
     """Get list of missing components for job"""
     result = api_request(f'/api/elec/jobs/{job_id}/missing_bom')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch missing components'}), 500
+    return api_result(result, 'Failed to fetch missing components')
 
 # ============================================================================
 # FILES API ENDPOINTS
@@ -335,9 +310,7 @@ def get_missing_bom(job_id):
 def get_board_files(board_id):
     """Get list of files for a board"""
     result = api_request(f'/api/elec/boards/{board_id}/files')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch files'}), 500
+    return api_result(result, 'Failed to fetch files')
 
 @bp.route('/api/boards/<board_id>/files', methods=['POST'])
 @admin_required
@@ -345,27 +318,21 @@ def register_board_file(board_id):
     """Register file metadata (file must already exist on nginx storage)"""
     data = request.get_json()
     result = api_request(f'/api/elec/boards/{board_id}/files', method='POST', data=data)
-    if result is not None:
-        return jsonify(result), 201
-    return jsonify({'error': 'Failed to register file'}), 500
+    return api_result(result, 'Failed to register file')
 
 @bp.route('/api/boards/<board_id>/files/<file_id>', methods=['DELETE'])
 @admin_required
 def delete_board_file(board_id, file_id):
     """Delete file metadata"""
     result = api_request(f'/api/elec/boards/{board_id}/files/{file_id}', method='DELETE')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to delete file'}), 500
+    return api_result(result, 'Failed to delete file')
 
 @bp.route('/api/files/types', methods=['GET'])
 @admin_required
 def get_file_types():
     """Get supported file types"""
     result = api_request('/api/elec/files/types')
-    if result is not None:
-        return jsonify(result)
-    return jsonify({'error': 'Failed to fetch file types'}), 500
+    return api_result(result, 'Failed to fetch file types')
 
 # ============================================================================
 # EXPORT ENDPOINTS
@@ -424,7 +391,7 @@ def export_bom():
 def api_proxy_get_components():
     """Proxy: Get components list"""
     result = api_request('/api/elec/components', params=request.args.to_dict())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch components'}), 500)
+    return api_result(result, 'Failed to fetch components')
 
 @api_bp.route('/components/search', methods=['GET'])
 @login_required
@@ -437,7 +404,7 @@ def api_proxy_search_components():
         params['q'] = ''
     
     result = api_request('/api/elec/components/search', params=params)
-    return jsonify(result) if result else (jsonify({'error': 'Search failed'}), 500)
+    return api_result(result, 'Search failed')
 
 @api_bp.route('/components/types', methods=['GET'])
 @login_required
@@ -490,7 +457,7 @@ def get_component_packages():
 def api_proxy_create_component():
     """Proxy: Create component"""
     result = api_request('/api/elec/components', method='POST', data=request.get_json())
-    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create component'}), 500)
+    return api_result(result, 'Failed to create component')
 
 @api_bp.route('/components/<component_id>', methods=['GET'])
 @login_required
@@ -510,49 +477,49 @@ def api_proxy_get_component(component_id):
 def api_proxy_update_component(component_id):
     """Proxy: Update component"""
     result = api_request(f'/api/elec/components/{component_id}', method='PATCH', data=request.get_json())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to update component'}), 500)
+    return api_result(result, 'Failed to update component')
 
 @api_bp.route('/components/<component_id>', methods=['DELETE'])
 @login_required
 def api_proxy_delete_component(component_id):
     """Proxy: Delete component"""
     result = api_request(f'/api/elec/components/{component_id}', method='DELETE')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to delete component'}), 500)
+    return api_result(result, 'Failed to delete component')
 
 @api_bp.route('/boards', methods=['GET'])
 @login_required
 def api_proxy_get_boards():
     """Proxy: Get boards list"""
     result = api_request('/api/elec/boards', params=request.args.to_dict())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch boards'}), 500)
+    return api_result(result, 'Failed to fetch boards')
 
 @api_bp.route('/boards', methods=['POST'])
 @login_required
 def api_proxy_create_board():
     """Proxy: Create board"""
     result = api_request('/api/elec/boards', method='POST', data=request.get_json())
-    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create board'}), 500)
+    return api_result(result, 'Failed to create board')
 
 @api_bp.route('/boards/<board_id>', methods=['GET'])
 @login_required
 def api_proxy_get_board(board_id):
     """Proxy: Get board details"""
     result = api_request(f'/api/elec/boards/{board_id}')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch board'}), 500)
+    return api_result(result, 'Failed to fetch board')
 
 @api_bp.route('/boards/<board_id>/bom', methods=['GET'])
 @login_required
 def api_proxy_get_board_bom(board_id):
     """Proxy: Get board BOM"""
     result = api_request(f'/api/elec/boards/{board_id}/bom')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch BOM'}), 500)
+    return api_result(result, 'Failed to fetch BOM')
 
 @api_bp.route('/boards/<board_id>/bom', methods=['POST'])
 @login_required
 def api_proxy_upload_bom(board_id):
     """Proxy: Upload/Save BOM"""
     result = api_request(f'/api/elec/boards/{board_id}/bom', method='POST', data=request.get_json())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to save BOM'}), 500)
+    return api_result(result, 'Failed to save BOM')
 
 @api_bp.route('/boards/<board_id>/bom/upload', methods=['POST'])
 @login_required
@@ -563,7 +530,7 @@ def api_proxy_upload_bom_legacy(board_id):
     if not result:
         # Try without /upload suffix
         result = api_request(f'/api/elec/boards/{board_id}/bom', method='POST', data=request.get_json())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to upload BOM'}), 500)
+    return api_result(result, 'Failed to upload BOM')
 
 @api_bp.route('/jobs', methods=['GET'])
 @login_required
@@ -571,10 +538,7 @@ def api_proxy_get_jobs():
     """Proxy: Get jobs list"""
     try:
         result = api_request('/api/elec/jobs', params=request.args.to_dict())
-        if result is None:
-            current_app.logger.error("[Jobs Proxy] API request returned None")
-            return jsonify({'error': 'Failed to fetch jobs - API returned no data'}), 500
-        return jsonify(result)
+        return api_result(result, 'Failed to fetch jobs - API returned no data')
     except Exception as e:
         current_app.logger.error(f"[Jobs Proxy] Exception: {e}", exc_info=True)
         return jsonify({'error': f'Failed to fetch jobs: {str(e)}'}), 500
@@ -584,28 +548,28 @@ def api_proxy_get_jobs():
 def api_proxy_create_job():
     """Proxy: Create job"""
     result = api_request('/api/elec/jobs', method='POST', data=request.get_json())
-    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to create job'}), 500)
+    return api_result(result, 'Failed to create job')
 
 @api_bp.route('/jobs/<job_id>', methods=['GET'])
 @login_required
 def api_proxy_get_job(job_id):
     """Proxy: Get job details"""
     result = api_request(f'/api/elec/jobs/{job_id}')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch job'}), 500)
+    return api_result(result, 'Failed to fetch job')
 
 @api_bp.route('/jobs/<job_id>/boards', methods=['POST'])
 @login_required
 def api_proxy_add_board_to_job(job_id):
     """Proxy: Add board to job"""
     result = api_request(f'/api/elec/jobs/{job_id}/boards', method='POST', data=request.get_json())
-    return jsonify(result) if result else (jsonify({'error': 'Failed to add board'}), 500)
+    return api_result(result, 'Failed to add board')
 
 @api_bp.route('/jobs/<job_id>/check_stock', methods=['GET'])
 @login_required
 def api_proxy_check_job_stock(job_id):
     """Proxy: Check stock for job"""
     result = api_request(f'/api/elec/jobs/{job_id}/check_stock')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to check stock'}), 500)
+    return api_result(result, 'Failed to check stock')
 
 @api_bp.route('/pnp', methods=['GET'])
 @login_required
@@ -628,35 +592,35 @@ def api_proxy_get_pnp_files():
 def api_proxy_create_pnp():
     """Proxy: Upload PnP file"""
     result = api_request('/api/elec/pnp', method='POST', data=request.get_json())
-    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to upload PnP file'}), 500)
+    return api_result(result, 'Failed to upload PnP file')
 
 @api_bp.route('/pnp/<pnp_id>', methods=['GET'])
 @login_required
 def api_proxy_get_pnp(pnp_id):
     """Proxy: Get PnP file details"""
     result = api_request(f'/api/elec/pnp/{pnp_id}')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to fetch PnP file'}), 500)
+    return api_result(result, 'Failed to fetch PnP file')
 
 @api_bp.route('/pnp/<pnp_id>', methods=['DELETE'])
 @login_required
 def api_proxy_delete_pnp(pnp_id):
     """Proxy: Delete PnP file"""
     result = api_request(f'/api/elec/pnp/{pnp_id}', method='DELETE')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to delete PnP file'}), 500)
+    return api_result(result, 'Failed to delete PnP file')
 
 @api_bp.route('/jobs/<job_id>/reserve_stock', methods=['POST'])
 @login_required
 def api_proxy_reserve_stock(job_id):
     """Proxy: Reserve stock for job"""
     result = api_request(f'/api/elec/jobs/{job_id}/reserve_stock', method='POST')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to reserve stock'}), 500)
+    return api_result(result, 'Failed to reserve stock')
 
 @api_bp.route('/jobs/<job_id>/missing_bom', methods=['GET'])
 @login_required
 def api_proxy_missing_bom(job_id):
     """Proxy: Get missing components BOM"""
     result = api_request(f'/api/elec/jobs/{job_id}/missing_bom')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to generate BOM'}), 500)
+    return api_result(result, 'Failed to generate BOM')
 
 @api_bp.route('/files', methods=['GET'])
 @login_required
@@ -711,7 +675,7 @@ def api_proxy_register_file():
     data_copy.pop('board_id', None)
     
     result = api_request(f'/api/elec/boards/{board_id}/files', method='POST', data=data_copy)
-    return (jsonify(result), 201) if result else (jsonify({'error': 'Failed to register file'}), 500)
+    return api_result(result, 'Failed to register file')
 
 @api_bp.route('/files/<file_id>', methods=['DELETE'])
 @login_required
@@ -723,7 +687,7 @@ def api_proxy_delete_file(file_id):
         return jsonify({'error': 'board_id query parameter is required'}), 400
     
     result = api_request(f'/api/elec/boards/{board_id}/files/{file_id}', method='DELETE')
-    return jsonify(result) if result else (jsonify({'error': 'Failed to delete file'}), 500)
+    return api_result(result, 'Failed to delete file')
 
 # ==================== ORDER IMPORTER ====================
 
