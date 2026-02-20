@@ -4514,11 +4514,15 @@ async function showOpenPnPExportModal() {
         
         // Map PnP data with BOM
         const pnpItems = currentPnPData.pnp_data || [];
+        const fiducials = getFiducialDesignators(currentPnPId);
         openPnPMappingData = pnpItems.map(item => {
             const designator = item.designator || '';
             const bomMatch = designatorMap[designator];
-            const fiducials = getFiducialDesignators(currentPnPId);
             const isFiducial = fiducials.includes(designator);
+            const rawFootprint = bomMatch ? (bomMatch.footprint || '') : '';
+            const isTHT = rawFootprint.toUpperCase().includes('THT');
+            const noFootprint = !isFiducial && !rawFootprint;
+            const isExcluded = isTHT || noFootprint;
             
             return {
                 designator: designator,
@@ -4527,12 +4531,15 @@ async function showOpenPnPExportModal() {
                 layer: item.layer || '',
                 rotation: item.rotation || '0',
                 component_id: bomMatch ? bomMatch.component_id : null,
-                footprint: isFiducial ? 'Fiducial' : (bomMatch ? bomMatch.footprint : ''),
+                footprint: isFiducial ? 'Fiducial' : rawFootprint,
                 manufacturer_code: bomMatch ? bomMatch.manufacturer_code : '',
                 value: isFiducial ? 'Fiducial' : (bomMatch ? bomMatch.value : ''),
-                status: (bomMatch || isFiducial) ? 'mapped' : 'unmapped',
-                selected: (bomMatch || isFiducial) ? true : false,
+                status: isFiducial ? 'mapped' : isExcluded ? 'excluded' : bomMatch ? 'mapped' : 'unmapped',
+                selected: isFiducial ? true : isExcluded ? false : bomMatch ? true : false,
                 isFiducial: isFiducial,
+                isTHT: isTHT,
+                noFootprint: noFootprint,
+                isExcluded: isExcluded,
                 _pnpData: item
             };
         });
@@ -4540,7 +4547,9 @@ async function showOpenPnPExportModal() {
         // Update statistics
         const mapped = openPnPMappingData.filter(i => i.status === 'mapped').length;
         const unmapped = openPnPMappingData.filter(i => i.status === 'unmapped').length;
+        const excluded = openPnPMappingData.filter(i => i.isExcluded).length;
         const selected = openPnPMappingData.filter(i => i.selected).length;
+        console.log(`[OpenPnP] ${mapped} mapped, ${unmapped} unmapped, ${excluded} excluded (THT/no footprint), ${selected} selected`);
         
         document.getElementById('openpnp-mapped-count').textContent = mapped;
         document.getElementById('openpnp-unmapped-count').textContent = unmapped;
@@ -4579,12 +4588,20 @@ function renderOpenPnPMappingTable() {
     tbody.innerHTML = openPnPMappingData.map((item, idx) => {
         const statusBadge = item.isFiducial
             ? '<span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded"><i class="fas fa-crosshairs mr-1"></i>Fiducial</span>'
+            : item.isTHT
+            ? '<span class="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded"><i class="fas fa-microchip mr-1"></i>THT</span>'
+            : item.noFootprint
+            ? '<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">No Footprint</span>'
             : item.status === 'mapped' 
             ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
             : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
         
+        const rowClass = item.isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10'
+            : item.isExcluded ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60'
+            : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : '';
+        
         return `
-            <tr class="text-sm ${item.isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10' : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : ''}">
+            <tr class="text-sm ${rowClass}">
                 <td class="px-3 py-2 text-center">
                     <input type="checkbox" 
                            ${item.selected ? 'checked' : ''}
