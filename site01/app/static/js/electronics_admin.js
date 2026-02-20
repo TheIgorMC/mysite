@@ -4318,23 +4318,32 @@ async function viewPnPDetails(pnpId) {
         
         // Parse and display data
         const items = pnp.pnp_data || [];
+        const fiducials = getFiducialDesignators(pnpId);
         
         // Calculate statistics
         const total = items.length;
         const topLayer = items.filter(item => item.layer === 'T' || item.layer === 'Top').length;
         const bottomLayer = items.filter(item => item.layer === 'B' || item.layer === 'Bottom').length;
         const uniqueParts = new Set(items.map(item => item.device || item.comment)).size;
+        const fiducialCount = items.filter(item => fiducials.includes(item.designator)).length;
         
         document.getElementById('pnp-total-count').textContent = total;
         document.getElementById('pnp-top-count').textContent = topLayer;
         document.getElementById('pnp-bottom-count').textContent = bottomLayer;
         document.getElementById('pnp-unique-count').textContent = uniqueParts;
+        document.getElementById('pnp-fiducial-count').textContent = fiducialCount;
         
         // Render table
         const tbody = document.getElementById('pnp-data-table');
-        tbody.innerHTML = items.map(item => `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">${item.designator || '-'}</td>
+        tbody.innerHTML = items.map(item => {
+            const isFiducial = fiducials.includes(item.designator);
+            const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10' : '';
+            return `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${rowClass}">
+                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    ${item.designator || '-'}
+                    ${isFiducial ? '<i class="fas fa-crosshairs text-yellow-600 ml-1" title="Fiducial"></i>' : ''}
+                </td>
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_x || item.x || '-'}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_y || item.y || '-'}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
@@ -4345,8 +4354,14 @@ async function viewPnPDetails(pnpId) {
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.rotation || '0'}°</td>
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.comment || '-'}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.device || '-'}</td>
+                <td class="px-4 py-2 text-center">
+                    <input type="checkbox" ${isFiducial ? 'checked' : ''}
+                           onchange="toggleFiducial(${pnpId}, '${(item.designator || '').replace(/'/g, '\\\'')}', this.checked)"
+                           class="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                           title="Mark as fiducial">
+                </td>
             </tr>
-        `).join('');
+        `}).join('');
         
         document.getElementById('pnp-details-modal').classList.remove('hidden');
         document.getElementById('pnp-details-modal').classList.add('flex');
@@ -4428,6 +4443,36 @@ async function deletePnPFile() {
     }
 }
 
+// ===== FIDUCIAL MANAGEMENT =====
+
+function _getFiducialsKey(pnpId) {
+    return `pnp_fiducials_${pnpId}`;
+}
+
+function getFiducialDesignators(pnpId) {
+    try {
+        const stored = localStorage.getItem(_getFiducialsKey(pnpId));
+        return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+}
+
+function setFiducialDesignators(pnpId, designators) {
+    localStorage.setItem(_getFiducialsKey(pnpId), JSON.stringify(designators));
+}
+
+function toggleFiducial(pnpId, designator, checked) {
+    const fiducials = getFiducialDesignators(pnpId);
+    if (checked && !fiducials.includes(designator)) {
+        fiducials.push(designator);
+    } else if (!checked) {
+        const idx = fiducials.indexOf(designator);
+        if (idx !== -1) fiducials.splice(idx, 1);
+    }
+    setFiducialDesignators(pnpId, fiducials);
+    // Update fiducial count
+    document.getElementById('pnp-fiducial-count').textContent = fiducials.length;
+}
+
 // ===== OPENPNP EXPORT =====
 
 let openPnPMappingData = [];
@@ -4472,6 +4517,8 @@ async function showOpenPnPExportModal() {
         openPnPMappingData = pnpItems.map(item => {
             const designator = item.designator || '';
             const bomMatch = designatorMap[designator];
+            const fiducials = getFiducialDesignators(currentPnPId);
+            const isFiducial = fiducials.includes(designator);
             
             return {
                 designator: designator,
@@ -4480,12 +4527,13 @@ async function showOpenPnPExportModal() {
                 layer: item.layer || '',
                 rotation: item.rotation || '0',
                 component_id: bomMatch ? bomMatch.component_id : null,
-                footprint: bomMatch ? bomMatch.footprint : '',
+                footprint: isFiducial ? 'Fiducial' : (bomMatch ? bomMatch.footprint : ''),
                 manufacturer_code: bomMatch ? bomMatch.manufacturer_code : '',
-                value: bomMatch ? bomMatch.value : '',
-                status: bomMatch ? 'mapped' : 'unmapped',
-                selected: bomMatch ? true : false, // Auto-select mapped, deselect unmapped
-                _pnpData: item // Store original PnP data
+                value: isFiducial ? 'Fiducial' : (bomMatch ? bomMatch.value : ''),
+                status: (bomMatch || isFiducial) ? 'mapped' : 'unmapped',
+                selected: (bomMatch || isFiducial) ? true : false,
+                isFiducial: isFiducial,
+                _pnpData: item
             };
         });
         
@@ -4529,12 +4577,14 @@ function renderOpenPnPMappingTable() {
     const tbody = document.getElementById('openpnp-mapping-table');
     
     tbody.innerHTML = openPnPMappingData.map((item, idx) => {
-        const statusBadge = item.status === 'mapped' 
+        const statusBadge = item.isFiducial
+            ? '<span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded"><i class="fas fa-crosshairs mr-1"></i>Fiducial</span>'
+            : item.status === 'mapped' 
             ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
             : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
         
         return `
-            <tr class="text-sm ${item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : ''}">
+            <tr class="text-sm ${item.isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10' : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : ''}">
                 <td class="px-3 py-2 text-center">
                     <input type="checkbox" 
                            ${item.selected ? 'checked' : ''}
@@ -4640,10 +4690,8 @@ function downloadOpenPnPCSV() {
             return;
         }
         
-        // OpenPnP CSV format according to https://github.com/openpnp/openpnp/wiki/Importing-Centroid-Data
-        // Required columns: Designator, X, Y, Rotation, Side (or Layer)
-        // Optional: Value (we use for component ID), Footprint, Comment
-        
+        // OpenPnP CSV format
+        // Fiducials get special treatment: Value="Fiducial", Footprint="Fiducial"
         const headers = ['Designator', 'X', 'Y', 'Rotation', 'Side', 'Value', 'Footprint', 'Comment'];
         
         const rows = selectedComponents.map(item => {
@@ -4663,9 +4711,9 @@ function downloadOpenPnPCSV() {
                 y,
                 item.rotation || '0',
                 side,
-                item.component_id || '', // Component ID goes in Value field
-                item.footprint || '',
-                item.manufacturer_code || item.value || '' // Additional info in Comment
+                item.isFiducial ? 'Fiducial' : (item.component_id || ''),
+                item.isFiducial ? 'Fiducial' : (item.footprint || ''),
+                item.isFiducial ? '' : (item.manufacturer_code || item.value || '')
             ];
         });
         
