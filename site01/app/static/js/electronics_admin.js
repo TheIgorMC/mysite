@@ -425,19 +425,21 @@ function openBOMQuickAdd(unmappedIdx) {
     
     // Package / Footprint - normalize Rxxxx→R_xxxx, Cxxxx→C_xxxx
     let pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
-    pkg = pkg.replace(/^([RC])(\d{4})$/i, (m, letter, digits) => letter.toUpperCase() + '_' + digits);
+    pkg = _normalizePackage(pkg);
     document.getElementById('bom-qa-package').value = pkg;
     
-    // SMD footprint (separate from package in some BOMs)
-    const footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+    // SMD footprint: use C_/R_ package as PnP designator if it matches, else raw footprint
+    let footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+    if (!footprint && /^[A-Z]_\d{4}$/i.test(pkg)) footprint = pkg;
     document.getElementById('bom-qa-footprint').value = footprint;
     
     // Value
     const value = rawLower['value'] || rawLower['comment'] || rawLower['description'] || '';
     document.getElementById('bom-qa-value').value = value;
     
-    // Product type / Category - try to guess from Description or Comment
-    const typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
+    // Product type / Category - auto-guess from package prefix, else from CSV fields
+    let typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
+    if (!typeGuess) typeGuess = _guessTypeFromPackage(pkg);
     document.getElementById('bom-qa-type').value = typeGuess;
     
     // Description
@@ -626,6 +628,15 @@ function _normalizePackage(value) {
     return value.replace(/^([RC])(\d{4})$/i, (m, letter, digits) => letter.toUpperCase() + '_' + digits);
 }
 
+function _guessTypeFromPackage(pkg) {
+    // C_xxxx → CAPACITOR, R_xxxx → RESISTOR, L_xxxx → INDUCTOR
+    const m = pkg.match(/^([A-Z])_\d{4}$/i);
+    if (!m) return '';
+    const letter = m[1].toUpperCase();
+    const map = { 'C': 'CAPACITOR', 'R': 'RESISTOR', 'L': 'INDUCTOR' };
+    return map[letter] || '';
+}
+
 function openBulkImportTable() {
     const tbody = document.getElementById('bulk-import-table-body');
     
@@ -650,11 +661,15 @@ function openBulkImportTable() {
         let manufacturer = rawLower['manufacturer'] || rawLower['mfr'] || rawLower['mfg'] || '';
         manufacturer = _cleanManufacturer(manufacturer);
         const supplier = rawLower['supplier'] || rawLower['seller'] || rawLower['vendor'] || rawLower['distributor'] || '';
-        const typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
+        let typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
         const value = rawLower['value'] || rawLower['comment'] || rawLower['description'] || '';
         let pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
         pkg = _normalizePackage(pkg);
-        const footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+        // Auto-guess type from package prefix if not already set
+        if (!typeGuess) typeGuess = _guessTypeFromPackage(pkg);
+        // Use C_/R_ package as PnP footprint designator if no explicit footprint
+        let footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+        if (!footprint && /^[A-Z]_\d{4}$/i.test(pkg)) footprint = pkg;
         const description = rawLower['description'] || rawLower['desc'] || rawLower['comment'] || '';
         const priceStr = rawLower['unit price'] || rawLower['unit price(\u20ac)'] || rawLower['price'] || rawLower['unit_price'] || '0';
         const price = parseFloat(priceStr) || 0;
@@ -824,11 +839,28 @@ async function executeBulkImport() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Create & Map Selected';
     
-    document.getElementById('bulk-import-stats').textContent = `${created} created, ${failed} failed`;
-    showToast(`Bulk import: ${created} created, ${failed} failed`, created > 0 ? 'success' : 'error');
-    
     // Re-render the mapping list behind this modal
     renderManualMappingList();
+    
+    if (failed === 0 && created > 0) {
+        // All succeeded — close both modals
+        showToast(`All ${created} components created & mapped!`, 'success');
+        closeBulkImportTable();
+    } else if (created > 0 && failed > 0) {
+        // Partial success — remove successful rows, keep only failed
+        document.querySelectorAll('#bulk-import-table-body tr').forEach(row => {
+            const statusEl = row.querySelector('.bulk-status');
+            if (statusEl && statusEl.querySelector('.text-green-600')) {
+                row.remove();
+            }
+        });
+        const remaining = document.querySelectorAll('#bulk-import-table-body tr').length;
+        document.getElementById('bulk-import-stats').textContent = `${created} created, ${remaining} remaining to fix`;
+        showToast(`${created} created, ${failed} failed — fix the remaining rows`, 'error');
+    } else {
+        document.getElementById('bulk-import-stats').textContent = `${failed} failed`;
+        showToast(`Bulk import failed for all ${failed} components`, 'error');
+    }
 }
 
 // ==================== END MANUAL MAPPING ====================
