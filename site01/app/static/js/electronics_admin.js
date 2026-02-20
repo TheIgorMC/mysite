@@ -414,16 +414,18 @@ function openBOMQuickAdd(unmappedIdx) {
     const rawLower = {};
     Object.entries(raw).forEach(([k, v]) => { rawLower[k.toLowerCase().trim()] = v; });
     
-    // Manufacturer
-    const manufacturer = rawLower['manufacturer'] || rawLower['mfr'] || rawLower['mfg'] || '';
+    // Manufacturer - strip Chinese characters section like "(中文名称)"
+    let manufacturer = rawLower['manufacturer'] || rawLower['mfr'] || rawLower['mfg'] || '';
+    manufacturer = manufacturer.replace(/\s*\([^)]*[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff][^)]*\)\s*/g, '').trim();
     document.getElementById('bom-qa-manufacturer').value = manufacturer;
     
     // Supplier name
     const supplier = rawLower['supplier'] || rawLower['seller'] || rawLower['vendor'] || rawLower['distributor'] || '';
     document.getElementById('bom-qa-supplier').value = supplier;
     
-    // Package / Footprint
-    const pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
+    // Package / Footprint - normalize Rxxxx→R_xxxx, Cxxxx→C_xxxx
+    let pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
+    pkg = pkg.replace(/^([RC])(\d{4})$/i, (m, letter, digits) => letter.toUpperCase() + '_' + digits);
     document.getElementById('bom-qa-package').value = pkg;
     
     // SMD footprint (separate from package in some BOMs)
@@ -505,21 +507,30 @@ async function fetchBOMQuickAddPrice() {
         if (response.ok && data.unit_price) {
             document.getElementById('bom-qa-price').value = data.unit_price;
             
-            // Show price tiers + conversion info
-            let infoLines = [];
+            // Build tooltip with full conversion details
+            let tooltipParts = [];
             if (data.original_currency === 'USD') {
-                infoLines.push(`Converted from $${data.original_price} (rate: ${data.exchange_rate})`);
+                tooltipParts.push(`Original: $${data.original_price}`);
+                tooltipParts.push(`Rate: 1 USD = ${data.exchange_rate} EUR`);
                 if (data.original_tiers && data.original_tiers.length > 1) {
-                    const origTiers = data.original_tiers.map(p => `$${p}`).join(' / ');
-                    infoLines.push(`USD tiers: ${origTiers}`);
+                    tooltipParts.push(`USD tiers: ${data.original_tiers.map(p => '$' + p).join(' / ')}`);
                 }
+                if (data.price_tiers && data.price_tiers.length > 1) {
+                    tooltipParts.push(`EUR tiers: ${data.price_tiers.map(p => '\u20ac' + p).join(' / ')}`);
+                }
+            } else if (data.price_tiers && data.price_tiers.length > 1) {
+                tooltipParts.push(`Tiers: ${data.price_tiers.map(p => '\u20ac' + p).join(' / ')}`);
             }
-            if (data.price_tiers && data.price_tiers.length > 1) {
-                const tiersText = data.price_tiers.map(p => `\u20ac${p}`).join(' / ');
-                infoLines.push(`EUR tiers: ${tiersText}`);
-            }
-            if (infoLines.length) {
-                priceInfo.innerHTML = infoLines.join('<br>');
+            
+            // Show single-line info with info icon tooltip
+            if (data.original_currency === 'USD') {
+                const tooltipText = tooltipParts.join('\n');
+                priceInfo.innerHTML = `\u20ac${data.unit_price} converted from $${data.original_price} ` +
+                    `<i class="fas fa-info-circle text-blue-500 cursor-help" title="${tooltipText.replace(/"/g, '&quot;')}"></i>`;
+                priceInfo.classList.remove('hidden');
+            } else if (tooltipParts.length) {
+                priceInfo.innerHTML = tooltipParts[0] +
+                    ` <i class="fas fa-info-circle text-blue-500 cursor-help" title="${tooltipParts.join('\n').replace(/"/g, '&quot;')}"></i>`;
                 priceInfo.classList.remove('hidden');
             }
             
@@ -601,6 +612,223 @@ async function saveBOMQuickAddComponent() {
         console.error('[BOM Quick Add] Error:', error);
         showToast('Failed to create component: ' + error.message, 'error');
     }
+}
+
+// ==================== BULK IMPORT TABLE ====================
+
+function _cleanManufacturer(value) {
+    // Strip parenthesized sections containing CJK characters
+    return value.replace(/\s*\([^)]*[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff][^)]*\)\s*/g, '').trim();
+}
+
+function _normalizePackage(value) {
+    // Rxxxx → R_xxxx, Cxxxx → C_xxxx
+    return value.replace(/^([RC])(\d{4})$/i, (m, letter, digits) => letter.toUpperCase() + '_' + digits);
+}
+
+function openBulkImportTable() {
+    const tbody = document.getElementById('bulk-import-table-body');
+    
+    // Only process unmapped & non-ignored items
+    const items = unmappedComponents.map((item, idx) => {
+        if (manualMappings[idx] !== undefined || ignoredComponents.has(idx)) return null;
+        return { item, idx };
+    }).filter(Boolean);
+    
+    if (items.length === 0) {
+        showToast('No unmapped components to import', 'info');
+        return;
+    }
+    
+    tbody.innerHTML = items.map(({ item, idx }) => {
+        const raw = item._rawRow || {};
+        const rawLower = {};
+        Object.entries(raw).forEach(([k, v]) => { rawLower[k.toLowerCase().trim()] = v; });
+        
+        const supplierCode = item.supplier_code || '';
+        const mfrCode = item.manufacturer_code || '';
+        let manufacturer = rawLower['manufacturer'] || rawLower['mfr'] || rawLower['mfg'] || '';
+        manufacturer = _cleanManufacturer(manufacturer);
+        const supplier = rawLower['supplier'] || rawLower['seller'] || rawLower['vendor'] || rawLower['distributor'] || '';
+        const typeGuess = rawLower['product_type'] || rawLower['type'] || rawLower['category'] || '';
+        const value = rawLower['value'] || rawLower['comment'] || rawLower['description'] || '';
+        let pkg = rawLower['package'] || rawLower['footprint'] || rawLower['case/package'] || rawLower['case'] || '';
+        pkg = _normalizePackage(pkg);
+        const footprint = rawLower['smd footprint'] || rawLower['smd_footprint'] || rawLower['footprint'] || '';
+        const description = rawLower['description'] || rawLower['desc'] || rawLower['comment'] || '';
+        const priceStr = rawLower['unit price'] || rawLower['unit price(\u20ac)'] || rawLower['price'] || rawLower['unit_price'] || '0';
+        const price = parseFloat(priceStr) || 0;
+        
+        const inputClass = 'w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100';
+        
+        return `<tr data-bulk-idx="${idx}" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-2 py-1">
+                <input type="checkbox" class="bulk-import-check rounded border-gray-300 dark:border-gray-600" data-idx="${idx}" checked>
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-supplier-code ${inputClass}" data-idx="${idx}" value="${supplierCode.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-mfr-code ${inputClass}" data-idx="${idx}" value="${mfrCode.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-manufacturer ${inputClass}" data-idx="${idx}" value="${manufacturer.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-supplier ${inputClass}" data-idx="${idx}" value="${supplier.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-type ${inputClass}" data-idx="${idx}" value="${typeGuess.replace(/"/g, '&quot;')}" list="component-types-list">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-value ${inputClass}" data-idx="${idx}" value="${value.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-package ${inputClass}" data-idx="${idx}" value="${pkg.replace(/"/g, '&quot;')}" list="component-packages-list">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-footprint ${inputClass}" data-idx="${idx}" value="${footprint.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="text" class="bulk-description ${inputClass}" data-idx="${idx}" value="${description.replace(/"/g, '&quot;')}">
+            </td>
+            <td class="px-2 py-1">
+                <input type="number" step="0.0001" min="0" class="bulk-price ${inputClass} w-20" data-idx="${idx}" value="${price}">
+            </td>
+            <td class="px-2 py-1 text-center text-xs text-gray-500">&times;${item.qty}</td>
+            <td class="px-2 py-1">
+                <span class="bulk-status text-xs text-gray-400" data-idx="${idx}">Pending</span>
+            </td>
+        </tr>`;
+    }).join('');
+    
+    document.getElementById('bulk-import-stats').textContent = `${items.length} components`;
+    document.getElementById('bulk-import-select-all').checked = true;
+    
+    document.getElementById('bulk-import-modal').classList.remove('hidden');
+    document.getElementById('bulk-import-modal').classList.add('flex');
+}
+
+function closeBulkImportTable() {
+    document.getElementById('bulk-import-modal').classList.add('hidden');
+    document.getElementById('bulk-import-modal').classList.remove('flex');
+}
+
+function toggleBulkImportSelectAll(checked) {
+    document.querySelectorAll('.bulk-import-check').forEach(cb => cb.checked = checked);
+}
+
+async function bulkFetchPrices() {
+    const rows = document.querySelectorAll('#bulk-import-table-body tr');
+    let fetched = 0;
+    
+    for (const row of rows) {
+        const cb = row.querySelector('.bulk-import-check');
+        if (!cb || !cb.checked) continue;
+        
+        const supplierCodeInput = row.querySelector('.bulk-supplier-code');
+        const priceInput = row.querySelector('.bulk-price');
+        const code = supplierCodeInput?.value?.trim();
+        
+        if (!code || !code.match(/^C\d+$/i)) continue;
+        
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/fetch-lcsc-price?code=${encodeURIComponent(code)}`);
+            const data = await response.json();
+            if (response.ok && data.unit_price) {
+                priceInput.value = data.unit_price;
+                fetched++;
+            }
+        } catch (e) {
+            console.warn('[Bulk Fetch] Error for', code, e);
+        }
+    }
+    
+    showToast(`Fetched prices for ${fetched} components`, fetched > 0 ? 'success' : 'info');
+}
+
+async function executeBulkImport() {
+    const rows = document.querySelectorAll('#bulk-import-table-body tr');
+    const btn = document.getElementById('bulk-import-create-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+    
+    let created = 0;
+    let failed = 0;
+    
+    for (const row of rows) {
+        const cb = row.querySelector('.bulk-import-check');
+        if (!cb || !cb.checked) continue;
+        
+        const idx = parseInt(row.dataset.bulkIdx);
+        const statusEl = row.querySelector('.bulk-status');
+        
+        const mfrCode = row.querySelector('.bulk-mfr-code')?.value?.trim();
+        const typeValue = row.querySelector('.bulk-type')?.value?.trim();
+        const pkgValue = row.querySelector('.bulk-package')?.value?.trim();
+        
+        // Validate required fields
+        if (!mfrCode || !typeValue || !pkgValue) {
+            statusEl.innerHTML = '<span class="text-yellow-600">Skip (missing fields)</span>';
+            continue;
+        }
+        
+        const truncatedPkg = pkgValue.length > 50 ? pkgValue.substring(0, 50) : pkgValue;
+        
+        const componentData = {
+            seller: row.querySelector('.bulk-supplier')?.value?.trim() || '',
+            seller_code: row.querySelector('.bulk-supplier-code')?.value?.trim() || '',
+            manufacturer: row.querySelector('.bulk-manufacturer')?.value?.trim() || '',
+            manufacturer_code: mfrCode,
+            smd_footprint: row.querySelector('.bulk-footprint')?.value?.trim() || '',
+            package: truncatedPkg,
+            product_type: typeValue,
+            value: row.querySelector('.bulk-value')?.value?.trim() || mfrCode,
+            price: parseFloat(row.querySelector('.bulk-price')?.value) || 0,
+            qty_left: 0
+        };
+        
+        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500"></i>';
+        
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/components`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(componentData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+            
+            const newComponent = await response.json();
+            
+            // Add to allComponents
+            allComponents.push({ id: newComponent.id, ...componentData });
+            
+            // Auto-map
+            manualMappings[idx] = newComponent.id;
+            
+            statusEl.innerHTML = `<span class="text-green-600"><i class="fas fa-check mr-1"></i>ID:${newComponent.id}</span>`;
+            cb.checked = false;
+            cb.disabled = true;
+            created++;
+        } catch (error) {
+            console.error('[Bulk Import] Error for idx', idx, error);
+            statusEl.innerHTML = `<span class="text-red-600" title="${error.message}"><i class="fas fa-times mr-1"></i>Error</span>`;
+            failed++;
+        }
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Create & Map Selected';
+    
+    document.getElementById('bulk-import-stats').textContent = `${created} created, ${failed} failed`;
+    showToast(`Bulk import: ${created} created, ${failed} failed`, created > 0 ? 'success' : 'error');
+    
+    // Re-render the mapping list behind this modal
+    renderManualMappingList();
 }
 
 // ==================== END MANUAL MAPPING ====================

@@ -225,6 +225,11 @@
                         <!-- Stats populated by JavaScript -->
                     </span>
                 </div>
+                <button onclick="openBulkImportTable()" 
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition"
+                        title="Open table view for bulk component creation">
+                    <i class="fas fa-table mr-2"></i>Try Auto Assign All
+                </button>
             </div>
             
             <div class="space-y-3 mb-6" id="manual-mapping-list">
@@ -521,6 +526,71 @@
                 <button onclick="saveBOM()"
                         class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                     <i class="fas fa-save mr-2"></i>Save BOM
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Import Table Modal -->
+<div id="bulk-import-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[75]">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[95vw] mx-4 max-h-[95vh] flex flex-col">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-table text-purple-600 mr-2"></i>Bulk Component Import
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and create all unmapped components at once</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="bulk-import-stats" class="text-sm text-gray-500 dark:text-gray-400"></span>
+                <button onclick="closeBulkImportTable()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto p-4">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-8">
+                            <input type="checkbox" id="bulk-import-select-all" onchange="toggleBulkImportSelectAll(this.checked)"
+                                   class="rounded border-gray-300 dark:border-gray-600" checked>
+                        </th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Supplier Code</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Mfr Code</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Manufacturer</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Supplier</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Type/Category</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Value</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Package</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Footprint</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Description</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-20">Price (€)</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-16">Qty</th>
+                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-20">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="bulk-import-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="bulkFetchPrices()" 
+                        class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition">
+                    <i class="fas fa-sync-alt mr-2"></i>Fetch All Prices
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="closeBulkImportTable()"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Cancel
+                </button>
+                <button onclick="executeBulkImport()" id="bulk-import-create-btn"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+                    <i class="fas fa-plus-circle mr-2"></i>Create & Map Selected
                 </button>
             </div>
         </div>
