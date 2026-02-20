@@ -179,10 +179,16 @@
             </div>
             
             <div class="mt-6 flex items-center justify-between">
-                <button id="file-view-btn" onclick="viewFile()" 
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    <i class="fas fa-eye mr-2"></i>View File
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="file-view-btn" onclick="viewFile()" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <i class="fas fa-eye mr-2"></i>View File
+                    </button>
+                    <button id="file-parse-pnp-btn" onclick="parsePnPDirectly(currentFileId)" 
+                            class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition hidden">
+                        <i class="fas fa-cogs mr-2"></i>Parse PnP
+                    </button>
+                </div>
                 <button id="file-delete-btn" onclick="confirmDeleteFile()" 
                         class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
                     <i class="fas fa-trash mr-2"></i>Delete

@@ -3408,6 +3408,15 @@ function viewFileDetails(fileId) {
     `;
     
     const viewBtn = document.getElementById('file-view-btn');
+    const parsePnPBtn = document.getElementById('file-parse-pnp-btn');
+    
+    // Show/hide Parse PnP button based on file type
+    if (file.file_type === 'pnp_csv' || file.file_type === 'pnp') {
+        parsePnPBtn.classList.remove('hidden');
+    } else {
+        parsePnPBtn.classList.add('hidden');
+    }
+    
     if (file.file_type === 'ibom') {
         viewBtn.onclick = () => openIBOMViewer(file.file_path);
         viewBtn.innerHTML = '<i class="fas fa-eye mr-2"></i>View Interactive BOM';
@@ -3424,6 +3433,97 @@ function closeFileDetailsModal() {
     document.getElementById('file-details-modal').classList.add('hidden');
     document.getElementById('file-details-modal').classList.remove('flex');
     currentFileId = null;
+}
+
+async function parsePnPDirectly(fileId) {
+    const file = allFiles.find(f => f.id === fileId);
+    if (!file) { showToast('File not found', 'error'); return; }
+    
+    const btn = document.getElementById('file-parse-pnp-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Parsing...';
+    
+    try {
+        // 1. Fetch file content via proxy
+        const fetchResp = await fetch(`${ELECTRONICS_API_BASE}/storage/fetch?path=${encodeURIComponent(file.file_path)}`);
+        if (!fetchResp.ok) throw new Error('Failed to fetch file from storage');
+        const csvData = await fetchResp.text();
+        
+        if (!csvData || csvData.trim().length < 10) {
+            throw new Error('File is empty or too small');
+        }
+        
+        // 2. Parse and map CSV headers (same logic as PnP upload form)
+        const { headers, rows } = parseCSV(csvData);
+        console.log('[Parse PnP] Parsed CSV:', headers.length, 'columns,', rows.length, 'rows');
+        
+        const columnMapping = {
+            'Designator': ['Designator', 'Ref', 'Reference', 'RefDes', 'Component'],
+            'Mid X': ['Mid X', 'Center X', 'X', 'PosX', 'LocationX', 'Mid-X'],
+            'Mid Y': ['Mid Y', 'Center Y', 'Y', 'PosY', 'LocationY', 'Mid-Y'],
+            'Layer': ['Layer', 'Side', 'TB'],
+            'Rotation': ['Rotation', 'Rot', 'Angle'],
+            'Comment': ['Comment', 'Value', 'Description', 'Part'],
+        };
+        
+        const headerMap = {};
+        for (const [apiName, variations] of Object.entries(columnMapping)) {
+            const found = variations.find(v => headers.includes(v));
+            if (found) headerMap[found] = apiName;
+        }
+        
+        const requiredColumns = ['Designator', 'Mid X', 'Mid Y', 'Layer'];
+        const missingColumns = requiredColumns.filter(col => !Object.values(headerMap).includes(col));
+        if (missingColumns.length > 0) {
+            throw new Error(`Missing required columns: ${missingColumns.join(', ')}. Available: ${headers.join(', ')}`);
+        }
+        
+        // Rebuild CSV with mapped headers
+        const mappedHeaders = headers.map(h => headerMap[h] || h);
+        const mappedCsvLines = [mappedHeaders.join(',')];
+        rows.forEach(row => {
+            const mappedRow = headers.map(h => {
+                let value = row[h] || '';
+                if (value.includes(',') || value.includes('"')) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            });
+            mappedCsvLines.push(mappedRow.join(','));
+        });
+        const mappedCsvData = mappedCsvLines.join('\n');
+        
+        // 3. Derive filename from file path
+        const filename = file.filename || file.file_path.split('/').pop().replace(/\.[^/.]+$/, '');
+        
+        // 4. Submit to PnP API
+        const response = await fetch(`${ELECTRONICS_API_BASE}/pnp`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                board_id: file.board_id,
+                filename: filename,
+                csv_data: mappedCsvData
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || error.detail || `HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('[Parse PnP] Success:', result);
+        showToast(`PnP parsed: ${rows.length} placements for board ${file.board_name || file.board_id}`, 'success');
+        closeFileDetailsModal();
+        
+    } catch (error) {
+        console.error('[Parse PnP] Error:', error);
+        showToast('Parse failed: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-cogs mr-2"></i>Parse PnP';
+    }
 }
 
 function openIBOMViewer(filePath) {
