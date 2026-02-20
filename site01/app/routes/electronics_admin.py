@@ -1201,10 +1201,30 @@ def fetch_storage_file():
         return jsonify({'error': f'Error fetching file: {str(e)}'}), 500
 
 
+def _get_usd_eur_rate():
+    """Fetch current USD→EUR exchange rate with fallback."""
+    FALLBACK_RATE = 0.92  # reasonable fallback
+    try:
+        r = requests.get(
+            'https://open.er-api.com/v6/latest/USD',
+            timeout=5
+        )
+        if r.status_code == 200:
+            data = r.json()
+            rate = data.get('rates', {}).get('EUR')
+            if rate:
+                current_app.logger.info(f'[LCSC Price] Live USD→EUR rate: {rate}')
+                return float(rate)
+    except Exception as e:
+        current_app.logger.warning(f'[LCSC Price] Could not fetch exchange rate: {e}')
+    current_app.logger.info(f'[LCSC Price] Using fallback USD→EUR rate: {FALLBACK_RATE}')
+    return FALLBACK_RATE
+
+
 @api_bp.route('/fetch-lcsc-price', methods=['GET'])
 @login_required
 def fetch_lcsc_price():
-    """Fetch unit price from LCSC product page"""
+    """Fetch unit price from LCSC product page, convert USD→EUR if needed."""
     code = request.args.get('code', '').strip()
     if not code:
         return jsonify({'error': 'Missing code parameter'}), 400
@@ -1229,34 +1249,69 @@ def fetch_lcsc_price():
             return jsonify({'error': f'LCSC returned {resp.status_code}'}), 502
         
         html = resp.text
+        currency = 'EUR'  # assume EUR unless we detect otherwise
         
-        # Extract prices from the price table
-        # Pattern: look for euro prices like "€ 0.5194" or "€0.5194" in the price table cells
-        price_pattern = re.compile(r'[€\u20ac]\s*([0-9]+\.?[0-9]*)\s*</span>')
-        prices = price_pattern.findall(html)
+        # ---- Try EUR prices first ----
+        # Pattern: "€ 0.5194" or "€0.5194" in price table cells
+        price_pattern_eur = re.compile(r'[€\u20ac]\s*([0-9]+\.?[0-9]*)\s*</span>')
+        prices = price_pattern_eur.findall(html)
         
+        # ---- Try USD prices ----
         if not prices:
-            # Try alternate pattern without euro sign (sometimes uses data attributes)
+            # Match "$ 0.0290" or "$0.0290" or "US$ 0.0290"
+            price_pattern_usd = re.compile(r'(?:US)?\$\s*([0-9]+\.?[0-9]*)\s*</span>')
+            prices = price_pattern_usd.findall(html)
+            if prices:
+                currency = 'USD'
+        
+        # ---- Fallback: JSON data in page ----
+        if not prices:
             price_pattern2 = re.compile(r'"unitPrice"\s*:\s*"?([0-9]+\.?[0-9]*)"?')
             prices = price_pattern2.findall(html)
+            if prices:
+                # LCSC unitPrice in JSON is typically USD
+                currency = 'USD'
         
         if not prices:
-            # Try yet another pattern - look in JSON-LD or script data
+            # Generic price pattern in script/JSON
             price_pattern3 = re.compile(r'price["\']?\s*[:=]\s*["\']?([0-9]+\.[0-9]{2,6})')
             prices = price_pattern3.findall(html)
+            if prices:
+                currency = 'USD'
         
         if prices:
-            # Parse all price tiers
             price_values = [float(p) for p in prices if float(p) > 0]
             if price_values:
-                # Return the first (1+ qty) unit price
                 unit_price = price_values[0]
-                current_app.logger.info(f'[LCSC Price] Found price for {code}: €{unit_price} ({len(price_values)} tiers)')
-                return jsonify({
-                    'code': code,
-                    'unit_price': unit_price,
-                    'price_tiers': price_values
-                })
+                
+                # Convert USD → EUR if needed
+                eur_rate = None
+                if currency == 'USD':
+                    eur_rate = _get_usd_eur_rate()
+                    eur_values = [round(p * eur_rate, 6) for p in price_values]
+                    current_app.logger.info(
+                        f'[LCSC Price] {code}: ${unit_price} → €{eur_values[0]} '
+                        f'(rate {eur_rate}, {len(price_values)} tiers)'
+                    )
+                    return jsonify({
+                        'code': code,
+                        'unit_price': eur_values[0],
+                        'price_tiers': eur_values,
+                        'original_currency': 'USD',
+                        'original_price': unit_price,
+                        'original_tiers': price_values,
+                        'exchange_rate': eur_rate,
+                    })
+                else:
+                    current_app.logger.info(
+                        f'[LCSC Price] {code}: €{unit_price} ({len(price_values)} tiers)'
+                    )
+                    return jsonify({
+                        'code': code,
+                        'unit_price': unit_price,
+                        'price_tiers': price_values,
+                        'original_currency': 'EUR',
+                    })
         
         current_app.logger.warning(f'[LCSC Price] No prices found in page for {code}')
         return jsonify({'error': 'Could not extract price from page'}), 404

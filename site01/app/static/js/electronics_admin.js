@@ -505,14 +505,26 @@ async function fetchBOMQuickAddPrice() {
         if (response.ok && data.unit_price) {
             document.getElementById('bom-qa-price').value = data.unit_price;
             
-            // Show price tiers info
+            // Show price tiers + conversion info
+            let infoLines = [];
+            if (data.original_currency === 'USD') {
+                infoLines.push(`Converted from $${data.original_price} (rate: ${data.exchange_rate})`);
+                if (data.original_tiers && data.original_tiers.length > 1) {
+                    const origTiers = data.original_tiers.map(p => `$${p}`).join(' / ');
+                    infoLines.push(`USD tiers: ${origTiers}`);
+                }
+            }
             if (data.price_tiers && data.price_tiers.length > 1) {
-                const tiersText = data.price_tiers.map((p, i) => `\u20ac${p}`).join(' / ');
-                priceInfo.textContent = `Price tiers: ${tiersText}`;
+                const tiersText = data.price_tiers.map(p => `\u20ac${p}`).join(' / ');
+                infoLines.push(`EUR tiers: ${tiersText}`);
+            }
+            if (infoLines.length) {
+                priceInfo.innerHTML = infoLines.join('<br>');
                 priceInfo.classList.remove('hidden');
             }
             
-            showToast(`Price fetched: \u20ac${data.unit_price}`, 'success');
+            const tag = data.original_currency === 'USD' ? ' (from USD)' : '';
+            showToast(`Price: \u20ac${data.unit_price}${tag}`, 'success');
         } else {
             showToast(data.error || 'Could not fetch price', 'error');
         }
