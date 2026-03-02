@@ -558,13 +558,6 @@ def api_proxy_get_job(job_id):
     result = api_request(f'/api/elec/jobs/{job_id}')
     return api_result(result, 'Failed to fetch job')
 
-@api_bp.route('/jobs/<job_id>/boards', methods=['POST'])
-@login_required
-def api_proxy_add_board_to_job(job_id):
-    """Proxy: Add board to job"""
-    result = api_request(f'/api/elec/jobs/{job_id}/boards', method='POST', data=request.get_json())
-    return api_result(result, 'Failed to add board')
-
 @api_bp.route('/jobs/<job_id>/check_stock', methods=['GET'])
 @login_required
 def api_proxy_check_job_stock(job_id):

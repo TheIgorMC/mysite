@@ -8,6 +8,7 @@ let allComponents = [];
 let allBoards = [];
 let allJobs = [];
 let allFiles = [];
+let selectedJobIds = [];
 let parsedCSVData = null;
 
 // Check for required variables
@@ -2488,24 +2489,30 @@ function renderJobsGrid(jobs) {
         // Find the board for this job
         const board = allBoards.find(b => b.id === job.board_id);
         const boardName = board ? `${board.name || board.board_name || 'Unnamed'} - ${board.version}` : `Board #${job.board_id}`;
-        const jobTitle = `Job #${job.job_id || job.id}`;
+        const jobId = job.job_id || job.id;
+        const jobTitle = `Job #${jobId}`;
         const status = job.status || 'created';
         const quantity = job.quantity || 1;
         const pnpJob = job.pnp_job || 0;
         const dueDate = job.due_date ? new Date(job.due_date).toLocaleDateString() : null;
+        const isSelected = selectedJobIds.includes(jobId);
         
         return `
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
-             onclick="viewJobDetails(${job.job_id || job.id})">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition ${isSelected ? 'ring-2 ring-indigo-500' : ''}">
             <div class="flex items-start justify-between mb-3">
-                <div>
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${jobTitle}</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${boardName}</p>
-                    ${getStatusBadge(status)}
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''}
+                           onclick="event.stopPropagation(); toggleJobSelection(${jobId})"
+                           class="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                    <div class="cursor-pointer" onclick="viewJobDetails(${jobId})">
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${jobTitle}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${boardName}</p>
+                        ${getStatusBadge(status)}
+                    </div>
                 </div>
-                <i class="fas fa-industry text-blue-500 text-2xl"></i>
+                <i class="fas fa-industry text-blue-500 text-2xl cursor-pointer" onclick="viewJobDetails(${jobId})"></i>
             </div>
-            <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2">
+            <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 mb-2 cursor-pointer" onclick="viewJobDetails(${jobId})">
                 <span><i class="fas fa-layer-group mr-1"></i>Qty: ${quantity}</span>
                 ${pnpJob > 0 ? `<span><i class="fas fa-robot mr-1"></i>PnP: ${pnpJob}</span>` : '<span><i class="fas fa-hand-paper mr-1"></i>Manual</span>'}
             </div>
@@ -2673,48 +2680,253 @@ async function loadJobBoards(jobId) {
     }
 }
 
-function showAddBoardToJobModal() {
-    document.getElementById('add-board-job-id').value = currentJobId;
-    document.getElementById('add-board-to-job-modal').classList.remove('hidden');
-    document.getElementById('add-board-to-job-modal').classList.add('flex');
+// ===== JOB SELECTION & COMBINED BOM =====
+
+function toggleJobSelection(jobId) {
+    const idx = selectedJobIds.indexOf(jobId);
+    if (idx !== -1) {
+        selectedJobIds.splice(idx, 1);
+    } else {
+        selectedJobIds.push(jobId);
+    }
+    updateJobSelectionToolbar();
+    renderJobsGrid(allJobs);
+}
+
+function clearJobSelection() {
+    selectedJobIds = [];
+    updateJobSelectionToolbar();
+    renderJobsGrid(allJobs);
+}
+
+function updateJobSelectionToolbar() {
+    const toolbar = document.getElementById('jobs-selection-toolbar');
+    const countEl = document.getElementById('jobs-selected-count');
+    if (selectedJobIds.length > 0) {
+        toolbar.classList.remove('hidden');
+        toolbar.classList.add('flex');
+        countEl.textContent = `${selectedJobIds.length} job${selectedJobIds.length > 1 ? 's' : ''} selected`;
+    } else {
+        toolbar.classList.add('hidden');
+        toolbar.classList.remove('flex');
+    }
+}
+
+async function showCombinedBomModal() {
+    if (selectedJobIds.length === 0) {
+        showToast('Select at least one job', 'warning');
+        return;
+    }
     
-    // Populate board select
-    const select = document.getElementById('board-select');
-    select.innerHTML = allBoards.map(board => 
-        `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} v${board.version} - ${board.id}</option>`
-    ).join('');
-}
-
-function closeAddBoardToJobModal() {
-    document.getElementById('add-board-to-job-modal').classList.add('hidden');
-    document.getElementById('add-board-to-job-modal').classList.remove('flex');
-}
-
-document.getElementById('add-board-to-job-form')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const jobId = document.getElementById('add-board-job-id').value;
-    const boardId = document.getElementById('board-select').value;
-    const quantity = parseInt(document.getElementById('board-quantity').value);
+    document.getElementById('combined-bom-modal').classList.remove('hidden');
+    document.getElementById('combined-bom-modal').classList.add('flex');
+    document.getElementById('combined-bom-table').innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading BOM data...</td></tr>';
     
     try {
-        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${jobId}/boards`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({board_id: boardId, quantity})
+        // Fetch BOM for each selected job
+        const jobPromises = selectedJobIds.map(async (jobId) => {
+            const resp = await fetch(`${ELECTRONICS_API_BASE}/jobs/${jobId}`);
+            if (!resp.ok) throw new Error(`Failed to fetch job ${jobId}`);
+            return resp.json();
+        });
+        const jobResults = await Promise.all(jobPromises);
+        
+        // Build summary
+        const summaryParts = jobResults.map(data => {
+            const job = data.job || data;
+            const board = allBoards.find(b => b.id === job.board_id);
+            const boardName = board ? `${board.name || board.board_name || 'Unnamed'} v${board.version}` : `Board #${job.board_id}`;
+            return `Job #${job.job_id} — ${boardName} ×${job.quantity}`;
+        });
+        document.getElementById('combined-bom-jobs-summary').innerHTML = 
+            `<strong>${selectedJobIds.length} jobs selected:</strong><br>` + summaryParts.join('<br>');
+        
+        // Merge BOM: aggregate by component_id
+        const componentMap = {}; // component_id -> { ...details, need: total, usedIn: [...] }
+        
+        for (const data of jobResults) {
+            const job = data.job || data;
+            const bom = data.bom || [];
+            const qty = job.quantity || 1;
+            const board = allBoards.find(b => b.id === job.board_id);
+            const boardLabel = board ? `${board.name || board.board_name || 'Unnamed'} v${board.version}` : `Board #${job.board_id}`;
+            
+            for (const item of bom) {
+                const cid = item.component_id;
+                const need = (item.qty || 0) * qty;
+                
+                if (!componentMap[cid]) {
+                    // Look up full details from allComponents cache
+                    const cached = allComponents.find(c => c.id === cid);
+                    componentMap[cid] = {
+                        component_id: cid,
+                        seller_code: cached?.seller_code || '',
+                        seller: cached?.seller || '',
+                        manufacturer_code: item.manufacturer_code || cached?.manufacturer_code || '',
+                        product_type: item.product_type || cached?.product_type || '',
+                        package: item.package || cached?.package || '',
+                        value: item.value || cached?.value || '',
+                        qty_left: item.qty_left ?? cached?.qty_left ?? 0,
+                        need: 0,
+                        usedIn: []
+                    };
+                }
+                componentMap[cid].need += need;
+                componentMap[cid].usedIn.push(`${boardLabel} ×${need}`);
+            }
+        }
+        
+        // Convert to array and compute status
+        window._combinedBomData = Object.values(componentMap).sort((a, b) => {
+            // Missing first, then by type
+            const aMissing = a.qty_left < a.need ? 0 : 1;
+            const bMissing = b.qty_left < b.need ? 0 : 1;
+            if (aMissing !== bMissing) return aMissing - bMissing;
+            return (a.product_type || '').localeCompare(b.product_type || '');
         });
         
-        if (response.ok) {
-            showToast('Board added to job', 'success');
-            closeAddBoardToJobModal();
-            loadJobBoards(jobId);
-        } else {
-            throw new Error('Failed to add board');
+        // Stats
+        let okCount = 0, missingCount = 0, totalParts = 0;
+        for (const comp of window._combinedBomData) {
+            totalParts += comp.need;
+            if (comp.qty_left >= comp.need) okCount++;
+            else missingCount++;
         }
+        
+        document.getElementById('combined-unique-count').textContent = window._combinedBomData.length;
+        document.getElementById('combined-ok-count').textContent = okCount;
+        document.getElementById('combined-missing-count').textContent = missingCount;
+        document.getElementById('combined-total-parts').textContent = totalParts;
+        
+        // Render table
+        const tbody = document.getElementById('combined-bom-table');
+        if (window._combinedBomData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500">No BOM data found for selected jobs</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = window._combinedBomData.map(comp => {
+            const shortage = Math.max(0, comp.need - comp.qty_left);
+            const isMissing = comp.qty_left < comp.need;
+            const badge = isMissing
+                ? `<span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded">Need ${shortage}</span>`
+                : '<span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded">OK</span>';
+            
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isMissing ? 'bg-red-50/50 dark:bg-red-900/5' : ''}">
+                    <td class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100">${comp.component_id}</td>
+                    <td class="px-4 py-3 text-sm font-mono text-gray-700 dark:text-gray-300">${comp.seller_code || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.product_type || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">${comp.need}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.qty_left}</td>
+                    <td class="px-4 py-3 text-sm font-semibold ${isMissing ? 'text-red-600' : 'text-gray-400'}">${shortage || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate" title="${comp.usedIn.join('\n')}">${comp.usedIn.join(', ')}</td>
+                    <td class="px-4 py-3 text-sm">${badge}</td>
+                </tr>
+            `;
+        }).join('');
+        
     } catch (error) {
-        console.error('Error adding board to job:', error);
-        showToast('Failed to add board', 'error');
+        console.error('[Combined BOM] Error:', error);
+        document.getElementById('combined-bom-table').innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-red-500">Error: ${error.message}</td></tr>`;
     }
-});
+}
+
+function closeCombinedBomModal() {
+    document.getElementById('combined-bom-modal').classList.add('hidden');
+    document.getElementById('combined-bom-modal').classList.remove('flex');
+}
+
+function downloadCombinedShoppingList() {
+    const data = window._combinedBomData;
+    if (!data || data.length === 0) {
+        showToast('No BOM data to export', 'warning');
+        return;
+    }
+    
+    // Only missing components, grouped by supplier
+    const missing = data.filter(c => c.qty_left < c.need);
+    if (missing.length === 0) {
+        showToast('All components are in stock!', 'info');
+        return;
+    }
+    
+    const bySupplier = {};
+    for (const comp of missing) {
+        const seller = (comp.seller || 'UNKNOWN').trim().toUpperCase();
+        if (!bySupplier[seller]) bySupplier[seller] = [];
+        const shortage = comp.need - comp.qty_left;
+        bySupplier[seller].push({
+            supplier_code: comp.seller_code || '',
+            manufacturer_code: comp.manufacturer_code || '',
+            quantity: shortage > 0 ? shortage : comp.need
+        });
+    }
+    
+    let fileCount = 0;
+    for (const [supplier, items] of Object.entries(bySupplier)) {
+        const csvLines = ['Supplier Code,Manufacturer Code,Quantity'];
+        for (const item of items) {
+            const sc = item.supplier_code.includes(',') ? `"${item.supplier_code}"` : item.supplier_code;
+            const mc = item.manufacturer_code.includes(',') ? `"${item.manufacturer_code}"` : item.manufacturer_code;
+            csvLines.push(`${sc},${mc},${item.quantity}`);
+        }
+        
+        const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${supplier}_ORDER_COMBINED.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        fileCount++;
+    }
+    
+    showToast(`Downloaded ${fileCount} shopping list${fileCount > 1 ? 's' : ''} (${missing.length} components)`, 'success');
+}
+
+function downloadCombinedFullBom() {
+    const data = window._combinedBomData;
+    if (!data || data.length === 0) {
+        showToast('No BOM data to export', 'warning');
+        return;
+    }
+    
+    const headers = ['Component ID', 'Supplier Code', 'Manufacturer Code', 'Type', 'Package', 'Value', 'Required', 'Available', 'Shortage', 'Status'];
+    const rows = data.map(comp => {
+        const shortage = Math.max(0, comp.need - comp.qty_left);
+        const status = comp.qty_left >= comp.need ? 'OK' : 'MISSING';
+        return [
+            comp.component_id,
+            `"${comp.seller_code || ''}"`,
+            `"${comp.manufacturer_code || ''}"`,
+            `"${comp.product_type || ''}"`,
+            `"${comp.package || ''}"`,
+            `"${comp.value || ''}"`,
+            comp.need,
+            comp.qty_left,
+            shortage,
+            status
+        ].join(',');
+    });
+    
+    const csv = headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `COMBINED_BOM_${selectedJobIds.join('_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('Full BOM exported', 'success');
+}
 
 async function checkJobStock() {
     try {
