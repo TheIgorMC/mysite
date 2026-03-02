@@ -129,6 +129,7 @@
                                         Categoria di Età
                                     </label>
                                     <select id="age-category" name="age_category" 
+                                            onchange="recalcPicchetto();"
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                         <option value="">Seleziona categoria...</option>
                                         <option value="GM">GM - Giovanissimi Maschile</option>
@@ -154,12 +155,18 @@
                                         Tipo di Arco
                                     </label>
                                     <select id="bow-type" name="bow_type" required
+                                            onchange="toggleTriplaVisibility(this.value); recalcPicchetto();"
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                         <option value="">Seleziona arco...</option>
                                         <option value="CO">CO - Compound</option>
                                         <option value="OL">OL - Olympic Recurve</option>
                                         <option value="AN">AN - Barebow</option>
                                     </select>
+                                    <p class="bow-type-warning hidden text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium"></p>
+                                </div>
+                                
+                                <!-- Picchetto Display (H&F / 3D competitions) -->
+                                <div id="picchetto-display" class="hidden mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                 </div>
                                 
                                 <!-- Tripla Toggle (only for OL division) -->
@@ -321,6 +328,7 @@
                                     Categoria di Età
                                 </label>
                                 <select id="edit-user-sub-categoria" required
+                                        onchange="recalcEditPicchetto();"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <!-- Populated dynamically based on validation rules -->
                                 </select>
@@ -334,11 +342,17 @@
                                     Tipo di Arco
                                 </label>
                                 <select id="edit-user-sub-classe" required
+                                        onchange="toggleUserTriplaVisibility(this.value); recalcEditPicchetto();"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="CO">CO - Compound</option>
                                     <option value="OL">OL - Olympic Recurve</option>
                                     <option value="AN">AN - Barebow</option>
                                 </select>
+                                <p class="bow-type-warning hidden text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium"></p>
+                            </div>
+                            
+                            <!-- Picchetto Display (H&F / 3D competitions) -->
+                            <div id="edit-picchetto-display" class="hidden mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             </div>
                             
                             <div class="mb-4">
@@ -416,6 +430,7 @@
                                     Categoria di Età
                                 </label>
                                 <select id="edit-user-int-categoria" required
+                                        onchange="recalcEditInterestPicchetto();"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <!-- Populated dynamically based on validation rules -->
                                 </select>
@@ -429,11 +444,17 @@
                                     Tipo di Arco
                                 </label>
                                 <select id="edit-user-int-classe" required
+                                        onchange="recalcEditInterestPicchetto();"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="CO">CO - Compound</option>
                                     <option value="OL">OL - Olympic Recurve</option>
                                     <option value="AN">AN - Barebow</option>
                                 </select>
+                                <p class="bow-type-warning hidden text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium"></p>
+                            </div>
+                            
+                            <!-- Picchetto Display (H&F / 3D competitions) -->
+                            <div id="edit-interest-picchetto-display" class="hidden mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             </div>
                             
                             <div class="mb-4">
@@ -559,6 +580,7 @@ let allSocieta = {};  // Organizations mapped by codice_societa
 let userSubscriptions = new Map();  // Map of codice_gara -> array of subscription objects
 let userInterests = new Map();  // Map of codice_gara -> array of interest expressions
 let authorizedAthletes = [];  // User's authorized athletes from website
+let currentSubscriptionCompetition = null;  // Competition currently being subscribed to
 
 // Interest expressions are now stored in ARC_interesse table (separate from subscriptions)
 
@@ -1515,6 +1537,9 @@ function deleteInterestById(interestId, codiceGara, event) {
 }
 
 async function openSubscriptionModal(competition) {
+    // Store competition context for picchetto/bow type helpers
+    currentSubscriptionCompetition = competition;
+    
     // Get subscription summary to check who's already subscribed (NOT interested)
     const subSummary = getSubscriptionSummary(competition.codice);
     const subscribedAthletes = new Set(subSummary.subscriptions
@@ -1590,8 +1615,14 @@ function showNormalSubscriptionMode(competition, availableAthletes = null) {
     const infoEl = document.getElementById('modal-competition-info');
     infoEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">${competition.nome} - ${formatDate(competition.data_inizio)}</p>`;
     
-    // Populate athlete dropdown (filter if provided)
+    // Update bow type options based on competition type
+    updateBowTypeOptions('bow-type', competition, null);
+    
+    // Populate athlete dropdown (filter if provided) — this may pre-select bow type
     populateAthleteDropdown(availableAthletes);
+    
+    // Reset picchetto display
+    recalcPicchetto();
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
@@ -1634,8 +1665,14 @@ function showExpressInterestMode(competition, availableAthletes = null) {
     const interestedTessere = new Set(interestedAthletes.filter(i => i.stato === 'attivo').map(i => i.tessera_atleta));
     const filteredAthletes = availableAthletes ? availableAthletes.filter(a => !interestedTessere.has(a.tessera)) : null;
     
+    // Update bow type options based on competition type
+    updateBowTypeOptions('bow-type', competition, null);
+    
     // Populate athlete dropdown with filtered list
     populateAthleteDropdown(filteredAthletes);
+    
+    // Reset picchetto display
+    recalcPicchetto();
     
     // Show modal
     document.getElementById('subscription-modal').classList.remove('hidden');
@@ -1720,13 +1757,13 @@ function populateAthleteDropdown(filteredAthletes = null) {
             }
         }
         if (athlete.classe) {
-            const bowTypeEl = document.getElementById('bow-type');
-            if (bowTypeEl) {
-                bowTypeEl.value = athlete.classe;
-                console.log('Set bow-type to:', athlete.classe);
-                // Trigger Tripla visibility check
-                toggleTriplaVisibility(athlete.classe);
-            }
+            // Update bow type options for competition type, then try to pre-select athlete's saved bow type
+            const wasValid = updateBowTypeOptions('bow-type', currentSubscriptionCompetition, athlete.classe);
+            console.log('Set bow-type to:', athlete.classe, 'valid:', wasValid);
+            // Trigger Tripla visibility check
+            toggleTriplaVisibility(document.getElementById('bow-type')?.value || '');
+            // Update picchetto display
+            recalcPicchetto();
         }
         return;
     }
@@ -1796,10 +1833,13 @@ function populateAthleteDropdown(filteredAthletes = null) {
                 console.log('Set age-category options to valid categories:', validCategories);
             }
             if (selectedOption.dataset.bowType && bowTypeEl) {
-                bowTypeEl.value = selectedOption.dataset.bowType;
-                console.log('Set bow-type to:', selectedOption.dataset.bowType);
+                // Update bow type options for competition type, then pre-select
+                const wasValid = updateBowTypeOptions('bow-type', currentSubscriptionCompetition, selectedOption.dataset.bowType);
+                console.log('Set bow-type to:', selectedOption.dataset.bowType, 'valid:', wasValid);
                 // Trigger Tripla visibility check
-                toggleTriplaVisibility(selectedOption.dataset.bowType);
+                toggleTriplaVisibility(bowTypeEl.value || '');
+                // Update picchetto
+                recalcPicchetto();
             }
         } else {
             // Reset fields if no athlete selected
@@ -1818,9 +1858,12 @@ function populateAthleteDropdown(filteredAthletes = null) {
                 <option value="MM">MM - Master Maschile</option>
                 <option value="MF">MF - Master Femminile</option>
             `;
-            document.getElementById('bow-type').value = '';
+            // Reset bow type options for competition
+            updateBowTypeOptions('bow-type', currentSubscriptionCompetition, null);
             // Hide Tripla when no athlete selected
             toggleTriplaVisibility('');
+            // Reset picchetto
+            recalcPicchetto();
         }
     });
     
@@ -1843,6 +1886,11 @@ function closeSubscriptionModal() {
     document.getElementById('subscription-form').reset();
     // Reset tripla visibility
     toggleTriplaVisibility('');
+    // Reset picchetto display
+    const picchettoEl = document.getElementById('picchetto-display');
+    if (picchettoEl) picchettoEl.classList.add('hidden');
+    // Clear competition context
+    currentSubscriptionCompetition = null;
 }
 
 async function submitSubscription() {
@@ -1857,6 +1905,17 @@ async function submitSubscription() {
     if (bowType === 'OL') {
         const triplaChecked = document.getElementById('sub-tripla').checked;
         notes = manageTriplaInNotes(notes, triplaChecked);
+    }
+    
+    // Add picchetto assignment to notes for H&F / 3D competitions
+    const competition = currentSubscriptionCompetition || allCompetitions.find(c => c.codice === codiceGara);
+    if (competition && competition.tipo) {
+        const picchetto = getPicchetto(competition.tipo, bowType, ageCategory);
+        if (picchetto) {
+            // Remove any existing picchetto mention
+            notes = notes.replace(/\bPicchetto\s+(Giallo|Blu|Rosso)\b/gi, '').replace(/\s+/g, ' ').trim();
+            notes = notes ? `${notes} Picchetto ${picchetto.color}` : `Picchetto ${picchetto.color}`;
+        }
     }
     
     // Check if turn selection is visible (normal subscription) or hidden (express interest)
@@ -2603,6 +2662,172 @@ function showError(message) {
 // Category validation rules
 // G -> R, R -> A, A -> J, J -> S, M -> S
 // Gender must remain the same (M stays M, F stays F)
+// ==========================================
+// Competition Type & Picchetto Helpers
+// ==========================================
+
+// Bow type display names
+const bowTypeNames = {
+    'CO': 'CO - Compound',
+    'OL': 'OL - Olympic Recurve',
+    'AN': 'AN - Barebow',
+    'LB': 'LB - Long Bow',
+    'AI': 'AI - Arco Istintivo'
+};
+
+// Detect H&F (Hunter & Field) competitions: 12+12, 24+24, campagna
+function isHF(tipo) {
+    if (!tipo) return false;
+    const t = tipo.toLowerCase();
+    return t.includes('12+12') || t.includes('24+24') || t.includes('campagna');
+}
+
+// Detect 3D competitions
+function is3D(tipo) {
+    if (!tipo) return false;
+    return tipo.toLowerCase().includes('3d');
+}
+
+// Get valid bow types for a given competition
+function getValidBowTypes(competition) {
+    let validTypes;
+    if (competition && competition.tipo) {
+        if (isHF(competition.tipo)) {
+            validTypes = ['CO', 'OL', 'AN', 'LB', 'AI'];
+        } else if (is3D(competition.tipo)) {
+            validTypes = ['CO', 'AN', 'AI', 'LB'];  // No OL for 3D
+        } else {
+            validTypes = ['CO', 'OL', 'AN'];
+        }
+    } else {
+        validTypes = ['CO', 'OL', 'AN'];
+    }
+    return validTypes.map(code => ({ code, name: bowTypeNames[code] || code }));
+}
+
+// Get picchetto (target stake) assignment based on competition type, bow type, and age category
+function getPicchetto(competitionTipo, bowType, ageCategory) {
+    if (!competitionTipo || !bowType || !ageCategory || ageCategory.length < 2) return null;
+
+    const ageCode = ageCategory[0]; // G, R, A, J, S, M
+
+    if (isHF(competitionTipo)) {
+        // LB → always Giallo
+        if (bowType === 'LB') return { color: 'Giallo', css: 'bg-yellow-400 text-yellow-900' };
+        // AI → always Blu
+        if (bowType === 'AI') return { color: 'Blu', css: 'bg-blue-500 text-white' };
+
+        if (bowType === 'OL') {
+            if (ageCode === 'G') return { color: 'Giallo', css: 'bg-yellow-400 text-yellow-900' };
+            if (['R', 'A'].includes(ageCode)) return { color: 'Blu', css: 'bg-blue-500 text-white' };
+            if (['J', 'S', 'M'].includes(ageCode)) return { color: 'Rosso', css: 'bg-red-500 text-white' };
+        }
+
+        if (bowType === 'AN') {
+            if (['G', 'R', 'A'].includes(ageCode)) return { color: 'Giallo', css: 'bg-yellow-400 text-yellow-900' };
+            if (['J', 'S', 'M'].includes(ageCode)) return { color: 'Blu', css: 'bg-blue-500 text-white' };
+        }
+
+        if (bowType === 'CO') {
+            if (ageCode === 'G') return { color: 'Giallo', css: 'bg-yellow-400 text-yellow-900' };
+            if (['R', 'A'].includes(ageCode)) return { color: 'Blu', css: 'bg-blue-500 text-white' };
+            if (['J', 'S', 'M'].includes(ageCode)) return { color: 'Rosso', css: 'bg-red-500 text-white' };
+        }
+
+        return null;
+    }
+
+    if (is3D(competitionTipo)) {
+        if (['AN', 'AI', 'LB'].includes(bowType)) return { color: 'Blu', css: 'bg-blue-500 text-white' };
+        if (bowType === 'CO') return { color: 'Rosso', css: 'bg-red-500 text-white' };
+        return null;
+    }
+
+    return null; // No picchetto for standard indoor/outdoor competitions
+}
+
+// Update bow type <select> options based on competition type
+function updateBowTypeOptions(selectId, competition, preselectedValue) {
+    const selectEl = document.getElementById(selectId);
+    if (!selectEl) return false;
+
+    const validTypes = getValidBowTypes(competition);
+    const validCodes = validTypes.map(t => t.code);
+
+    selectEl.innerHTML = '<option value="">Seleziona arco...</option>' +
+        validTypes.map(t =>
+            `<option value="${t.code}" ${t.code === preselectedValue && validCodes.includes(preselectedValue) ? 'selected' : ''}>${t.name}</option>`
+        ).join('');
+
+    // If preselected value not valid for this competition, clear selection & show warning
+    const warningEl = selectEl.parentElement.querySelector('.bow-type-warning');
+    if (preselectedValue && !validCodes.includes(preselectedValue)) {
+        selectEl.value = '';
+        if (warningEl) {
+            warningEl.textContent = `⚠️ Il tipo di arco salvato (${bowTypeNames[preselectedValue] || preselectedValue}) non è disponibile per questo tipo di gara. Seleziona un arco valido.`;
+            warningEl.classList.remove('hidden');
+        }
+        return false;
+    } else {
+        if (warningEl) warningEl.classList.add('hidden');
+        return true;
+    }
+}
+
+// Update picchetto display badge
+function updatePicchettoDisplay(displayId, competition, bowType, ageCategory) {
+    const displayEl = document.getElementById(displayId);
+    if (!displayEl) return;
+
+    if (!competition || !competition.tipo || (!isHF(competition.tipo) && !is3D(competition.tipo))) {
+        displayEl.classList.add('hidden');
+        return;
+    }
+
+    const picchetto = getPicchetto(competition.tipo, bowType, ageCategory);
+
+    if (picchetto) {
+        displayEl.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-flag mr-1"></i>Picchetto assegnato:
+                </span>
+                <span class="px-3 py-1 rounded-full text-sm font-bold ${picchetto.css}">
+                    ${picchetto.color}
+                </span>
+            </div>`;
+        displayEl.classList.remove('hidden');
+    } else if (bowType || ageCategory) {
+        displayEl.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400"><i class="fas fa-info-circle mr-1"></i>Seleziona arco e categoria per vedere il picchetto assegnato</p>`;
+        displayEl.classList.remove('hidden');
+    } else {
+        displayEl.classList.add('hidden');
+    }
+}
+
+// Recalculate picchetto for the subscription modal based on current selections
+function recalcPicchetto() {
+    const bowType = document.getElementById('bow-type')?.value;
+    const ageCategory = document.getElementById('age-category')?.value;
+    updatePicchettoDisplay('picchetto-display', currentSubscriptionCompetition, bowType, ageCategory);
+}
+
+// Recalculate picchetto for the edit subscription modal
+function recalcEditPicchetto() {
+    const bowType = document.getElementById('edit-user-sub-classe')?.value;
+    const ageCategory = document.getElementById('edit-user-sub-categoria')?.value;
+    const competition = editingSubscription ? allCompetitions.find(c => c.codice === editingSubscription.codiceGara) : null;
+    updatePicchettoDisplay('edit-picchetto-display', competition, bowType, ageCategory);
+}
+
+// Recalculate picchetto for the edit interest modal
+function recalcEditInterestPicchetto() {
+    const bowType = document.getElementById('edit-user-int-classe')?.value;
+    const ageCategory = document.getElementById('edit-user-int-categoria')?.value;
+    const competition = editingInterest ? allCompetitions.find(c => c.codice === editingInterest.codiceGara) : null;
+    updatePicchettoDisplay('edit-interest-picchetto-display', competition, bowType, ageCategory);
+}
+
 function getValidCategoryChanges(currentCategory) {
     if (!currentCategory || currentCategory.length !== 2) return [];
     
@@ -2764,8 +2989,9 @@ async function editUserSubscription(subscriptionId, codiceGara, event) {
         `<option value="${cat}" ${cat === ageCategory ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
     ).join('');
     
-    // Set classe field to bow type
-    document.getElementById('edit-user-sub-classe').value = bowType || '';
+    // Set classe field to bow type — use dynamic options based on competition type
+    const editCompetition = allCompetitions.find(c => c.codice === codiceGara);
+    updateBowTypeOptions('edit-user-sub-classe', editCompetition, bowType);
     
     // Set notes (exclude CAMBI RICHIESTI part)
     let userNotes = sub.note || '';
@@ -2775,16 +3001,20 @@ async function editUserSubscription(subscriptionId, codiceGara, event) {
     document.getElementById('edit-user-sub-note').value = userNotes;
     
     // Handle Tripla toggle based on bow class
-    toggleUserTriplaVisibility(bowType);
+    toggleUserTriplaVisibility(document.getElementById('edit-user-sub-classe')?.value || '');
     
     // Check if "tripla" is in notes
     const hasTripla = (sub.note || '').toLowerCase().includes('tripla');
     document.getElementById('edit-user-sub-tripla').checked = hasTripla;
     
-    // Add listener for bow class changes
+    // Add listener for bow class changes (onchange now also on HTML element)
     document.getElementById('edit-user-sub-classe').addEventListener('change', function() {
         toggleUserTriplaVisibility(this.value);
+        recalcEditPicchetto();
     });
+    
+    // Update picchetto display
+    recalcEditPicchetto();
     
     // Setup change tracking
     setupSubscriptionChangeTracking();
@@ -2871,6 +3101,16 @@ async function submitUserSubscriptionEdit() {
     if (newBowType === 'OL') {
         const triplaChecked = document.getElementById('edit-user-sub-tripla').checked;
         notesWithTripla = manageTriplaInNotes(finalNotes, triplaChecked);
+    }
+    
+    // Add picchetto assignment to notes for H&F / 3D competitions
+    const editCompetition2 = allCompetitions.find(c => c.codice === editingSubscription.codice_gara || c.codice === editingSubscription.codiceGara);
+    if (editCompetition2 && editCompetition2.tipo) {
+        const picchetto = getPicchetto(editCompetition2.tipo, newBowType, newAgeCategory);
+        if (picchetto) {
+            notesWithTripla = notesWithTripla.replace(/\bPicchetto\s+(Giallo|Blu|Rosso)\b/gi, '').replace(/\s+/g, ' ').trim();
+            notesWithTripla = notesWithTripla ? `${notesWithTripla} Picchetto ${picchetto.color}` : `Picchetto ${picchetto.color}`;
+        }
     }
     
     newData.note = notesWithTripla;
@@ -2966,11 +3206,15 @@ function editUserInterest(interestId, codiceGara, event) {
         `<option value="${cat}" ${cat === ageCategory ? 'selected' : ''}>${categoryNames[cat] || cat}</option>`
     ).join('');
     
-    // Set classe (bow type)
-    document.getElementById('edit-user-int-classe').value = bowType || '';
+    // Set classe (bow type) — use dynamic options based on competition type
+    const editIntCompetition = allCompetitions.find(c => c.codice === codiceGara);
+    updateBowTypeOptions('edit-user-int-classe', editIntCompetition, bowType);
     
     // Set notes
     document.getElementById('edit-user-int-note').value = interest.note || '';
+    
+    // Update picchetto display
+    recalcEditInterestPicchetto();
     
     // Show modal
     document.getElementById('edit-user-interest-modal').classList.remove('hidden');
@@ -2984,10 +3228,22 @@ async function submitUserInterestEdit() {
     const newBowType = document.getElementById('edit-user-int-classe').value;
     
     // Prepare data for API (REVERSED: categoria=bowType, classe=ageCategory)
+    let interestNotes = document.getElementById('edit-user-int-note').value || '';
+    
+    // Add picchetto assignment to notes for H&F / 3D competitions
+    const editIntComp2 = allCompetitions.find(c => c.codice === editingInterest.codice_gara || c.codice === editingInterest.codiceGara);
+    if (editIntComp2 && editIntComp2.tipo) {
+        const picchetto = getPicchetto(editIntComp2.tipo, newBowType, newAgeCategory);
+        if (picchetto) {
+            interestNotes = interestNotes.replace(/\bPicchetto\s+(Giallo|Blu|Rosso)\b/gi, '').replace(/\s+/g, ' ').trim();
+            interestNotes = interestNotes ? `${interestNotes} Picchetto ${picchetto.color}` : `Picchetto ${picchetto.color}`;
+        }
+    }
+    
     const newData = {
         categoria: newBowType,      // Send bow type as categoria
         classe: newAgeCategory,     // Send age category as classe
-        note: document.getElementById('edit-user-int-note').value || '',
+        note: interestNotes,
         tessera_atleta: editingInterest.tessera_atleta,
         codice_gara: editingInterest.codice_gara
     };
@@ -3474,7 +3730,7 @@ function toggleTriplaVisibility(bowClass) {
     // Get current competition to check if it's indoor
     const codiceGara = document.getElementById('competition-id')?.value;
     const competition = codiceGara ? allCompetitions.find(c => c.codice === codiceGara) : null;
-    const isIndoor = competition && competition.tipo_gara && (competition.tipo_gara.includes('18m') || competition.tipo_gara.includes('25m'));
+    const isIndoor = competition && competition.tipo && (competition.tipo.includes('18m') || competition.tipo.includes('25m'));
     
     // Show tripla only for OL bow class AND indoor competitions
     if (bowClass === 'OL' && isIndoor) {
@@ -3493,7 +3749,7 @@ function toggleUserTriplaVisibility(bowClass) {
     
     // Get current competition from editingSubscription to check if it's indoor
     const competition = editingSubscription ? allCompetitions.find(c => c.codice === editingSubscription.codiceGara) : null;
-    const isIndoor = competition && competition.tipo_gara && (competition.tipo_gara.includes('18m') || competition.tipo_gara.includes('25m'));
+    const isIndoor = competition && competition.tipo && (competition.tipo.includes('18m') || competition.tipo.includes('25m'));
     
     // Show tripla only for OL bow class AND indoor competitions
     if (bowClass === 'OL' && isIndoor) {
