@@ -1158,13 +1158,13 @@ function renderComponentsTable(components) {
             <td class="px-3 py-3 text-sm text-gray-400 dark:text-gray-500 font-mono text-xs">${comp.id || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || '-'}</td>
             <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code || ''}">${comp.manufacturer_code || '-'}</td>
+            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code ? 'Click to copy' : ''}">${comp.manufacturer_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.manufacturer_code.replace(/'/g, "\\'")}')">` + comp.manufacturer_code + ' <i class="fas fa-copy text-gray-400 text-[10px]"></i></span>' : '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                 <div class="max-w-xs">
                     <div class="font-medium">${comp.seller || '-'}</div>
-                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code || ''}">${comp.seller_code || '-'}</div>
+                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code ? 'Click to copy' : ''}">${comp.seller_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.seller_code.replace(/'/g, "\\'")}')">` + comp.seller_code + ' <i class="fas fa-copy text-gray-400 text-[10px]"></i></span>' : '-'}</div>
                 </div>
             </td>
             <td class="px-3 py-3 text-sm text-center">
@@ -1191,6 +1191,16 @@ function renderComponentsTable(components) {
         </tr>
     `;
     }).join('');
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm transition-opacity duration-300';
+        toast.innerHTML = '<i class="fas fa-check mr-2 text-green-400"></i>Copied: ' + text;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1500);
+    });
 }
 
 function getStockBadge(qty) {
