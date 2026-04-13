@@ -1130,7 +1130,7 @@ function renderComponentsTable(components) {
     if (components.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="11" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No components found
                 </td>
             </tr>
@@ -1149,8 +1149,13 @@ function renderComponentsTable(components) {
             });
         }
         
+        const lcscLink = (comp.seller || '').toLowerCase() === 'lcsc' && comp.seller_code
+            ? `<a href="https://www.lcsc.com/product-detail/${encodeURIComponent(comp.seller_code)}.html" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Open on LCSC"><i class="fas fa-external-link-alt"></i></a>`
+            : '<span class="text-gray-300 dark:text-gray-600">-</span>';
+
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-3 py-3 text-sm text-gray-400 dark:text-gray-500 font-mono text-xs">${comp.id || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || '-'}</td>
             <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code || ''}">${comp.manufacturer_code || '-'}</td>
@@ -1161,6 +1166,9 @@ function renderComponentsTable(components) {
                     <div class="font-medium">${comp.seller || '-'}</div>
                     <div class="text-xs text-gray-500 truncate" title="${comp.seller_code || ''}">${comp.seller_code || '-'}</div>
                 </div>
+            </td>
+            <td class="px-3 py-3 text-sm text-center">
+                ${lcscLink}
             </td>
             <td class="px-3 py-3 text-sm">
                 ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0))}
