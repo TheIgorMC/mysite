@@ -104,6 +104,27 @@ Auth: *(currently open, optional Bearer auth can be added)*
 
 ---
 
+### **ARC_posti**
+
+| Column           | Type        | Description                       |
+| ---------------- | ----------- | --------------------------------- |
+| `id`             | int         | Primary key (auto-increment)      |
+| `codice_gara`    | varchar(8)  | FK → `ARC_gare.codice`            |
+| `turno`          | int         | Turn number                       |
+| `max_posti`      | int         | Maximum capacity for this turn    |
+| `posti_occupati` | int         | Currently occupied spots          |
+| `created_at`     | datetime    | Record creation timestamp         |
+| `updated_at`     | datetime    | Last update timestamp             |
+
+**Notes:**
+- Defines maximum capacity and current occupancy for each competition turn
+- `posti_occupati` is updated from external sources (not calculated from `ARC_iscrizioni`)
+- `ARC_iscrizioni` only contains local club registrations, not all clubs
+- Available spots calculated as: `max_posti - posti_occupati`
+- Unique constraint on (`codice_gara`, `turno`) to prevent duplicate entries
+
+---
+
 ### **ARC_qualifiche**
 
 | Column                      | Type         | Description    |
@@ -662,6 +683,142 @@ Delete an interest expression (by ID).
 
 ---
 
+## 🎯 Posti (Capacity Management)
+
+### `GET /api/posti`
+
+Retrieve capacity information for competition turns with availability.
+
+**Params:**
+
+| Param         | Type   | Description                                          |
+| ------------- | ------ | ---------------------------------------------------- |
+| `codice_gara` | string | Filter by competition code                           |
+| `export`      | string | if `"full"`, returns all capacity records (mass export) |
+
+**Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "codice_gara": "25A001",
+    "nome_gara": "Campionato Indoor",
+    "turno": 1,
+    "max_posti": 50,
+    "posti_occupati": 32,
+    "posti_disponibili": 18,
+    "created_at": "2025-10-01T10:00:00",
+    "updated_at": "2025-10-15T14:30:00"
+  },
+  {
+    "id": 2,
+    "codice_gara": "25A001",
+    "nome_gara": "Campionato Indoor",
+    "turno": 2,
+    "max_posti": 50,
+    "posti_occupati": 45,
+    "posti_disponibili": 5,
+    "created_at": "2025-10-01T10:00:00",
+    "updated_at": "2025-10-15T14:30:00"
+  }
+]
+```
+
+**Notes:**
+- `posti_occupati` is a stored value (updated from external sources, not calculated locally)
+- `posti_disponibili` = `max_posti` - `posti_occupati` (calculated on retrieval)
+- `ARC_iscrizioni` only contains local club registrations, not all clubs
+- If `export=full`, returns all capacity records without filtering
+
+---
+
+### `POST /api/posti`
+
+Create a new capacity record for a competition turn.
+
+**Body:**
+
+```json
+{
+  "codice_gara": "25A001",
+  "turno": 1,
+  "max_posti": 50,
+  "posti_occupati": 0
+}
+```
+
+**Fields:**
+
+| Field            | Type   | Required | Default | Description                            |
+| ---------------- | ------ | -------- | ------- | -------------------------------------- |
+| `codice_gara`    | string | ✅ Yes   | -       | Competition code (max 8 chars)         |
+| `turno`          | int    | ✅ Yes   | -       | Turn number                            |
+| `max_posti`      | int    | ✅ Yes   | -       | Maximum capacity for this turn         |
+| `posti_occupati` | int    | No       | `0`     | Currently occupied spots (from invites)|
+
+**Response:**
+
+```json
+{"id": 1, "status": "created"}
+```
+
+**Errors:**
+- `400` - Competition not found
+- `409` - Capacity already exists for this competition/turn combination
+
+---
+
+### `PATCH /api/posti/{id}`
+
+Update capacity information for a turn.
+
+**Body:**
+
+```json
+{
+  "max_posti": 60,
+  "posti_occupati": 35
+}
+```
+
+**Fields:**
+
+| Field            | Type | Required | Description                            |
+| ---------------- | ---- | -------- | -------------------------------------- |
+| `max_posti`      | int  | No       | New maximum capacity for this turn     |
+| `posti_occupati` | int  | No       | Updated occupied spots count           |
+
+**Response:**
+
+```json
+{"id": 1, "status": "updated"}
+```
+
+**Notes:**
+- Can update `max_posti` and/or `posti_occupati`
+- At least one field must be provided
+- Cannot change `codice_gara` or `turno` (delete and recreate instead)
+- `updated_at` timestamp is automatically updated
+
+---
+
+### `DELETE /api/posti/{id}`
+
+Delete a capacity record.
+
+**Response:**
+
+```json
+{"id": 1, "status": "deleted"}
+```
+
+**Notes:**
+- Deleting a capacity record does NOT affect existing registrations
+- This only removes the capacity limit tracking for the turn
+
+---
+
 ## 📬 Mail Queue (Email Sending)
 
 ### `POST /api/mail/send`
@@ -755,140 +912,6 @@ Scheduled email for future:
   "recipient_email": "user@example.com",
   "mail_type": "closing_soon",
   "scheduled_time": "2025-12-23T09:00:00"
-}
-```
-
----
-
-## 📨 Athlete Email Management (Flask Proxy Endpoints)
-
-These endpoints are available through the Flask backend and proxy requests to the Orion API.
-
-### `GET /archery/api/athlete/<tessera>/emails`
-
-Get all email addresses associated with a specific athlete.
-
-**Path params:**
-
-* `tessera` (int, required): Athlete ID
-
-**Auth:** Login required
-
-**Response:**
-
-```json
-[
-  {
-    "id": 1,
-    "tessera": 123456,
-    "email": "athlete@example.com",
-    "created_at": "2025-11-15T14:30:00"
-  },
-  {
-    "id": 2,
-    "tessera": 123456,
-    "email": "parent@example.com",
-    "created_at": "2025-11-16T09:15:00"
-  }
-]
-```
-
----
-
-### `POST /archery/api/athlete/email/link`
-
-Link an email address to an athlete. If the association already exists, it's ignored without error.
-
-**Auth:** Login required
-
-**Body:**
-
-```json
-{
-  "tessera": 123456,
-  "email": "athlete@example.com"
-}
-```
-
-**Response:**
-
-```json
-{
-  "status": "ok",
-  "message": "Linked athlete@example.com to 123456"
-}
-```
-
----
-
-### `DELETE /archery/api/athlete/email/unlink`
-
-Remove the association between an athlete and a specific email address.
-
-**Auth:** Login required
-
-**Query params:**
-
-| Param     | Type   | Required | Description                  |
-| --------- | ------ | -------- | ---------------------------- |
-| `tessera` | int    | ✅ Yes   | Athlete ID                   |
-| `email`   | string | ✅ Yes   | Email address to unlink      |
-
-**Example:**
-
-```
-DELETE /archery/api/athlete/email/unlink?tessera=123456&email=athlete@example.com
-```
-
-**Response:**
-
-```json
-{
-  "status": "ok",
-  "message": "Link removed"
-}
-```
-
----
-
-### `POST /archery/api/athlete/email/sync`
-
-Automatically sync the current user's email address to all their authorized athletes.
-This is useful when a user adds new athletes or when you want to bulk-link emails.
-
-**Auth:** Login required
-
-**Body:** None (uses current user's email and authorized athletes)
-
-**Response:**
-
-```json
-{
-  "message": "Synced 5 out of 5 athletes",
-  "synced": 5,
-  "total": 5
-}
-```
-
-**Error Response (if user has no email):**
-
-```json
-{
-  "error": "User has no email address"
-}
-```
-
-**Partial Success Response (some athletes failed):**
-
-```json
-{
-  "message": "Synced 3 out of 5 athletes",
-  "synced": 3,
-  "total": 5,
-  "errors": [
-    "Athlete 123456: Connection timeout",
-    "Athlete 789012: Invalid tessera"
-  ]
 }
 ```
 
@@ -1014,6 +1037,7 @@ Modules:
   ├── /api/atleti, /api/societa → read-only lists
   ├── /api/gare, /api/turni, /api/inviti → event and invite info
   ├── /api/interesse → interest tracking (pre-registration)
+  ├── /api/posti → capacity management (CRUD + export)
   ├── /api/iscrizioni → full CRUD + export
   ├── /api/mail/send → email queue management
   ├── /api/mailer/... → athlete email management
