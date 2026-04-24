@@ -19,35 +19,79 @@ For a complete overview, see [site01/docs/INDEX.md](site01/docs/INDEX.md).
 
 ### 🏹 Archery Analysis
 - Performance tracking and statistics
-- Multi-athlete comparison (up to 5 athletes)
-- Career vs filtered statistics
-- Competition results visualization with Chart.js
+- Multi-athlete comparison (up to 5 athletes) with side-by-side comparison table
+- Dual statistics view: career vs. filtered (date/type/category)
+- Dynamic auto-refresh when athletes are added or removed
+- Competition results visualization with Chart.js (zoom and pan on mobile/desktop)
 - Support for multiple competition types and categories
 - Date range filtering
 - Average per arrow calculations
 
+### 🏆 Competition & Athlete Management
+- Club member competition portal (ASD Compagnia Arcieri Carraresi)
+- Three competition states: active subscriptions, invite published, interest registration
+- Turn selection with notes
+- Authorized athletes system: admins assign athletes to users for multi-athlete registration
+- Admin panel (`/admin/manage-athletes`) for athlete–user assignment with real-time search
+- Locked section access control: a third authorization layer above login and role checks
+
 ### 🖨️ 3D Printing
-- Project gallery
+- Full blog-style project gallery with SEO-friendly slugs
+- Rich HTML/Markdown content per project with WYSIWYG + raw HTML editor
+- Live preview in admin editor
+- Gallery image management (add/remove)
+- View count statistics with admin reset
+- Related projects shown automatically
 - Custom model requests
 - Integration with Printables
 
 ### ⚡ Electronics
-- Project showcase
+- Blog-style project gallery with PCB parallax background effect (scrolling PCB artwork)
+- Full electronics management portal (admin-only):
+  - Component inventory with smart search (e.g., "R0402" finds all 0402 resistors)
+  - PCB board and BOM management (upload, view, export CSV)
+  - Production job tracking with real-time stock checking
+  - Shopping list generation for missing components
+  - File manager with Interactive BOM (iBOM) viewer
 - Custom circuit services
+
+### 🛒 Shop
+- Multi-category product grid (Archery, 3D Printing, Electronics)
+- Product variants system (length, material, color, etc.) with per-variant pricing and stock
+- Product customization options
+- Cart synced to localStorage with toast notifications (no more `alert()` popups)
+- Mobile-optimized category filter (dropdown on small screens, buttons on desktop)
+- Stock management per variant
+
+### 🔐 Authentication & Security
+- Login / registration with role-based access (admin, club member, regular user)
+- Self-service password reset via email (token expires in 24 hours)
+- Admin password management: send reset email or set password directly
+- Locked section access control for highly sensitive areas
+- Password hashing, remember me, session security
 
 ### 🌍 Internationalization
 - Full bilingual support (Italian/English)
 - Dynamic language switching
-- All UI elements, messages, and content translated
+- All UI elements, messages, and content translated (100+ keys)
+
+### 🎨 UI/UX
+- Dark mode with full support across all components (hamburger menu, nav links, modals)
+- Toast notification system (success, error, warning, info) — replaces all browser `alert()` calls
+- Animated, stackable toasts with auto-dismiss and manual close
+- Responsive mobile improvements: image sizing, spacing, date inputs, chart zoom/pan
+- Loading spinners with correct animation
+- Glassmorphism card design
 
 ## Technology Stack
 
-- **Backend**: Flask (Python)
-- **Frontend**: Tailwind CSS, Chart.js, Vanilla JavaScript
-- **Database**: SQLite (with SQLAlchemy ORM)
-- **Authentication**: Flask-Login
+- **Backend**: Flask (Python), blueprint-based modular architecture
+- **Frontend**: Tailwind CSS, Chart.js (with zoom/pan plugin), Vanilla JavaScript
+- **Database**: SQLite (with SQLAlchemy ORM and migration scripts)
+- **Authentication**: Flask-Login (roles: admin, club member, locked section)
 - **API Integration**: Orion API with Cloudflare Access
-- **Deployment**: Docker + Docker Compose
+- **Email**: SMTP-based password reset with token security
+- **Deployment**: Docker + Docker Compose, compatible with Dockge
 
 ## Quick Start with Docker
 
@@ -153,9 +197,22 @@ mysite/
 ├── site01/              # Main application directory
 │   ├── app/             # Flask application
 │   │   ├── routes/      # Route handlers
+│   │   │   ├── main.py          # Home, about, admin dashboard
+│   │   │   ├── auth.py          # Login, register, password reset
+│   │   │   ├── archery.py       # Analysis, competitions
+│   │   │   ├── printing.py      # 3D printing gallery/blog
+│   │   │   ├── electronics.py   # Electronics gallery/blog
+│   │   │   ├── electronics_admin.py  # Electronics portal (admin)
+│   │   │   ├── shop.py          # Shop and cart
+│   │   │   ├── api.py           # Website-level API (athletes, newsletter)
+│   │   │   ├── api_routes.py    # Internal utility APIs
+│   │   │   ├── admin.py         # Admin tools
+│   │   │   └── locked.py        # Locked section routes
+│   │   ├── api/         # Cloudflare/Orion API client
 │   │   ├── static/      # CSS, JS, images
 │   │   ├── templates/   # Jinja2 templates
-│   │   └── utils.py     # Utility functions
+│   │   └── utils.py     # Translation and utility functions
+│   ├── migrations/      # Database migration scripts
 │   ├── translations/    # i18n translation files
 │   │   ├── en.json      # English translations
 │   │   └── it.json      # Italian translations
@@ -172,28 +229,33 @@ Comprehensive documentation is available in the `site01/docs/` directory:
 
 ### 📖 Essential Guides
 - **[Documentation Index](site01/docs/INDEX.md)** - Navigation to all docs
-- **[Troubleshooting](site01/docs/TROUBLESHOOTING.md)** - Complete debugging guide
-- **[Force Rebuild](site01/docs/FORCE_REBUILD.md)** - How to force rebuilds in Dockge
+- **[Project Overview](site01/docs/OVERVIEW.md)** - High-level overview
+- **[Architecture](site01/docs/ARCHITECTURE.md)** - System design diagrams
+- **[Troubleshooting](site01/docs/troubleshooting/TROUBLESHOOTING.md)** - Complete debugging guide
 
 ### 🚀 Deployment
-- **[Quick Start](QUICKSTART.md)** - 5-minute deployment guide
-- **[Deployment Guide](DEPLOYMENT.md)** - Complete deployment instructions
-- **[Dockge Setup](DOCKGE_SETUP.md)** - Dockge-specific guide
-- **[Deployment Checklist](CHECKLIST.md)** - Pre-deployment verification
+- **[Quick Start](site01/docs/setup/QUICKSTART.md)** - 5-minute deployment guide
+- **[Deployment Guide](site01/docs/deployment/DEPLOYMENT.md)** - Complete deployment instructions
+- **[Dockge Setup](site01/docs/deployment/DOCKGE_SETUP.md)** - Dockge-specific guide
+- **[Force Rebuild](site01/docs/deployment/FORCE_REBUILD.md)** - How to force rebuilds in Dockge
+- **[Emergency Rebuild](site01/docs/deployment/EMERGENCY_REBUILD.md)** - Manual rebuild via SSH
 
-### 🔧 Troubleshooting & Fixes
-- **[Emergency Rebuild](site01/docs/EMERGENCY_REBUILD.md)** - Manual rebuild via SSH
-- **[Import Fix](site01/docs/IMPORT_FIX.md)** - Config import fix details
-- **[Fix Summary](site01/docs/FIX_SUMMARY.md)** - Complete deployment fix summary
+### ✨ Features
+- **[Archery Analysis Features](site01/docs/features/ARCHERY_ANALYSIS_FEATURES.md)**
+- **[Statistics Enhancement Summary](site01/docs/features/STATISTICS_ENHANCEMENT_SUMMARY.md)**
+- **[Gallery & Blog System](site01/docs/GALLERY_BLOG_SYSTEM.md)** - Blog posts, PCB parallax, WYSIWYG editor
+- **[Electronics Portal](site01/docs/ELECTRONICS_PORTAL.md)** - Inventory, BOM, production jobs
+- **[Authorized Athletes Guide](site01/docs/AUTHORIZED_ATHLETES_GUIDE.md)**
+- **[Locked Section Guide](site01/docs/LOCKED_SECTION_GUIDE.md)** - Premium content access
+- **[Password Reset Guide](site01/docs/PASSWORD_RESET_GUIDE.md)**
+- **[Product Variants](site01/docs/PRODUCT_VARIANTS.md)**
+- **[Internationalization](site01/docs/features/internationalization.md)**
+- **[Mobile Improvements](site01/docs/features/MOBILE_IMPROVEMENTS.md)**
 
-### 📚 Features & Implementation
-- **[Features](site01/docs/features/)** - Feature documentation
-  - Statistics system
-  - Date handling
-  - Loading states
-  - Internationalization
-- **[API Documentation](site01/docs/api/)** - API usage guides
-- **[Implementation Details](site01/docs/IMPLEMENTATION_SUMMARY.md)** - Technical details
+### 🔌 API Documentation
+- **[API Specification](site01/docs/api/APIspec.md)**
+- **[API Usage Guide](site01/docs/api/usage-guide.md)**
+- **[Competition API Spec](site01/docs/COMPETITION_API_SPEC.md)**
 
 ## Security Considerations
 
