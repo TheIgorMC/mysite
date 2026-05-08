@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OrionPnP CMS</title>
+  <style>
+    :root {
+      --navy:#060d1a; --surface:rgba(11,22,41,0.95); --surface2:rgba(6,13,26,0.7);
+      --border:rgba(255,255,255,0.09); --border-hi:rgba(255,255,255,0.18);
+      --accent:#e07c24; --accent2:#63b3ed; --text:#e8f1ff; --muted:#7da4c8;
+      --success:#4ade80; --danger:#f87171; --radius:10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--navy);color:var(--text);font-family:system-ui,sans-serif;font-size:.93rem;min-height:100vh;}
+    /* ── header ── */
+    .hdr{background:rgba(6,13,26,.97);border-bottom:1px solid var(--border);padding:.7rem 1.5rem;position:sticky;top:0;z-index:100;}
+    .hdr-inner{max-width:980px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+    .hdr-logo{font-weight:700;font-size:1rem;letter-spacing:-.02em;}
+    .badge{background:var(--accent);color:#fff;font-size:.62rem;padding:.1rem .4rem;border-radius:4px;vertical-align:middle;margin-left:.35rem;font-weight:700;letter-spacing:.06em;}
+    .hdr-right{display:flex;align-items:center;gap:.9rem;}
+    .save-status{font-size:.82rem;transition:color .3s;}
+    .save-status.ok{color:var(--success);}
+    .save-status.err{color:var(--danger);}
+    /* ── buttons ── */
+    .btn{border:none;border-radius:var(--radius);cursor:pointer;font-size:.88rem;font-weight:600;padding:.5rem 1.2rem;transition:opacity .15s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.85;}
+    .btn-primary:disabled{opacity:.45;cursor:default;}
+    .btn-sm{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:.22rem .6rem;font-size:.76rem;cursor:pointer;transition:border-color .15s,color .15s;}
+    .btn-sm:hover{border-color:var(--border-hi);color:var(--text);}
+    .btn-del{border-color:rgba(248,113,113,.25);color:var(--danger);}
+    .btn-del:hover{border-color:var(--danger)!important;color:var(--danger);}
+    .btn-add{background:rgba(99,179,237,.07);border:1px dashed rgba(99,179,237,.35);border-radius:var(--radius);color:var(--accent2);width:100%;padding:.6rem;text-align:center;cursor:pointer;font-size:.86rem;transition:background .15s,border-color .15s;}
+    .btn-add:hover{background:rgba(99,179,237,.13);border-color:var(--accent2);}
+    /* ── tabs ── */
+    .tabs{max-width:980px;margin:0 auto;padding:1.2rem 1.5rem 0;display:flex;gap:.35rem;flex-wrap:wrap;}
+    .tab{background:transparent;border:1px solid var(--border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);padding:.45rem 1rem;cursor:pointer;font-size:.86rem;transition:color .15s,background .15s;}
+    .tab.active{background:var(--surface);color:var(--text);border-color:var(--border-hi);}
+    .tab:hover:not(.active){color:var(--text);}
+    /* ── main ── */
+    .main{max-width:980px;margin:0 auto;padding:0 1.5rem 4rem;}
+    .panel{background:var(--surface);border:1px solid var(--border-hi);border-radius:0 var(--radius) var(--radius) var(--radius);padding:1.4rem;}
+    .panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;}
+    .panel-header h2{font-size:.95rem;font-weight:600;}
+    .panel-header .cnt{font-size:.76rem;color:var(--muted);}
+    /* ── item cards ── */
+    .items{display:flex;flex-direction:column;gap:.6rem;margin-bottom:.6rem;}
+    .card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+    .card-hdr{display:flex;align-items:center;gap:.7rem;padding:.65rem 1rem;cursor:pointer;user-select:none;}
+    .card-hdr:hover{background:rgba(255,255,255,.025);}
+    .chevron{font-size:.6rem;color:var(--muted);flex-shrink:0;transition:transform .15s;display:inline-block;}
+    .card.open .chevron{transform:rotate(90deg);}
+    .card-summary{flex:1;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .card-meta{font-size:.73rem;color:var(--muted);flex-shrink:0;}
+    .card-body{display:none;padding:1rem;border-top:1px solid var(--border);}
+    .card.open .card-body{display:block;}
+    /* ── fields ── */
+    .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem .75rem;margin-bottom:.55rem;}
+    .fgrid.full{grid-template-columns:1fr;}
+    .fgrid.tri{grid-template-columns:1fr 1fr 1fr;}
+    .field{display:flex;flex-direction:column;gap:.28rem;}
+    .field label{font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+    .field input,.field textarea,.field select{
+      background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:inherit;font-size:.88rem;padding:.42rem .7rem;width:100%;
+      transition:border-color .15s;
+    }
+    .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent2);}
+    .field textarea{resize:vertical;min-height:72px;line-height:1.5;}
+    .field input[type=number]{-moz-appearance:textfield;}
+    /* ── lang toggle ── */
+    .lang-hdr{margin-top:.6rem;}
+    .lang-btn{background:none;border:none;color:var(--accent2);font-size:.75rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:.3rem;}
+    .lang-btn:hover{text-decoration:underline;}
+    .lang-fields{display:none;margin-top:.5rem;}
+    .lang-fields.open{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;}
+    /* ── card footer ── */
+    .card-foot{display:flex;justify-content:space-between;align-items:center;padding-top:.7rem;border-top:1px solid var(--border);margin-top:.7rem;}
+    .card-order{display:flex;gap:.35rem;}
+    /* ── misc ── */
+    .empty{color:var(--muted);text-align:center;padding:1.5rem;font-size:.9rem;}
+    .loading{color:var(--muted);text-align:center;padding:3rem;}
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <span class="hdr-logo">⚙ OrionPnP <span class="badge">CMS</span></span>
+    <div class="hdr-right">
+      <span class="save-status" id="saveStatus"></span>
+      <button class="btn btn-primary" id="saveBtn" disabled>Save Changes</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs"></nav>
+<main class="main" id="main"><p class="loading">Loading…</p></main>
+
+<script>
+/* ─────────────────────────────────────────────────────── state */
+let content = null;
+let dirty   = false;
+let activeTab = 'updates';
+const openCards = { updates: new Set(), timeline: new Set(), milestones: new Set(), planned_work: new Set() };
+
+/* ─────────────────────────────────────────────────────── schema */
+const TABS = [
+  { key: 'updates',      label: 'Updates' },
+  { key: 'timeline',     label: 'Timeline' },
+  { key: 'milestones',   label: 'Milestones' },
+  { key: 'planned_work', label: 'Planned Work' },
+];
+
+const SCHEMA = {
+  updates: {
+    summary: i => i.title?.en || '(untitled)',
+    meta:    i => [i.date, i.status].filter(Boolean).join(' · '),
+    fields: [
+      { k:'date',   label:'Date',              type:'text',     half:true  },
+      { k:'status', label:'Status',            type:'select',   half:true,  opts:['active','draft','archived'] },
+      { k:'tags',   label:'Tags (comma-sep)',  type:'text',     half:false, toVal: v => (v||[]).join(', '), fromVal: v => v.split(',').map(s=>s.trim()).filter(Boolean) },
+      { k:'title',  label:'Title',             type:'text',     half:false, ml:true },
+      { k:'body',   label:'Body',              type:'textarea', half:false, ml:true },
+    ],
+    blank: () => ({ date: today(), status:'draft', tags:[], title:{en:'',it:'',fr:'',es:''}, body:{en:'',it:'',fr:'',es:''} }),
+  },
+  timeline: {
+    summary: i => i.label?.en || '(untitled)',
+    meta:    i => i.date || '',
+    fields: [
+      { k:'date',        label:'Date',        type:'text',     half:false },
+      { k:'label',       label:'Label',       type:'text',     half:false, ml:true },
+      { k:'description', label:'Description', type:'textarea', half:false, ml:true },
+    ],
+    blank: () => ({ date:'', label:{en:'',it:'',fr:'',es:''}, description:{en:'',it:'',fr:'',es:''} }),
+  },
+  milestones: {
+    summary: i => i.name?.en || '(untitled)',
+    meta:    i => [i.target, i.progress != null ? i.progress+'%' : ''].filter(Boolean).join(' · '),
+    fields: [
+      { k:'target',      label:'Target',      type:'text',     half:true  },
+      { k:'progress',    label:'Progress %',  type:'number',   half:true  },
+      { k:'name',        label:'Name',        type:'text',     half:false, ml:true },
+      { k:'description', label:'Description', type:'textarea', half:false, ml:true },
+    ],
+    blank: () => ({ target:'', progress:0, name:{en:'',it:'',fr:'',es:''}, description:{en:'',it:'',fr:'',es:''} }),
+  },
+  planned_work: {
+    summary: i => i.task?.en || i.window || '(untitled)',
+    meta:    i => i.window || '',
+    fields: [
+      { k:'window',  label:'Window',  type:'text',     half:false },
+      { k:'task',    label:'Task',    type:'text',     half:false, ml:true },
+      { k:'details', label:'Details', type:'textarea', half:false, ml:true },
+    ],
+    blank: () => ({ window:'', task:{en:'',it:'',fr:'',es:''}, details:{en:'',it:'',fr:'',es:''} }),
+  },
+};
+
+/* ─────────────────────────────────────────────────────── helpers */
+function today() { return new Date().toISOString().slice(0,10); }
+function esc(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function getVal(item, f, lang='en') {
+  if (f.ml)      return item[f.k]?.[lang] ?? '';
+  if (f.toVal)   return f.toVal(item[f.k]);
+  return item[f.k] ?? '';
+}
+
+function setVal(item, f, raw, lang='en') {
+  if (f.ml) {
+    item[f.k] = item[f.k] || {en:'',it:'',fr:'',es:''};
+    item[f.k][lang] = raw;
+  } else if (f.fromVal) {
+    item[f.k] = f.fromVal(raw);
+  } else if (f.type === 'number') {
+    item[f.k] = raw === '' ? 0 : Number(raw);
+  } else {
+    item[f.k] = raw;
+  }
+  markDirty();
+}
+
+/* ─────────────────────────────────────────────────────── dirty */
+function markDirty() {
+  dirty = true;
+  document.getElementById('saveBtn').disabled = false;
+  setStatus('');
+}
+
+function setStatus(msg, cls='') {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.className = 'save-status' + (cls ? ' '+cls : '');
+}
+
+/* ─────────────────────────────────────────────────────── render */
+function renderTabs() {
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = TABS.map(t =>
+    `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${(content[t.key]||[]).length})</span></button>`
+  ).join('');
+  nav.querySelectorAll('.tab').forEach(btn =>
+    btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderAll(); })
+  );
+}
+
+function renderMain() {
+  const main = document.getElementById('main');
+  const schema = SCHEMA[activeTab];
+  const items  = content[activeTab] || [];
+
+  let html = `<div class="panel">
+    <div class="panel-header">
+      <h2>${TABS.find(t=>t.key===activeTab).label}</h2>
+      <span class="cnt">${items.length} item${items.length!==1?'s':''}</span>
+    </div>
+    <div class="items" id="itemList">`;
+
+  items.forEach((item, idx) => {
+    const open = openCards[activeTab].has(idx);
+    html += renderCard(schema, item, idx, open);
+  });
+
+  html += `</div><button class="btn-add" id="btnAdd">+ Add entry</button></div>`;
+  main.innerHTML = html;
+
+  // card header toggles
+  main.querySelectorAll('.card-hdr').forEach(hdr => {
+    hdr.addEventListener('click', () => {
+      const card = hdr.closest('.card');
+      const idx  = Number(card.dataset.idx);
+      if (openCards[activeTab].has(idx)) openCards[activeTab].delete(idx);
+      else openCards[activeTab].add(idx);
+      card.classList.toggle('open', openCards[activeTab].has(idx));
+      hdr.querySelector('.chevron').style.transform = openCards[activeTab].has(idx) ? 'rotate(90deg)' : '';
+    });
+  });
+
+  // field inputs
+  main.querySelectorAll('[data-idx][data-fk]').forEach(el => {
+    const sectionItems = content[activeTab];
+    const onChange = () => {
+      const idx  = Number(el.dataset.idx);
+      const fk   = el.dataset.fk;
+      const lang = el.dataset.lang || null;
+      const f    = schema.fields.find(x => x.k === fk);
+      if (!f) return;
+      if (lang) setVal(sectionItems[idx], f, el.value, lang);
+      else      setVal(sectionItems[idx], f, el.value);
+      // update summary in header without full re-render
+      const hdrSum = el.closest('.card')?.querySelector('.card-summary');
+      if (hdrSum) hdrSum.textContent = schema.summary(sectionItems[idx]);
+      const hdrMeta = el.closest('.card')?.querySelector('.card-meta');
+      if (hdrMeta) hdrMeta.textContent = schema.meta(sectionItems[idx]);
+    };
+    el.addEventListener('input', onChange);
+    el.addEventListener('change', onChange);
+  });
+
+  // lang toggles
+  main.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lf = btn.nextElementSibling;
+      const open = lf.classList.toggle('open');
+      btn.querySelector('.chevron').style.transform = open ? 'rotate(90deg)' : '';
+    });
+  });
+
+  // move up/down
+  main.querySelectorAll('[data-move]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const card  = btn.closest('.card');
+      const idx   = Number(card.dataset.idx);
+      const dir   = btn.dataset.move;
+      const arr   = content[activeTab];
+      if (dir === 'up'   && idx > 0)           { [arr[idx-1],arr[idx]] = [arr[idx],arr[idx-1]]; markDirty(); renderAll(); }
+      if (dir === 'down' && idx < arr.length-1) { [arr[idx],arr[idx+1]] = [arr[idx+1],arr[idx]]; markDirty(); renderAll(); }
+    });
+  });
+
+  // delete
+  main.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = Number(btn.closest('.card').dataset.idx);
+      if (!confirm('Delete this entry?')) return;
+      content[activeTab].splice(idx, 1);
+      openCards[activeTab].clear();
+      markDirty();
+      renderAll();
+    });
+  });
+
+  // add new
+  document.getElementById('btnAdd').addEventListener('click', () => {
+    const arr = content[activeTab];
+    arr.unshift(schema.blank());
+    openCards[activeTab].clear();
+    openCards[activeTab].add(0);
+    markDirty();
+    renderAll();
+    document.getElementById('main').scrollIntoView({behavior:'smooth'});
+  });
+}
+
+function renderCard(schema, item, idx, open) {
+  const o = open ? ' open' : '';
+  return `
+  <div class="card${o}" data-idx="${idx}">
+    <div class="card-hdr">
+      <span class="chevron" style="${open?'transform:rotate(90deg)':''}">&#9654;</span>
+      <span class="card-summary">${esc(schema.summary(item))}</span>
+      <span class="card-meta">${esc(schema.meta(item))}</span>
+    </div>
+    <div class="card-body">
+      ${renderFields(schema, item, idx)}
+      <div class="card-foot">
+        <div class="card-order">
+          <button class="btn-sm" data-move="up" title="Move up">↑</button>
+          <button class="btn-sm" data-move="down" title="Move down">↓</button>
+        </div>
+        <button class="btn-sm btn-del" data-delete="1">Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFields(schema, item, idx) {
+  let html = '';
+  // group non-ml fields into a grid, ml fields full-width
+  const simpleFields = schema.fields.filter(f => !f.ml);
+  const mlFields     = schema.fields.filter(f => f.ml);
+
+  if (simpleFields.length) {
+    const cols = simpleFields.length === 1 ? 'full' : simpleFields.some(f=>!f.half) ? 'full' : '';
+    // render each simply
+    let gridHtml = '';
+    let inGrid = false;
+    simpleFields.forEach(f => {
+      if (f.half && !inGrid) { gridHtml += '<div class="fgrid">'; inGrid = true; }
+      if (!f.half && inGrid) { gridHtml += '</div>'; inGrid = false; }
+      if (!f.half) gridHtml += '<div class="fgrid full">';
+      gridHtml += renderField(f, getVal(item, f), idx, null);
+      if (!f.half) gridHtml += '</div>';
+    });
+    if (inGrid) gridHtml += '</div>';
+    html += gridHtml;
+  }
+
+  mlFields.forEach(f => {
+    const enVal  = getVal(item, f, 'en');
+    const itVal  = getVal(item, f, 'it');
+    const frVal  = getVal(item, f, 'fr');
+    const esVal  = getVal(item, f, 'es');
+    html += `<div class="fgrid full">${renderField(f, enVal, idx, 'en')}</div>`;
+    html += `<div class="lang-hdr">
+      <button class="lang-btn" type="button"><span class="chevron">&#9654;</span> IT / FR / ES</button>
+      <div class="lang-fields">
+        <div class="field"><label>IT</label>${renderInput(f, itVal, idx, 'it')}</div>
+        <div class="field"><label>FR</label>${renderInput(f, frVal, idx, 'fr')}</div>
+        <div class="field"><label>ES</label>${renderInput(f, esVal, idx, 'es')}</div>
+      </div>
+    </div>`;
+  });
+
+  return html;
+}
+
+function renderField(f, val, idx, lang) {
+  return `<div class="field"><label>${esc(f.label)}${lang?' ('+lang.toUpperCase()+')':''}</label>${renderInput(f, val, idx, lang)}</div>`;
+}
+
+function renderInput(f, val, idx, lang) {
+  const attrs = `data-idx="${idx}" data-fk="${f.k}"${lang?` data-lang="${lang}"`:''} `;
+  const v = esc(val);
+  if (f.type === 'select')   return `<select ${attrs}>${f.opts.map(o=>`<option${o===val?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  if (f.type === 'textarea') return `<textarea ${attrs} rows="3">${v}</textarea>`;
+  if (f.type === 'number')   return `<input type="number" ${attrs} value="${v}" min="0" max="100">`;
+  return `<input type="text" ${attrs} value="${v}">`;
+}
+
+function renderAll() {
+  renderTabs();
+  renderMain();
+}
+
+/* ─────────────────────────────────────────────────────── load / save */
+async function load() {
+  try {
+    const res = await fetch('/api/content', {headers:{Accept:'application/json'}});
+    if (!res.ok) throw new Error();
+    content = await res.json();
+    content.updates      = content.updates      || [];
+    content.timeline     = content.timeline     || [];
+    content.milestones   = content.milestones   || [];
+    content.planned_work = content.planned_work || [];
+    renderAll();
+  } catch {
+    document.getElementById('main').innerHTML = '<p class="loading" style="color:var(--danger)">Failed to load content.json</p>';
+  }
+}
+
+async function save() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  setStatus('Saving…');
+  try {
+    const res = await fetch('/api/content', {
+      method:  'PUT',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify(content),
+    });
+    if (!res.ok) throw new Error();
+    dirty = false;
+    setStatus('Saved ✓', 'ok');
+    renderTabs(); // refresh counts
+    setTimeout(() => setStatus(''), 3000);
+  } catch {
+    setStatus('Save failed', 'err');
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('saveBtn').addEventListener('click', save);
+
+window.addEventListener('beforeunload', e => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+load();
+</script>
+</body>
+</html>

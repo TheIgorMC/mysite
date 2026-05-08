@@ -1,0 +1,14 @@
+services:
+  orionpnp:
+    build: .
+    container_name: orionpnp_site
+    restart: unless-stopped
+    ports:
+      - "1080:1080"
+    environment:
+      - PORT=1080
+      # Optional: set this to protect the export endpoint.
+      # - ORION_ADMIN_TOKEN=change-me
+    volumes:
+      - ./content.json:/app/content.json
+      - ./registrations.json:/app/registrations.json

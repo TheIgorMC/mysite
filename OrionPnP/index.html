@@ -1,0 +1,234 @@
+﻿<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OrionPnP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- â”€â”€ NAVBAR â”€â”€ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#" data-page="home">
+        <img src="logoOrion.png" alt="OrionPnP" class="nav-logo">
+        <span>OrionPnP</span>
+      </a>
+
+      <button class="nav-burger" id="navBurger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="#" data-page="home"    data-i18n="navHome"     class="nav-link active">Home</a></li>
+        <li><a href="#" data-page="status"  data-i18n="navStatus"   class="nav-link">Status</a></li>
+        <li><a href="#" data-page="diary"   data-i18n="navDiary"    class="nav-link">Diary</a></li>
+        <li><a href="#" data-page="register" data-i18n="navRegister" class="nav-link nav-link-cta">Stay Posted</a></li>
+      </ul>
+
+      <div class="nav-lang">
+        <select id="languageSelect" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="it">IT</option>
+          <option value="fr">FR</option>
+          <option value="es">ES</option>
+        </select>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">&#x1F319;</button>
+    </div>
+</nav>
+
+  <!-- â”€â”€ PAGES â”€â”€ -->
+  <div id="app">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <section class="hero">
+        <video id="bgVideo" class="bg-video" autoplay muted loop playsinline>
+          <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="hero-overlay"></div>
+        <div class="hero-content reveal">
+          <p class="eyebrow" data-i18n="eyebrow">Open hardware pick &amp; place</p>
+          <h1 data-i18n="heroTitle">Precision automation<br>for makers</h1>
+          <p class="lead" data-i18n="heroSubtitle">Build smarter. Place faster. OrionPnP is an open hardware pick-and-place machine designed for real production benches.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" data-nav="register" data-i18n="heroCta">Stay Posted</button>
+            <button class="btn btn-ghost" data-nav="status" data-i18n="heroSecondary">View Status</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" id="home-features">
+        <div class="section-inner">
+          <h2 class="section-title" data-i18n="featuresTitle">Why OrionPnP?</h2>
+          <div class="feature-grid">
+            <div class="feature-card reveal-child">
+              <div class="feature-icon">&#x26A1;</div>
+              <h3 data-i18n="feat1Title">Open Hardware</h3>
+              <p data-i18n="feat1Body">Fully open schematics, CAD files, and firmware. Modify it to fit your exact needs.</p>
+            </div>
+            <div class="feature-card reveal-child">
+              <div class="feature-icon">&#x1F3AF;</div>
+              <h3 data-i18n="feat2Title">Vision Aligned</h3>
+              <p data-i18n="feat2Body">Camera-assisted placement with sub-millimeter accuracy for 0402 and finer components.</p>
+            </div>
+            <div class="feature-card reveal-child">
+              <div class="feature-icon">&#x1F6E0;&#xFE0F;</div>
+              <h3 data-i18n="feat3Title">Maker-First</h3>
+              <p data-i18n="feat3Body">Designed around real workflows. Tape feeders, tray feeders, no-fuss calibration.</p>
+            </div>
+            <div class="feature-card reveal-child">
+              <div class="feature-icon">&#x1F310;</div>
+              <h3 data-i18n="feat4Title">Community Driven</h3>
+              <p data-i18n="feat4Body">Built in the open, improved together. Join the early access list to shape the roadmap.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- STATUS -->
+    <div class="page" id="page-status">
+      <section class="page-hero reveal">
+        <div class="page-hero-inner">
+          <p class="eyebrow" data-i18n="statusEyebrow">Project Status</p>
+          <h1 data-i18n="statusTitle">Where we are</h1>
+          <p class="lead" data-i18n="statusSubtitle">Live milestones and planned work as the project evolves.</p>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-inner">
+          <h2 class="section-title" data-i18n="milestonesTitle">Milestones</h2>
+          <p class="section-sub" data-i18n="milestonesSubtitle">Measurable goals and current progress.</p>
+          <div id="milestonesList" class="milestone-list"></div>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-inner">
+          <h2 class="section-title" data-i18n="plannedTitle">Planned Work</h2>
+          <p class="section-sub" data-i18n="plannedSubtitle">What is coming next on the roadmap.</p>
+          <div id="plannedList" class="planned-list"></div>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-inner">
+          <h2 class="section-title" data-i18n="timelineTitle">Project Timeline</h2>
+          <p class="section-sub" data-i18n="timelineSubtitle">Key events from start to now.</p>
+          <div id="timelineList" class="timeline-list"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- DIARY -->
+    <div class="page" id="page-diary">
+      <section class="page-hero reveal">
+        <div class="page-hero-inner">
+          <p class="eyebrow" data-i18n="diaryEyebrow">Dev Diary</p>
+          <h1 data-i18n="diaryTitle">Dev Diary</h1>
+          <p class="lead" data-i18n="diarySubtitle">Short posts about decisions, progress, and what's next.</p>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-inner">
+          <div id="updatesList" class="blog-list"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="page" id="page-register">
+      <section class="page-hero reveal">
+        <div class="page-hero-inner">
+          <p class="eyebrow" data-i18n="registerEyebrow">Early Access</p>
+          <h1 data-i18n="registerTitle">Stay in the loop</h1>
+          <p class="lead" data-i18n="registerSubtitle">Tell us how you want to follow the project â€” or whether you'd buy one when it's ready.</p>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="section-inner form-section">
+
+          <div class="intent-chooser">
+            <p class="intent-label" data-i18n="intentLabel">I want to:</p>
+            <div class="intent-options" id="intentOptions">
+              <label class="intent-card">
+                <input type="radio" name="intent" value="stay_posted" checked>
+                <span class="intent-icon">ðŸ“¬</span>
+                <span class="intent-name" data-i18n="intentPosted">Stay posted</span>
+                <span class="intent-desc" data-i18n="intentPostedDesc">Get updates when major milestones are hit.</span>
+              </label>
+              <label class="intent-card">
+                <input type="radio" name="intent" value="buy_if_price">
+                <span class="intent-icon">ðŸ›’</span>
+                <span class="intent-name" data-i18n="intentBuy">Buy if price fits</span>
+                <span class="intent-desc" data-i18n="intentBuyDesc">I'm interested in buying if the final price works for me.</span>
+              </label>
+              <label class="intent-card">
+                <input type="radio" name="intent" value="contribute">
+                <span class="intent-icon">ðŸ”§</span>
+                <span class="intent-name" data-i18n="intentContrib">Contribute</span>
+                <span class="intent-desc" data-i18n="intentContribDesc">I'd like to help with testing, design, or firmware.</span>
+              </label>
+            </div>
+          </div>
+
+          <form id="interestForm" class="interest-form" novalidate>
+            <div class="form-row">
+              <label>
+                <span data-i18n="nameLabel">Name</span>
+                <input type="text" name="name" required maxlength="120" placeholder="Alex Example">
+              </label>
+              <label>
+                <span data-i18n="emailLabel">Email</span>
+                <input type="email" name="email" required placeholder="alex@example.com">
+              </label>
+            </div>
+
+            <label>
+              <span data-i18n="interestLabel">Primary use case</span>
+              <input type="text" name="interest" required maxlength="200" placeholder="Small-batch SMD assembly for prototypes">
+            </label>
+
+            <div class="form-row" id="priceRow" style="display:none">
+              <label>
+                <span data-i18n="maxPriceLabel">Max budget (EUR, optional)</span>
+                <input type="number" name="max_price" min="0" max="99999" placeholder="e.g. 800">
+              </label>
+            </div>
+
+            <label>
+              <span data-i18n="messageLabel">Message (optional)</span>
+              <textarea name="message" rows="3" maxlength="1000" placeholder="Anything else you'd like us to know"></textarea>
+            </label>
+
+            <button type="submit" class="btn btn-primary" data-i18n="submitLabel">Submit</button>
+            <p id="formStatus" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </div>
+
+  </div><!-- /app -->
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <img src="logoOrion.png" alt="OrionPnP" class="footer-logo">
+      <p>OrionPnP &copy; 2026 &mdash; <span data-i18n="footerNote">Open hardware pick &amp; place for makers.</span></p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+

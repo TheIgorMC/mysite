@@ -1,0 +1,417 @@
+{
+  "updates": [
+    {
+      "body": {
+        "en": "The project website launched today. It includes a live status page with milestones and planned work, a dev diary, and an early-access registration form. Needed something quick and easy to hold progress for the public.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2026-05-08",
+      "status": "active",
+      "tags": [
+        "web",
+        "milestone"
+      ],
+      "title": {
+        "en": "OrionPnP website is live",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "The gantry is moving reliably under a custom Marlin build and the head is working okay. Started working through the OpenPnP configuration :machine definition, camera setup, homing. Also built a quick reflow oven out of an old oven and two SSRs: slow to ramp (barely fast enough for leaded) but the results are usable. Feeder devboard design is underway in parallel.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2026-04-20",
+      "status": "active",
+      "tags": [
+        "hardware",
+        "firmware"
+      ],
+      "title": {
+        "en": "First motion tests and OpenPnP bringup",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "Started wiring the V2 frame. In parallel, the first feeder concept was prototyped on a breadboard. The mechanism advances tape but issues are present with stopping the motors and connections on the breadboard are unreliable. Will move to a proper devboard.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2025-12-10",
+      "status": "archived",
+      "tags": [
+        "hardware",
+        "feeders"
+      ],
+      "title": {
+        "en": "Wiring the V2, first feeder breadboard tests",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "The first full mechanical assembly of V2 is together. No electronics yet — this was purely a fit check. Rail alignment is good, the gantry moves smoothly by hand, and the overall rigidity is much better than V1. A few printed parts need reprints but nothing blocking.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2025-09-05",
+      "status": "archived",
+      "tags": [
+        "hardware",
+        "mechanical"
+      ],
+      "title": {
+        "en": "V2 mechanical prototype assembled",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "The first full CAD model of V2 is done. Main goals were met: proper linear rails, dual nozzle, and space for tape feeders (single or dual rail, allowing a larger quantity of low count boards to be placed. BOM is in, parts ordered. Printing the structural pieces now.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2025-03-15",
+      "status": "archived",
+      "tags": [
+        "mechanical",
+        "cad"
+      ],
+      "title": {
+        "en": "V2 CAD finalized, parts sourced",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "The first version of Core (the OrionPnP mainboard) came back from fab. Powered it up and immediately found issues on power (wrong pins for the capacitor) and USB (missing the 100nF caps inline). Started debugging and fixing, but will keep it for the future.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2024-09-20",
+      "status": "archived",
+      "tags": [
+        "electronics",
+        "hardware"
+      ],
+      "title": {
+        "en": "Core mainboard first spin — debugging begins",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "V1 taught us what not to do. V2 requirements are now clear: affordable BOM, linear rails for actual precision, 0402-capable placement, tape feeders from day one, easy to maintain and upgrade. CAD work started.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2024-02-01",
+      "status": "archived",
+      "tags": [
+        "mechanical",
+        "concept"
+      ],
+      "title": {
+        "en": "V2 concept locked in",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "V1 works, sort of. CoreXY motion runs, a single nozzle picks and places, and strip holders act as primitive feeders. Precision is poor and the coreXY motion means errors on placement. Enough to prove the concept is viable; not enough to be useful. Time to design V2 from scratch.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2024-01-10",
+      "status": "archived",
+      "tags": [
+        "milestone"
+      ],
+      "title": {
+        "en": "OrionPnP V1 — proof of concept done",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "body": {
+        "en": "Every prototype board I build means hours of hand-placing SMD components. There had to be a better way. Started experimenting with old 3D printer hardware to see if a pick-and-place was feasible on a maker budget. Spoiler: it is, but not with 3D printer parts.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "date": "2023-06-01",
+      "status": "archived",
+      "tags": [
+        "concept"
+      ],
+      "title": {
+        "en": "The idea: a home-built PnP from spare parts",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "date": "2023",
+      "description": {
+        "en": "First idea of a PnP machine to aid in home-built prototype development. Started with reusing old 3D printer parts and electronics, mainly as proof of concept.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "First idea",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2024",
+      "description": {
+        "en": "The first iteration of the project is born, complete of a single nozzle and simple strip holders instead of feeders. CoreXY motion working but with issues in precision. V2 conceptualized to address these issues.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "OrionPnP V1 is born",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2024-Q1",
+      "description": {
+        "en": "OrionPnP V2 starts taking shape in CAD, the main requirements are defined: cheap, precise, supporting feeders, allowing easy upgradability and maintenance. Needs to place down to 0402 components at the very least.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "OrionPnP V2 starts taking shape",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2024-Q3",
+      "description": {
+        "en": "Core is the mainboard of the OrionPnP, first version is produced but issues arise almost immediately. Debugging starts as new versions start to be conceptualized.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "First iteration of the Core",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2025-Q1",
+      "description": {
+        "en": "First version of the CAD model of the V2 is finished, printing starts and components are sourced. More maintainable design and feeders are planned.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "Mechanical design of V2 finalized, feeder design starts",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2025-Q3",
+      "description": {
+        "en": "First mechanical prototype of the V2 is assembled, allowing initial testing and validation of the design. No wiring or electronics yet, just mechanical validation.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "First mechanical prototype of V2 assembled",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2025-Q4",
+      "description": {
+        "en": "Wiring of the V2 starts, and the first bench prototype of feeders is tested. Edits are made and pieces reprinted as needed. Feeder tests are failing due to (probably) poor connection on breadboards.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "Wiring of V2 starts. First bench prototype of feeders",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    },
+    {
+      "date": "2026-Q1",
+      "description": {
+        "en": "First motion tests of the V2 are conducted with a custom Marlin firmware. OpenPnP is tested and first few steps of its configuration are made. A first reflow oven is built with an old oven and two SSRs. Tests show slow heating but acceptable results.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "label": {
+        "en": "First motion of V2, feeder devboard started, reflow oven built",
+        "es": "",
+        "fr": "",
+        "it": ""
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "description": {
+        "en": "Motion is working and the reflow oven is built. OpenPnP configuration is underway. Remaining work: camera alignment, full OpenPnP config, first pick-and-place run, reflow validation.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "name": {
+        "en": "First board placed and reflowed",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "progress": 60,
+      "target": "2026-Q2"
+    },
+    {
+      "description": {
+        "en": "Feeder devboard design was started in Q1 2026. Remaining work: PCB assembly, firmware bringup, mechanical feeder tests, and initial OpenPnP integration via custom scripts.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "name": {
+        "en": "Feeder devboard tested and validated",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "progress": 20,
+      "target": "2026-Q2"
+    },
+    {
+      "description": {
+        "en": "Mechanical frame is assembled and motion validated. Full wiring, camera system, working feeders, and end-to-end software configuration still needed before the unit is considered complete.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "name": {
+        "en": "First complete OrionPnP unit ready",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "progress": 30,
+      "target": "2026-Q3"
+    },
+    {
+      "description": {
+        "en": "Demonstrate a working OrionPnP unit at Maker Faire Rome — live placements, feeders running, and first public look at the project.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "name": {
+        "en": "Public showcase at Maker Faire Rome",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "progress": 10,
+      "target": "2026-Q3"
+    }
+  ],
+  "planned_work": [
+    {
+      "details": {
+        "en": "Finish the configuration, test and reflow the first boards, validate all the process and design choices.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "task": {
+        "en": "Finish config, test picks, test process",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "window": "Next month"
+    },
+    {
+      "details": {
+        "en": "Develop automation scripts to import components and jobs into OpenPnP, streamlining the workflow and reducing manual configuration required.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "task": {
+        "en": "Automation scripts for importing components and jobs",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "window": "Next 2 months"
+    },
+    {
+      "details": {
+        "en": "Ensure all feeders are operational and the machine is fully prepared for the Maker Faire demonstration.",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "task": {
+        "en": "Feeders working, machine ready for Maker Faire",
+        "es": "",
+        "fr": "",
+        "it": ""
+      },
+      "window": "By September"
+    }
+  ]
+}
