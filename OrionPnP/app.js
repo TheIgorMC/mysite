@@ -343,8 +343,6 @@ function setupLanguage() {
     applyTranslations();
     renderAll();
   });
-
-  applyTranslations();
 }
 
 /* ── RENDERERS ── */
@@ -518,12 +516,18 @@ function renderGallery() {
   if (!box) return;
   box.innerHTML = "";
 
-  galleryItems.forEach((item) => {
+  const items = (state.content.gallery && state.content.gallery.length)
+    ? state.content.gallery
+    : galleryItems;
+
+  items.forEach((item) => {
     const el = document.createElement("figure");
     el.className = "gallery-card reveal-child";
+    const alt     = item.altKey     ? t(item.altKey)     : (pickText(item.alt)     || "");
+    const caption = item.captionKey ? t(item.captionKey) : (pickText(item.caption) || "");
     el.innerHTML = `
-      <img src="${item.src}" alt="${t(item.altKey)}">
-      <figcaption>${t(item.captionKey)}</figcaption>
+      <img src="${item.src}" alt="${alt}">
+      <figcaption>${caption}</figcaption>
     `;
     box.appendChild(el);
   });
@@ -657,6 +661,7 @@ async function init() {
   setupTheme();
   setupNav();
   await loadLocales();
+  applyTranslations();
   setupLanguage();
   setupVideo();
   setupIntentCards();

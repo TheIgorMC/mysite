@@ -8,12 +8,16 @@ from pathlib import Path
 from threading import Lock
 
 from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.utils import secure_filename
 
 BASE_DIR = Path(__file__).resolve().parent
 CONTENT_FILE = BASE_DIR / "content.json"
 REGISTRATIONS_FILE = BASE_DIR / "registrations.json"
 LOCALES_DIR = BASE_DIR / "locales"
+ASSETS_DIR = BASE_DIR / "assets"
 SUPPORTED_LOCALES = ("en", "it", "fr", "es")
+ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_INTENTS = {"stay_posted", "buy_if_price", "contribute"}
 WRITE_LOCK = Lock()
@@ -146,7 +150,7 @@ def put_content():
     if not isinstance(payload, dict):
         return jsonify({"error": "Expected JSON object"}), 400
 
-    KNOWN_KEYS = {"updates", "timeline", "milestones", "planned_work"}
+    KNOWN_KEYS = {"updates", "timeline", "milestones", "planned_work", "gallery"}
     for key in KNOWN_KEYS:
         if key in payload and not isinstance(payload[key], list):
             return jsonify({"error": f"'{key}' must be a list"}), 400
@@ -177,6 +181,49 @@ def put_locales():
         for lang in SUPPORTED_LOCALES:
             _atomic_write_json(LOCALES_DIR / f"{lang}.json", normalized[lang])
 
+    return jsonify({"ok": True})
+
+
+@app.get("/api/assets")
+def list_assets():
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    files = []
+    for f in sorted(ASSETS_DIR.iterdir()):
+        if f.is_file() and f.suffix.lower() in ALLOWED_IMAGE_EXTS:
+            files.append({"name": f.name, "url": f"assets/{f.name}", "size": f.stat().st_size})
+    return jsonify(files)
+
+
+@app.post("/api/assets/upload")
+def upload_asset():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": "Empty filename"}), 400
+    filename = secure_filename(f.filename)
+    if not filename:
+        return jsonify({"error": "Invalid filename"}), 400
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTS:
+        return jsonify({"error": "File type not allowed"}), 400
+    data = f.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        return jsonify({"error": "File too large (max 10 MB)"}), 400
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    (ASSETS_DIR / filename).write_bytes(data)
+    return jsonify({"ok": True, "url": f"assets/{filename}", "name": filename})
+
+
+@app.delete("/api/assets/<path:filename>")
+def delete_asset(filename):
+    filename = secure_filename(filename)
+    if not filename:
+        return jsonify({"error": "Invalid filename"}), 400
+    target = ASSETS_DIR / filename
+    if not target.exists() or not target.is_file():
+        return jsonify({"error": "Not found"}), 404
+    target.unlink()
     return jsonify({"ok": True})
 
 

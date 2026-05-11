@@ -97,9 +97,30 @@
       color:var(--text);font-family:inherit;font-size:.88rem;padding:.45rem .65rem;min-height:56px;resize:vertical;
     }
 
+    /* gallery tab */
+    .asset-browser{margin-bottom:1.4rem;}
+    .asset-browser-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;}
+    .asset-browser-hdr h3{font-size:.9rem;font-weight:600;}
+    .asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;}
+    .asset-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;}
+    .asset-tile img{width:100%;aspect-ratio:1;object-fit:cover;background:#0b1629;display:block;}
+    .asset-tile-foot{padding:.4rem .5rem;display:flex;flex-direction:column;gap:.3rem;}
+    .asset-tile-name{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .asset-tile-btns{display:flex;gap:.3rem;}
+    .btn-add-gallery{background:rgba(224,124,36,.1);border:1px solid rgba(224,124,36,.35);border-radius:5px;color:var(--accent);font-size:.7rem;padding:.18rem .45rem;cursor:pointer;white-space:nowrap;}
+    .btn-add-gallery:hover{background:rgba(224,124,36,.2);}
+    .upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:1.2rem;text-align:center;color:var(--muted);font-size:.86rem;cursor:pointer;transition:border-color .15s,color .15s;margin-bottom:.7rem;}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--accent2);color:var(--text);}
+    .gallery-items-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;}
+    .gallery-items-hdr h3{font-size:.9rem;font-weight:600;}
+    .gallery-item-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);display:grid;grid-template-columns:80px 1fr auto;gap:.8rem;align-items:start;padding:.7rem;margin-bottom:.5rem;}
+    .gallery-item-thumb{width:80px;height:60px;object-fit:cover;border-radius:6px;background:#0b1629;display:block;}
+    .gallery-item-fields{display:flex;flex-direction:column;gap:.45rem;}
+    .gallery-item-actions{display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;}
     @media (max-width: 780px) {
       .locale-row{grid-template-columns:1fr;}
       .locale-key{padding-top:0;}
+      .gallery-item-card{grid-template-columns:1fr;}
     }
   </style>
 </head>
@@ -135,6 +156,7 @@ const TABS = [
   { key: 'timeline',     label: 'Timeline' },
   { key: 'milestones',   label: 'Milestones' },
   { key: 'planned_work', label: 'Planned Work' },
+  { key: 'gallery',      label: 'Gallery' },
   { key: 'locales',      label: 'Locales' },
 ];
 
@@ -225,9 +247,10 @@ function setStatus(msg, cls='') {
 function renderTabs() {
   const nav = document.getElementById('tabs');
   nav.innerHTML = TABS.map(t => {
-    const count = t.key === 'locales'
-      ? Object.keys((locales && locales.en) || {}).length
-      : (content && content[t.key] ? content[t.key].length : 0);
+    let count;
+    if (t.key === 'locales') count = Object.keys((locales && locales.en) || {}).length;
+    else if (t.key === 'gallery') count = (content && content.gallery ? content.gallery.length : 0);
+    else count = (content && content[t.key] ? content[t.key].length : 0);
     return `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${count})</span></button>`;
   }).join('');
   nav.querySelectorAll('.tab').forEach(btn =>
@@ -236,10 +259,8 @@ function renderTabs() {
 }
 
 function renderMain() {
-  if (activeTab === 'locales') {
-    renderLocalesPanel();
-    return;
-  }
+  if (activeTab === 'locales') { renderLocalesPanel(); return; }
+  if (activeTab === 'gallery') { renderGalleryPanel(); return; }
 
   const main = document.getElementById('main');
   const schema = SCHEMA[activeTab];
@@ -338,6 +359,213 @@ function renderMain() {
     renderAll();
     document.getElementById('main').scrollIntoView({behavior:'smooth'});
   });
+}
+
+/* ─────────────────────────────────────────────────────── gallery panel */
+let assetList = [];   // [{name, url, size}] loaded from /api/assets
+
+async function refreshAssets() {
+  try {
+    const res = await fetch('/api/assets', {headers:{Accept:'application/json'}});
+    assetList = res.ok ? await res.json() : [];
+  } catch { assetList = []; }
+}
+
+function galleryLang(item, field, lang) {
+  item[field] = item[field] || {en:'',it:'',fr:'',es:''};
+  return item[field][lang] || '';
+}
+
+function renderGalleryPanel() {
+  const main = document.getElementById('main');
+  const galleryItems = content.gallery || [];
+
+  // asset browser tiles
+  const tiles = assetList.map((a) => `
+    <div class="asset-tile">
+      <img src="${esc(a.url)}" alt="${esc(a.name)}">
+      <div class="asset-tile-foot">
+        <div class="asset-tile-name" title="${esc(a.name)}">${esc(a.name)}</div>
+        <div class="asset-tile-btns">
+          <button class="btn-add-gallery" data-add-asset="${esc(a.url)}">+ Gallery</button>
+          <button class="btn-sm btn-del" data-del-asset="${esc(a.name)}">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // gallery items list
+  const itemRows = galleryItems.map((item, idx) => {
+    const srcOpts = assetList.map(a =>
+      `<option value="${esc(a.url)}"${item.src===a.url?' selected':''}>${esc(a.name)}</option>`
+    ).join('');
+    // also add current src even if not in asset list
+    const srcInList = assetList.some(a => a.url === item.src);
+    const extraOpt = (!srcInList && item.src) ? `<option value="${esc(item.src)}" selected>${esc(item.src)}</option>` : '';
+    return `
+    <div class="gallery-item-card" data-gidx="${idx}">
+      <img class="gallery-item-thumb" src="${esc(item.src||'')}" alt="">
+      <div class="gallery-item-fields">
+        <div class="field">
+          <label>Image</label>
+          <select data-gfield="src" data-gidx="${idx}">${extraOpt}${srcOpts}</select>
+        </div>
+        <div class="fgrid">
+          <div class="field">
+            <label>Alt / Tooltip (EN)</label>
+            <input type="text" data-gfield="alt" data-glang="en" data-gidx="${idx}" value="${esc(galleryLang(item,'alt','en'))}">
+          </div>
+          <div class="field">
+            <label>Caption (EN)</label>
+            <input type="text" data-gfield="caption" data-glang="en" data-gidx="${idx}" value="${esc(galleryLang(item,'caption','en'))}">
+          </div>
+        </div>
+        <details style="margin-top:.2rem">
+          <summary style="font-size:.75rem;color:var(--muted);cursor:pointer">IT / FR / ES</summary>
+          <div class="fgrid tri" style="margin-top:.5rem">
+            <div class="field"><label>Alt IT</label><input type="text" data-gfield="alt" data-glang="it" data-gidx="${idx}" value="${esc(galleryLang(item,'alt','it'))}"></div>
+            <div class="field"><label>Alt FR</label><input type="text" data-gfield="alt" data-glang="fr" data-gidx="${idx}" value="${esc(galleryLang(item,'alt','fr'))}"></div>
+            <div class="field"><label>Alt ES</label><input type="text" data-gfield="alt" data-glang="es" data-gidx="${idx}" value="${esc(galleryLang(item,'alt','es'))}"></div>
+            <div class="field"><label>Caption IT</label><input type="text" data-gfield="caption" data-glang="it" data-gidx="${idx}" value="${esc(galleryLang(item,'caption','it'))}"></div>
+            <div class="field"><label>Caption FR</label><input type="text" data-gfield="caption" data-glang="fr" data-gidx="${idx}" value="${esc(galleryLang(item,'caption','fr'))}"></div>
+            <div class="field"><label>Caption ES</label><input type="text" data-gfield="caption" data-glang="es" data-gidx="${idx}" value="${esc(galleryLang(item,'caption','es'))}"></div>
+          </div>
+        </details>
+      </div>
+      <div class="gallery-item-actions">
+        <button class="btn-sm" data-gmove="up" data-gidx="${idx}">↑</button>
+        <button class="btn-sm" data-gmove="down" data-gidx="${idx}">↓</button>
+        <button class="btn-sm btn-del" data-gdel="${idx}">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  main.innerHTML = `<div class="panel">
+    <div class="asset-browser">
+      <div class="asset-browser-hdr">
+        <h3>Assets (${assetList.length} images)</h3>
+        <button class="btn btn-sm" id="uploadBtn">Upload image</button>
+        <input id="uploadFile" type="file" accept="image/*" style="display:none" multiple>
+      </div>
+      <div class="upload-zone" id="uploadZone">Drop images here or click Upload</div>
+      <div class="asset-grid" id="assetGrid">${tiles || '<p class="empty">No images in assets/ folder</p>'}</div>
+    </div>
+    <div>
+      <div class="gallery-items-hdr">
+        <h3>Gallery items (${galleryItems.length})</h3>
+        <span style="font-size:.78rem;color:var(--muted)">These appear on the Gallery page in order.</span>
+      </div>
+      <div id="galleryItemList">${itemRows || '<p class="empty">No gallery items. Use + Gallery to add images.</p>'}</div>
+    </div>
+  </div>`;
+
+  // upload button
+  document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('uploadFile').click());
+  document.getElementById('uploadFile').addEventListener('change', async (e) => {
+    const files = [...(e.target.files||[])];
+    e.target.value = '';
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+
+  // drag-drop upload
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', async e => {
+    e.preventDefault();
+    zone.classList.remove('drag');
+    const files = [...(e.dataTransfer.files||[])].filter(f => f.type.startsWith('image/'));
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+
+  // add to gallery
+  main.querySelectorAll('[data-add-asset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = btn.dataset.addAsset;
+      content.gallery = content.gallery || [];
+      content.gallery.push({ src, alt:{en:'',it:'',fr:'',es:''}, caption:{en:'',it:'',fr:'',es:''} });
+      markDirty();
+      renderAll();
+    });
+  });
+
+  // delete asset
+  main.querySelectorAll('[data-del-asset]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const name = btn.dataset.delAsset;
+      if (!confirm(`Delete asset "${name}"?\nThis cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/assets/${encodeURIComponent(name)}`, {method:'DELETE'});
+        if (!res.ok) { setStatus('Delete failed','err'); return; }
+        await refreshAssets();
+        renderAll();
+      } catch { setStatus('Delete failed','err'); }
+    });
+  });
+
+  // gallery field edits
+  main.querySelectorAll('[data-gfield]').forEach(el => {
+    el.addEventListener('input', () => applyGalleryField(el));
+    el.addEventListener('change', () => {
+      applyGalleryField(el);
+      // update thumb if src changed
+      if (el.dataset.gfield === 'src') {
+        const card = el.closest('.gallery-item-card');
+        if (card) card.querySelector('.gallery-item-thumb').src = el.value;
+      }
+    });
+  });
+
+  // gallery reorder
+  main.querySelectorAll('[data-gmove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.gidx);
+      const dir = btn.dataset.gmove;
+      const arr = content.gallery;
+      if (dir==='up'   && idx>0)          { [arr[idx-1],arr[idx]]=[arr[idx],arr[idx-1]]; markDirty(); renderAll(); }
+      if (dir==='down' && idx<arr.length-1){ [arr[idx],arr[idx+1]]=[arr[idx+1],arr[idx]]; markDirty(); renderAll(); }
+    });
+  });
+
+  // gallery delete
+  main.querySelectorAll('[data-gdel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove from gallery?')) return;
+      content.gallery.splice(Number(btn.dataset.gdel), 1);
+      markDirty();
+      renderAll();
+    });
+  });
+}
+
+function applyGalleryField(el) {
+  const idx  = Number(el.dataset.gidx);
+  const field = el.dataset.gfield;
+  const lang  = el.dataset.glang || null;
+  const item  = content.gallery[idx];
+  if (!item) return;
+  if (lang) {
+    item[field] = item[field] || {en:'',it:'',fr:'',es:''};
+    item[field][lang] = el.value;
+  } else {
+    item[field] = el.value;
+  }
+  markDirty();
+}
+
+async function uploadAssetFile(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/assets/upload', {method:'POST', body:fd});
+    const data = await res.json();
+    if (!res.ok) { setStatus(data.error || 'Upload failed','err'); return; }
+    setStatus(`Uploaded ${data.name} ✓`, 'ok');
+    setTimeout(() => setStatus(''), 3000);
+  } catch { setStatus('Upload failed','err'); }
 }
 
 function renderLocalesPanel() {
@@ -530,12 +758,14 @@ async function load() {
     content.timeline     = content.timeline     || [];
     content.milestones   = content.milestones   || [];
     content.planned_work = content.planned_work || [];
+    content.gallery      = content.gallery      || [];
 
     locales = locales && typeof locales === 'object' ? locales : {};
     ['en', 'it', 'fr', 'es'].forEach((lang) => {
       if (!locales[lang] || typeof locales[lang] !== 'object') locales[lang] = {};
     });
 
+    await refreshAssets();
     renderAll();
   } catch {
     document.getElementById('main').innerHTML = '<p class="loading" style="color:var(--danger)">Failed to load content/locales</p>';
