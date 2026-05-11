@@ -13,6 +13,8 @@ const i18n = {
     feat2Title: "Vision Aligned", feat2Body: "Camera-assisted placement with sub-millimeter accuracy for 0402 and finer components.",
     feat3Title: "Maker-First", feat3Body: "Designed around real workflows. Tape feeders, tray feeders, no-fuss calibration.",
     feat4Title: "Community Driven", feat4Body: "Built in the open, improved together. Join the early access list to shape the roadmap.",
+    galleryTitle: "Gallery",
+    gallerySubtitle: "Current prototype visuals, board tests, and mechanical details.",
     buildPlatesTitle: "Build Plate Configurations",
     buildPlatesSubtitle: "Choose the setup that matches your board size and feeder count.",
     snapshotTitle: "Development Snapshot",
@@ -45,6 +47,7 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -68,6 +71,7 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -91,6 +95,7 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -120,15 +125,15 @@ const state = {
 const buildPlateConfigs = [
   {
     name: "Compact Plate (Option 1)",
-    boardRange: "up to 100 x 100 mm",
-    feeders: "up to 16 tape feeders",
-    notes: "Quick swap: Both build plate options are fully supported. Swap the buildplate to switch between compact and extended. Ideal for small boards and fast prototyping."
+    workingArea: "300 x 215 mm",
+    feeders: "up to 64 feeders",
+    notes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups)."
   },
   {
     name: "Extended Plate (Option 2)",
-    boardRange: "up to 200 x 150 mm",
+    workingArea: "300 x 285 mm",
     feeders: "up to 32 tape feeders",
-    notes: "Quick swap: Both build plate options are fully supported. Swap the buildplate to switch between compact and extended. Best for larger boards and more feeders."
+    notes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups)."
   }
 ];
 
@@ -142,12 +147,32 @@ const feederAndConveyorNotes = [
     icon: "\uD83D\uDE9A", // delivery truck
     label: "Conveyor Ready",
     text: "Mechanical design allows for conveyor belt integration by modding. Predisposed for future automation upgrades."
+  },
+  {
+    icon: "\uD83D\uDCCF", // straight ruler
+    label: "Future XL Option",
+    text: "An XL buildplate variant may be developed later if demand is high enough."
   }
 ];
 
 /* ── HELPERS ── */
 function t(key) {
   return (i18n[state.lang] && i18n[state.lang][key]) || i18n.en[key] || key;
+}
+
+async function loadLocales() {
+  try {
+    const res = await fetch("/api/locales", { headers: { Accept: "application/json" } });
+    if (!res.ok) return;
+    const remote = await res.json();
+    ["en", "it", "fr", "es"].forEach((lang) => {
+      if (remote && remote[lang] && typeof remote[lang] === "object") {
+        i18n[lang] = { ...(i18n[lang] || {}), ...remote[lang] };
+      }
+    });
+  } catch (_) {
+    // Keep bundled defaults if locales endpoint is unavailable.
+  }
 }
 
 function pickText(value) {
@@ -344,7 +369,7 @@ function renderHomeSnapshot() {
     el.className = "build-plate-card";
     el.innerHTML = `
       <h3>${cfg.name}</h3>
-      <p><strong>Board size:</strong> ${cfg.boardRange}</p>
+      <p><strong>Working area:</strong> ${cfg.workingArea}</p>
       <p><strong>Feeders:</strong> ${cfg.feeders}</p>
       <p>${cfg.notes}</p>
     `;
@@ -518,6 +543,7 @@ function applyTheme(theme) {
 async function init() {
   setupTheme();
   setupNav();
+  await loadLocales();
   setupLanguage();
   setupVideo();
   setupIntentCards();

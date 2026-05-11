@@ -81,6 +81,26 @@
     /* ── misc ── */
     .empty{color:var(--muted);text-align:center;padding:1.5rem;font-size:.9rem;}
     .loading{color:var(--muted);text-align:center;padding:3rem;}
+
+    /* locales tab */
+    .locale-toolbar{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem;}
+    .locale-toolbar label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+    .locale-toolbar select{
+      background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:inherit;font-size:.88rem;padding:.36rem .62rem;
+    }
+    .locale-grid{display:grid;grid-template-columns:1fr;gap:.55rem;}
+    .locale-row{display:grid;grid-template-columns:minmax(180px, 260px) 1fr;gap:.65rem;align-items:start;}
+    .locale-key{font-size:.78rem;color:var(--muted);padding-top:.45rem;word-break:break-word;}
+    .locale-row textarea{
+      background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:inherit;font-size:.88rem;padding:.45rem .65rem;min-height:56px;resize:vertical;
+    }
+
+    @media (max-width: 780px) {
+      .locale-row{grid-template-columns:1fr;}
+      .locale-key{padding-top:0;}
+    }
   </style>
 </head>
 <body>
@@ -103,8 +123,10 @@
 <script>
 /* ─────────────────────────────────────────────────────── state */
 let content = null;
+let locales = null;
 let dirty   = false;
 let activeTab = 'updates';
+let activeLocale = 'en';
 const openCards = { updates: new Set(), timeline: new Set(), milestones: new Set(), planned_work: new Set() };
 
 /* ─────────────────────────────────────────────────────── schema */
@@ -113,6 +135,7 @@ const TABS = [
   { key: 'timeline',     label: 'Timeline' },
   { key: 'milestones',   label: 'Milestones' },
   { key: 'planned_work', label: 'Planned Work' },
+  { key: 'locales',      label: 'Locales' },
 ];
 
 const SCHEMA = {
@@ -201,15 +224,23 @@ function setStatus(msg, cls='') {
 /* ─────────────────────────────────────────────────────── render */
 function renderTabs() {
   const nav = document.getElementById('tabs');
-  nav.innerHTML = TABS.map(t =>
-    `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${(content[t.key]||[]).length})</span></button>`
-  ).join('');
+  nav.innerHTML = TABS.map(t => {
+    const count = t.key === 'locales'
+      ? Object.keys((locales && locales.en) || {}).length
+      : (content && content[t.key] ? content[t.key].length : 0);
+    return `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${count})</span></button>`;
+  }).join('');
   nav.querySelectorAll('.tab').forEach(btn =>
     btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderAll(); })
   );
 }
 
 function renderMain() {
+  if (activeTab === 'locales') {
+    renderLocalesPanel();
+    return;
+  }
+
   const main = document.getElementById('main');
   const schema = SCHEMA[activeTab];
   const items  = content[activeTab] || [];
@@ -306,6 +337,51 @@ function renderMain() {
     markDirty();
     renderAll();
     document.getElementById('main').scrollIntoView({behavior:'smooth'});
+  });
+}
+
+function renderLocalesPanel() {
+  const main = document.getElementById('main');
+  const enKeys = Object.keys((locales && locales.en) || {}).sort();
+  const rows = enKeys.map((key) => {
+    const val = (locales[activeLocale] && locales[activeLocale][key]) || '';
+    return `<div class="locale-row">
+      <div class="locale-key">${esc(key)}</div>
+      <textarea data-locale-key="${esc(key)}">${esc(val)}</textarea>
+    </div>`;
+  }).join('');
+
+  main.innerHTML = `<div class="panel">
+    <div class="panel-header">
+      <h2>Locales</h2>
+      <span class="cnt">${enKeys.length} keys</span>
+    </div>
+    <div class="locale-toolbar">
+      <label for="localeSelect">Language</label>
+      <select id="localeSelect">
+        <option value="en" ${activeLocale==='en'?'selected':''}>EN</option>
+        <option value="it" ${activeLocale==='it'?'selected':''}>IT</option>
+        <option value="fr" ${activeLocale==='fr'?'selected':''}>FR</option>
+        <option value="es" ${activeLocale==='es'?'selected':''}>ES</option>
+      </select>
+    </div>
+    <div class="locale-grid">${rows || '<p class="empty">No locale keys found</p>'}</div>
+  </div>`;
+
+  document.getElementById('localeSelect').addEventListener('change', (e) => {
+    activeLocale = e.target.value;
+    renderAll();
+  });
+
+  main.querySelectorAll('[data-locale-key]').forEach((el) => {
+    const onChange = () => {
+      const key = el.dataset.localeKey;
+      locales[activeLocale] = locales[activeLocale] || {};
+      locales[activeLocale][key] = el.value;
+      markDirty();
+    };
+    el.addEventListener('input', onChange);
+    el.addEventListener('change', onChange);
   });
 }
 
@@ -441,16 +517,28 @@ function setupImport() {
 /* ─────────────────────────────────────────────────────── load / save */
 async function load() {
   try {
-    const res = await fetch('/api/content', {headers:{Accept:'application/json'}});
-    if (!res.ok) throw new Error();
-    content = await res.json();
+    const [contentRes, localesRes] = await Promise.all([
+      fetch('/api/content', {headers:{Accept:'application/json'}}),
+      fetch('/api/locales', {headers:{Accept:'application/json'}}),
+    ]);
+    if (!contentRes.ok || !localesRes.ok) throw new Error();
+
+    content = await contentRes.json();
+    locales = await localesRes.json();
+
     content.updates      = content.updates      || [];
     content.timeline     = content.timeline     || [];
     content.milestones   = content.milestones   || [];
     content.planned_work = content.planned_work || [];
+
+    locales = locales && typeof locales === 'object' ? locales : {};
+    ['en', 'it', 'fr', 'es'].forEach((lang) => {
+      if (!locales[lang] || typeof locales[lang] !== 'object') locales[lang] = {};
+    });
+
     renderAll();
   } catch {
-    document.getElementById('main').innerHTML = '<p class="loading" style="color:var(--danger)">Failed to load content.json</p>';
+    document.getElementById('main').innerHTML = '<p class="loading" style="color:var(--danger)">Failed to load content/locales</p>';
   }
 }
 
@@ -459,12 +547,22 @@ async function save() {
   btn.disabled = true;
   setStatus('Saving…');
   try {
-    const res = await fetch('/api/content', {
+    const contentRes = await fetch('/api/content', {
       method:  'PUT',
       headers: {'Content-Type':'application/json'},
       body:    JSON.stringify(content),
     });
-    if (!res.ok) throw new Error();
+
+    if (!contentRes.ok) throw new Error();
+
+    const localesRes = await fetch('/api/locales', {
+      method:  'PUT',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify(locales),
+    });
+
+    if (!localesRes.ok) throw new Error();
+
     dirty = false;
     setStatus('Saved ✓', 'ok');
     renderTabs(); // refresh counts

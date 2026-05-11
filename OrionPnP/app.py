@@ -12,6 +12,8 @@ from flask import Flask, jsonify, request, send_from_directory
 BASE_DIR = Path(__file__).resolve().parent
 CONTENT_FILE = BASE_DIR / "content.json"
 REGISTRATIONS_FILE = BASE_DIR / "registrations.json"
+LOCALES_DIR = BASE_DIR / "locales"
+SUPPORTED_LOCALES = ("en", "it", "fr", "es")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_INTENTS = {"stay_posted", "buy_if_price", "contribute"}
 WRITE_LOCK = Lock()
@@ -43,6 +45,9 @@ def _load_json(path: Path, fallback):
 def _ensure_data_files() -> None:
     _load_json(CONTENT_FILE, {"updates": [], "milestones": [], "planned_work": []})
     _load_json(REGISTRATIONS_FILE, [])
+    LOCALES_DIR.mkdir(parents=True, exist_ok=True)
+    for lang in SUPPORTED_LOCALES:
+        _load_json(LOCALES_DIR / f"{lang}.json", {})
 
 
 # Ensure data files exist whether the app is started via `python app.py` or imported by Gunicorn.
@@ -58,6 +63,15 @@ def health():
 def get_content():
     content = _load_json(CONTENT_FILE, {"updates": [], "milestones": [], "planned_work": []})
     return jsonify(content)
+
+
+@app.get("/api/locales")
+def get_locales():
+    locales = {}
+    for lang in SUPPORTED_LOCALES:
+        data = _load_json(LOCALES_DIR / f"{lang}.json", {})
+        locales[lang] = data if isinstance(data, dict) else {}
+    return jsonify(locales)
 
 
 @app.post("/api/register")
@@ -142,6 +156,26 @@ def put_content():
         existing = _load_json(CONTENT_FILE, {})
         existing.update({k: payload[k] for k in KNOWN_KEYS if k in payload})
         _atomic_write_json(CONTENT_FILE, existing)
+
+    return jsonify({"ok": True})
+
+
+@app.put("/api/locales")
+def put_locales():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Expected JSON object"}), 400
+
+    normalized = {}
+    for lang in SUPPORTED_LOCALES:
+        value = payload.get(lang, {})
+        if not isinstance(value, dict):
+            return jsonify({"error": f"'{lang}' must be an object"}), 400
+        normalized[lang] = {str(k): str(v) for k, v in value.items()}
+
+    with WRITE_LOCK:
+        for lang in SUPPORTED_LOCALES:
+            _atomic_write_json(LOCALES_DIR / f"{lang}.json", normalized[lang])
 
     return jsonify({"ok": True})
 
