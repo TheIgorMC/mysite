@@ -15,30 +15,31 @@
   <nav class="navbar" id="navbar">
     <div class="nav-inner">
       <a class="nav-brand" href="#" data-page="home">
-        <img src="logoOrion.png" alt="OrionPnP" class="nav-logo">
+        <img src="logoOrion.png" alt="OrionPnP" class="nav-logo" data-i18n-attr="alt:navLogoAlt">
         <span>OrionPnP</span>
       </a>
 
-      <button class="nav-burger" id="navBurger" aria-label="Toggle menu" aria-expanded="false">
+      <button class="nav-burger" id="navBurger" aria-label="Toggle menu" aria-expanded="false" data-i18n-attr="aria-label:toggleMenuAria">
         <span></span><span></span><span></span>
       </button>
 
       <ul class="nav-links" id="navLinks" role="list">
         <li><a href="#" data-page="home"    data-i18n="navHome"     class="nav-link active">Home</a></li>
         <li><a href="#" data-page="status"  data-i18n="navStatus"   class="nav-link">Status</a></li>
+        <li><a href="#" data-page="gallery" data-i18n="navGallery"  class="nav-link">Gallery</a></li>
         <li><a href="#" data-page="diary"   data-i18n="navDiary"    class="nav-link">Diary</a></li>
         <li><a href="#" data-page="register" data-i18n="navRegister" class="nav-link nav-link-cta">Stay Posted</a></li>
       </ul>
 
       <div class="nav-lang">
-        <select id="languageSelect" aria-label="Language">
+        <select id="languageSelect" aria-label="Language" data-i18n-attr="aria-label:languageAria">
           <option value="en">EN</option>
           <option value="it">IT</option>
           <option value="fr">FR</option>
           <option value="es">ES</option>
         </select>
       </div>
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">&#x1F319;</button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" data-i18n-attr="aria-label:themeToggleAria">&#x1F319;</button>
     </div>
 </nav>
 
@@ -95,28 +96,6 @@
         </div>
       </section>
 
-      <section class="section reveal media-section" id="home-gallery">
-        <video class="section-bg-video" autoplay muted loop playsinline>
-          <source src="background.mp4" type="video/mp4">
-        </video>
-        <div class="section-bg-overlay section-bg-overlay-gallery"></div>
-        <div class="section-inner">
-          <h2 class="section-title" data-i18n="galleryTitle">Gallery</h2>
-          <p class="section-sub" data-i18n="gallerySubtitle">Current prototype visuals, board tests, and mechanical details.</p>
-          <div class="gallery-grid">
-            <figure class="gallery-card reveal-child">
-              <img src="assets/Render_WIP_PnP_2.jpg" alt="OrionPnP render overview">
-            </figure>
-            <figure class="gallery-card reveal-child">
-              <img src="assets/RealBoardV1b.jpg" alt="Real board test on OrionPnP">
-            </figure>
-            <figure class="gallery-card reveal-child">
-              <img src="assets/RenderBoardV2a.png" alt="Board and fixture render detail">
-            </figure>
-          </div>
-        </div>
-      </section>
-
       <section class="section reveal media-section" id="home-feature-list">
         <video class="section-bg-video" autoplay muted loop playsinline>
           <source src="background.mp4" type="video/mp4">
@@ -143,6 +122,27 @@
             <div id="latestUpdateCard" class="snapshot-card"></div>
             <div id="currentMilestoneCard" class="snapshot-card"></div>
           </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="page" id="page-gallery">
+      <section class="page-hero reveal">
+        <div class="page-hero-inner">
+          <p class="eyebrow" data-i18n="galleryEyebrow">Project Gallery</p>
+          <h1 data-i18n="galleryPageTitle">Inside OrionPnP</h1>
+          <p class="lead" data-i18n="galleryPageSubtitle">Renders, real tests, and mechanical details from current builds.</p>
+        </div>
+      </section>
+
+      <section class="section reveal media-section" id="gallery-main">
+        <video class="section-bg-video" autoplay muted loop playsinline>
+          <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="section-bg-overlay section-bg-overlay-gallery"></div>
+        <div class="section-inner">
+          <div id="galleryList" class="gallery-grid"></div>
         </div>
       </section>
     </div>
@@ -240,29 +240,29 @@
             <div class="form-row">
               <label>
                 <span data-i18n="nameLabel">Name</span>
-                <input type="text" name="name" required maxlength="120" placeholder="Alex Example">
+                <input type="text" name="name" required maxlength="120" placeholder="Alex Example" data-i18n-attr="placeholder:namePlaceholder">
               </label>
               <label>
                 <span data-i18n="emailLabel">Email</span>
-                <input type="email" name="email" required placeholder="alex@example.com">
+                <input type="email" name="email" required placeholder="alex@example.com" data-i18n-attr="placeholder:emailPlaceholder">
               </label>
             </div>
 
             <label>
               <span data-i18n="interestLabel">Primary use case</span>
-              <input type="text" name="interest" required maxlength="200" placeholder="Small-batch SMD assembly for prototypes">
+              <input type="text" name="interest" required maxlength="200" placeholder="Small-batch SMD assembly for prototypes" data-i18n-attr="placeholder:interestPlaceholder">
             </label>
 
             <div class="form-row" id="priceRow" style="display:none">
               <label>
                 <span data-i18n="maxPriceLabel">Max budget (EUR, optional)</span>
-                <input type="number" name="max_price" min="0" max="99999" placeholder="e.g. 800">
+                <input type="number" name="max_price" min="0" max="99999" placeholder="e.g. 800" data-i18n-attr="placeholder:maxPricePlaceholder">
               </label>
             </div>
 
             <label>
               <span data-i18n="messageLabel">Message (optional)</span>
-              <textarea name="message" rows="3" maxlength="1000" placeholder="Anything else you'd like us to know"></textarea>
+              <textarea name="message" rows="3" maxlength="1000" placeholder="Anything else you'd like us to know" data-i18n-attr="placeholder:messagePlaceholder"></textarea>
             </label>
 
             <button type="submit" class="btn btn-primary" data-i18n="submitLabel">Submit</button>
@@ -276,7 +276,7 @@
 
   <footer class="footer">
     <div class="footer-inner">
-      <img src="logoOrion.png" alt="OrionPnP" class="footer-logo">
+      <img src="logoOrion.png" alt="OrionPnP" class="footer-logo" data-i18n-attr="alt:footerLogoAlt">
       <p>OrionPnP &copy; 2026 &mdash; <span data-i18n="footerNote">Open hardware pick &amp; place for makers.</span></p>
     </div>
   </footer>

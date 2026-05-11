@@ -3,7 +3,7 @@ const PLACEHOLDER = "[coming soon]";
 
 const i18n = {
   en: {
-    navHome: "Home", navStatus: "Status", navDiary: "Diary", navRegister: "Stay Posted",
+    navHome: "Home", navStatus: "Status", navGallery: "Gallery", navDiary: "Diary", navRegister: "Stay Posted",
     eyebrow: "Open hardware pick & place",
     heroTitle: "Precision automation\nfor makers",
     heroSubtitle: "Build smarter. Place faster. OrionPnP is an open hardware pick-and-place machine designed for real production benches.",
@@ -15,6 +15,15 @@ const i18n = {
     feat4Title: "Community Driven", feat4Body: "Built in the open, improved together. Join the early access list to shape the roadmap.",
     galleryTitle: "Gallery",
     gallerySubtitle: "Current prototype visuals, board tests, and mechanical details.",
+    galleryEyebrow: "Project Gallery",
+    galleryPageTitle: "Inside OrionPnP",
+    galleryPageSubtitle: "Renders, real tests, and mechanical details from current builds.",
+    galleryImage1Alt: "OrionPnP render overview",
+    galleryImage1Caption: "Full render overview",
+    galleryImage2Alt: "Real board test on OrionPnP",
+    galleryImage2Caption: "Real board test",
+    galleryImage3Alt: "Board and fixture render detail",
+    galleryImage3Caption: "Fixture and board detail",
     buildPlatesTitle: "Build Plate Configurations",
     buildPlatesSubtitle: "Choose the setup that matches your board size and feeder count.",
     snapshotTitle: "Development Snapshot",
@@ -36,18 +45,49 @@ const i18n = {
     nameLabel: "Name", emailLabel: "Email", interestLabel: "Primary use case",
     maxPriceLabel: "Max budget (EUR, optional)",
     messageLabel: "Message (optional)", submitLabel: "Submit",
+    namePlaceholder: "Alex Example",
+    emailPlaceholder: "alex@example.com",
+    interestPlaceholder: "Small-batch SMD assembly for prototypes",
+    maxPricePlaceholder: "e.g. 800",
+    messagePlaceholder: "Anything else you'd like us to know",
+    toggleMenuAria: "Toggle menu",
+    languageAria: "Language",
+    themeToggleAria: "Toggle light/dark mode",
+    navLogoAlt: "OrionPnP",
+    footerLogoAlt: "OrionPnP",
+    workingAreaLabel: "Working area",
+    feedersLabel: "Feeders",
+    plateCompactName: "Compact Plate (Option 1)",
+    plateCompactFeeders: "up to 64 feeders",
+    plateCompactNotes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups).",
+    plateExtendedName: "Extended Plate (Option 2)",
+    plateExtendedFeeders: "up to 32 tape feeders",
+    plateExtendedNotes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups).",
+    feederSupportLabel: "Feeder Support",
+    feederSupportText: "8mm tape feeders supported now. 12mm, 16mm, and vibration feeders coming soon. Modular design for future expansion.",
+    conveyorReadyLabel: "Conveyor Ready",
+    conveyorReadyText: "Mechanical design allows for conveyor belt integration by modding. Predisposed for future automation upgrades.",
+    futureXlLabel: "Future XL Option",
+    futureXlText: "An XL buildplate variant may be developed later if demand is high enough.",
+    noEntriesYet: "No entries yet.",
+    noEventsYet: "No events yet.",
+    loadContentError: "Unable to load project content.",
     footerNote: "Open hardware pick & place for makers.",
     submitOk: "Thanks! Your registration has been saved.",
     submitErr: "Unable to submit right now. Please try again.",
     progressLabel: "Progress", targetLabel: "Target", windowLabel: "Window", statusLabel: "Status"
   },
   it: {
-    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
+    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navGallery: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
     eyebrow: PLACEHOLDER, heroTitle: PLACEHOLDER, heroSubtitle: PLACEHOLDER,
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
     galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
+    galleryEyebrow: PLACEHOLDER, galleryPageTitle: PLACEHOLDER, galleryPageSubtitle: PLACEHOLDER,
+    galleryImage1Alt: PLACEHOLDER, galleryImage1Caption: PLACEHOLDER,
+    galleryImage2Alt: PLACEHOLDER, galleryImage2Caption: PLACEHOLDER,
+    galleryImage3Alt: PLACEHOLDER, galleryImage3Caption: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -62,16 +102,31 @@ const i18n = {
     intentBuy: PLACEHOLDER, intentBuyDesc: PLACEHOLDER, intentContrib: PLACEHOLDER, intentContribDesc: PLACEHOLDER,
     nameLabel: PLACEHOLDER, emailLabel: PLACEHOLDER, interestLabel: PLACEHOLDER,
     maxPriceLabel: PLACEHOLDER, messageLabel: PLACEHOLDER, submitLabel: PLACEHOLDER,
+    namePlaceholder: PLACEHOLDER, emailPlaceholder: PLACEHOLDER,
+    interestPlaceholder: PLACEHOLDER, maxPricePlaceholder: PLACEHOLDER, messagePlaceholder: PLACEHOLDER,
+    toggleMenuAria: PLACEHOLDER, languageAria: PLACEHOLDER, themeToggleAria: PLACEHOLDER,
+    navLogoAlt: PLACEHOLDER, footerLogoAlt: PLACEHOLDER,
+    workingAreaLabel: PLACEHOLDER, feedersLabel: PLACEHOLDER,
+    plateCompactName: PLACEHOLDER, plateCompactFeeders: PLACEHOLDER, plateCompactNotes: PLACEHOLDER,
+    plateExtendedName: PLACEHOLDER, plateExtendedFeeders: PLACEHOLDER, plateExtendedNotes: PLACEHOLDER,
+    feederSupportLabel: PLACEHOLDER, feederSupportText: PLACEHOLDER,
+    conveyorReadyLabel: PLACEHOLDER, conveyorReadyText: PLACEHOLDER,
+    futureXlLabel: PLACEHOLDER, futureXlText: PLACEHOLDER,
+    noEntriesYet: PLACEHOLDER, noEventsYet: PLACEHOLDER, loadContentError: PLACEHOLDER,
     footerNote: PLACEHOLDER, submitOk: PLACEHOLDER, submitErr: PLACEHOLDER,
     progressLabel: PLACEHOLDER, targetLabel: PLACEHOLDER, windowLabel: PLACEHOLDER, statusLabel: PLACEHOLDER
   },
   fr: {
-    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
+    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navGallery: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
     eyebrow: PLACEHOLDER, heroTitle: PLACEHOLDER, heroSubtitle: PLACEHOLDER,
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
     galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
+    galleryEyebrow: PLACEHOLDER, galleryPageTitle: PLACEHOLDER, galleryPageSubtitle: PLACEHOLDER,
+    galleryImage1Alt: PLACEHOLDER, galleryImage1Caption: PLACEHOLDER,
+    galleryImage2Alt: PLACEHOLDER, galleryImage2Caption: PLACEHOLDER,
+    galleryImage3Alt: PLACEHOLDER, galleryImage3Caption: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -86,16 +141,31 @@ const i18n = {
     intentBuy: PLACEHOLDER, intentBuyDesc: PLACEHOLDER, intentContrib: PLACEHOLDER, intentContribDesc: PLACEHOLDER,
     nameLabel: PLACEHOLDER, emailLabel: PLACEHOLDER, interestLabel: PLACEHOLDER,
     maxPriceLabel: PLACEHOLDER, messageLabel: PLACEHOLDER, submitLabel: PLACEHOLDER,
+    namePlaceholder: PLACEHOLDER, emailPlaceholder: PLACEHOLDER,
+    interestPlaceholder: PLACEHOLDER, maxPricePlaceholder: PLACEHOLDER, messagePlaceholder: PLACEHOLDER,
+    toggleMenuAria: PLACEHOLDER, languageAria: PLACEHOLDER, themeToggleAria: PLACEHOLDER,
+    navLogoAlt: PLACEHOLDER, footerLogoAlt: PLACEHOLDER,
+    workingAreaLabel: PLACEHOLDER, feedersLabel: PLACEHOLDER,
+    plateCompactName: PLACEHOLDER, plateCompactFeeders: PLACEHOLDER, plateCompactNotes: PLACEHOLDER,
+    plateExtendedName: PLACEHOLDER, plateExtendedFeeders: PLACEHOLDER, plateExtendedNotes: PLACEHOLDER,
+    feederSupportLabel: PLACEHOLDER, feederSupportText: PLACEHOLDER,
+    conveyorReadyLabel: PLACEHOLDER, conveyorReadyText: PLACEHOLDER,
+    futureXlLabel: PLACEHOLDER, futureXlText: PLACEHOLDER,
+    noEntriesYet: PLACEHOLDER, noEventsYet: PLACEHOLDER, loadContentError: PLACEHOLDER,
     footerNote: PLACEHOLDER, submitOk: PLACEHOLDER, submitErr: PLACEHOLDER,
     progressLabel: PLACEHOLDER, targetLabel: PLACEHOLDER, windowLabel: PLACEHOLDER, statusLabel: PLACEHOLDER
   },
   es: {
-    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
+    navHome: PLACEHOLDER, navStatus: PLACEHOLDER, navGallery: PLACEHOLDER, navDiary: PLACEHOLDER, navRegister: PLACEHOLDER,
     eyebrow: PLACEHOLDER, heroTitle: PLACEHOLDER, heroSubtitle: PLACEHOLDER,
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
     galleryTitle: PLACEHOLDER, gallerySubtitle: PLACEHOLDER,
+    galleryEyebrow: PLACEHOLDER, galleryPageTitle: PLACEHOLDER, galleryPageSubtitle: PLACEHOLDER,
+    galleryImage1Alt: PLACEHOLDER, galleryImage1Caption: PLACEHOLDER,
+    galleryImage2Alt: PLACEHOLDER, galleryImage2Caption: PLACEHOLDER,
+    galleryImage3Alt: PLACEHOLDER, galleryImage3Caption: PLACEHOLDER,
     buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
     snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
     latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
@@ -110,6 +180,17 @@ const i18n = {
     intentBuy: PLACEHOLDER, intentBuyDesc: PLACEHOLDER, intentContrib: PLACEHOLDER, intentContribDesc: PLACEHOLDER,
     nameLabel: PLACEHOLDER, emailLabel: PLACEHOLDER, interestLabel: PLACEHOLDER,
     maxPriceLabel: PLACEHOLDER, messageLabel: PLACEHOLDER, submitLabel: PLACEHOLDER,
+    namePlaceholder: PLACEHOLDER, emailPlaceholder: PLACEHOLDER,
+    interestPlaceholder: PLACEHOLDER, maxPricePlaceholder: PLACEHOLDER, messagePlaceholder: PLACEHOLDER,
+    toggleMenuAria: PLACEHOLDER, languageAria: PLACEHOLDER, themeToggleAria: PLACEHOLDER,
+    navLogoAlt: PLACEHOLDER, footerLogoAlt: PLACEHOLDER,
+    workingAreaLabel: PLACEHOLDER, feedersLabel: PLACEHOLDER,
+    plateCompactName: PLACEHOLDER, plateCompactFeeders: PLACEHOLDER, plateCompactNotes: PLACEHOLDER,
+    plateExtendedName: PLACEHOLDER, plateExtendedFeeders: PLACEHOLDER, plateExtendedNotes: PLACEHOLDER,
+    feederSupportLabel: PLACEHOLDER, feederSupportText: PLACEHOLDER,
+    conveyorReadyLabel: PLACEHOLDER, conveyorReadyText: PLACEHOLDER,
+    futureXlLabel: PLACEHOLDER, futureXlText: PLACEHOLDER,
+    noEntriesYet: PLACEHOLDER, noEventsYet: PLACEHOLDER, loadContentError: PLACEHOLDER,
     footerNote: PLACEHOLDER, submitOk: PLACEHOLDER, submitErr: PLACEHOLDER,
     progressLabel: PLACEHOLDER, targetLabel: PLACEHOLDER, windowLabel: PLACEHOLDER, statusLabel: PLACEHOLDER
   }
@@ -124,35 +205,41 @@ const state = {
 
 const buildPlateConfigs = [
   {
-    name: "Compact Plate (Option 1)",
+    nameKey: "plateCompactName",
     workingArea: "300 x 215 mm",
-    feeders: "up to 64 feeders",
-    notes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups)."
+    feedersKey: "plateCompactFeeders",
+    notesKey: "plateCompactNotes"
   },
   {
-    name: "Extended Plate (Option 2)",
+    nameKey: "plateExtendedName",
     workingArea: "300 x 285 mm",
-    feeders: "up to 32 tape feeders",
-    notes: "Both options are fully valid and swappable via buildplate change. Working area includes nozzle swap area, upward-looking camera, and fixture space. Actual board size depends on fixturing and accessories (trays, cut-strip holders, and similar setups)."
+    feedersKey: "plateExtendedFeeders",
+    notesKey: "plateExtendedNotes"
   }
 ];
 
 const feederAndConveyorNotes = [
   {
     icon: "\uD83D\uDD27", // wrench
-    label: "Feeder Support",
-    text: "8mm tape feeders supported now. 12mm, 16mm, and vibration feeders coming soon. Modular design for future expansion."
+    labelKey: "feederSupportLabel",
+    textKey: "feederSupportText"
   },
   {
     icon: "\uD83D\uDE9A", // delivery truck
-    label: "Conveyor Ready",
-    text: "Mechanical design allows for conveyor belt integration by modding. Predisposed for future automation upgrades."
+    labelKey: "conveyorReadyLabel",
+    textKey: "conveyorReadyText"
   },
   {
     icon: "\uD83D\uDCCF", // straight ruler
-    label: "Future XL Option",
-    text: "An XL buildplate variant may be developed later if demand is high enough."
+    labelKey: "futureXlLabel",
+    textKey: "futureXlText"
   }
+];
+
+const galleryItems = [
+  { src: "assets/Render_WIP_PnP_2.jpg", altKey: "galleryImage1Alt", captionKey: "galleryImage1Caption" },
+  { src: "assets/RealBoardV1b.jpg", altKey: "galleryImage2Alt", captionKey: "galleryImage2Caption" },
+  { src: "assets/RenderBoardV2a.png", altKey: "galleryImage3Alt", captionKey: "galleryImage3Caption" }
 ];
 
 /* ── HELPERS ── */
@@ -186,6 +273,15 @@ function applyTranslations() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key);
+  });
+
+  document.querySelectorAll("[data-i18n-attr]").forEach((el) => {
+    const raw = el.getAttribute("data-i18n-attr") || "";
+    raw.split(";").forEach((pair) => {
+      const [attr, key] = pair.split(":").map((s) => (s || "").trim());
+      if (!attr || !key) return;
+      el.setAttribute(attr, t(key));
+    });
   });
 }
 
@@ -258,7 +354,7 @@ function renderUpdates() {
   box.innerHTML = "";
 
   if (!state.content.updates || !state.content.updates.length) {
-    box.innerHTML = '<p class="empty-note">No entries yet.</p>';
+    box.innerHTML = `<p class="empty-note">${t("noEntriesYet")}</p>`;
     return;
   }
 
@@ -334,7 +430,7 @@ function renderTimeline() {
 
   const events = state.content.timeline || [];
   if (!events.length) {
-    box.innerHTML = '<p class="empty-note">No events yet.</p>';
+    box.innerHTML = `<p class="empty-note">${t("noEventsYet")}</p>`;
     return;
   }
 
@@ -368,10 +464,10 @@ function renderHomeSnapshot() {
     const el = document.createElement("article");
     el.className = "build-plate-card";
     el.innerHTML = `
-      <h3>${cfg.name}</h3>
-      <p><strong>Working area:</strong> ${cfg.workingArea}</p>
-      <p><strong>Feeders:</strong> ${cfg.feeders}</p>
-      <p>${cfg.notes}</p>
+      <h3>${t(cfg.nameKey)}</h3>
+      <p><strong>${t("workingAreaLabel")}:</strong> ${cfg.workingArea}</p>
+      <p><strong>${t("feedersLabel")}:</strong> ${t(cfg.feedersKey)}</p>
+      <p>${t(cfg.notesKey)}</p>
     `;
     platesBox.appendChild(el);
   });
@@ -380,7 +476,7 @@ function renderHomeSnapshot() {
   feederAndConveyorNotes.forEach((note) => {
     const el = document.createElement("div");
     el.className = "build-plate-note";
-    el.innerHTML = `<span class="note-icon">${note.icon}</span> <strong>${note.label}:</strong> ${note.text}`;
+    el.innerHTML = `<span class="note-icon">${note.icon}</span> <strong>${t(note.labelKey)}:</strong> ${t(note.textKey)}`;
     platesBox.appendChild(el);
   });
 
@@ -417,11 +513,28 @@ function renderHomeSnapshot() {
   }
 }
 
+function renderGallery() {
+  const box = document.getElementById("galleryList");
+  if (!box) return;
+  box.innerHTML = "";
+
+  galleryItems.forEach((item) => {
+    const el = document.createElement("figure");
+    el.className = "gallery-card reveal-child";
+    el.innerHTML = `
+      <img src="${item.src}" alt="${t(item.altKey)}">
+      <figcaption>${t(item.captionKey)}</figcaption>
+    `;
+    box.appendChild(el);
+  });
+}
+
 function renderAll() {
   renderUpdates();
   renderMilestones();
   renderPlanned();
   renderTimeline();
+  renderGallery();
   renderHomeSnapshot();
 }
 
@@ -554,7 +667,7 @@ async function init() {
     await loadContent();
   } catch (_) {
     const box = document.getElementById("updatesList");
-    if (box) box.textContent = "Unable to load project content.";
+    if (box) box.textContent = t("loadContentError");
   }
 }
 

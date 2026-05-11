@@ -378,6 +378,12 @@ h1 {
   aspect-ratio: 16 / 10;
   object-fit: cover;
 }
+.gallery-card figcaption {
+  font-size: 0.84rem;
+  color: var(--muted);
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
 
 /* ── FEATURE GRID ── */
 .feature-grid {
@@ -620,6 +626,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
+  .nav-inner { gap: 0.6rem; }
   .nav-links {
     display: none;
     position: absolute;
@@ -634,8 +641,9 @@ textarea { resize: vertical; min-height: 90px; }
     border-bottom: 1px solid var(--border);
   }
   .nav-links.open { display: flex; }
-  .nav-burger { display: flex; }
-  .nav-lang { margin-left: 0.5rem; }
+  .nav-lang { margin-left: auto; order: 2; }
+  .theme-toggle { order: 3; }
+  .nav-burger { display: flex; order: 4; margin-left: 0; }
   .hero-content { padding: 3rem 1.25rem; margin-left: 0; }
   .snapshot-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
