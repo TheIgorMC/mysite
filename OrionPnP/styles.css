@@ -318,6 +318,39 @@ h1 {
 .section-title { font-family: var(--font-head); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: 0.4rem; }
 .section-sub { color: var(--muted); margin-bottom: 2rem; }
 
+/* Media-backed sections for separated home blocks */
+.media-section {
+  position: relative;
+  overflow: hidden;
+}
+.section-bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.24;
+  z-index: 0;
+}
+.section-bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.section-bg-overlay-features {
+  background: linear-gradient(140deg, rgba(16, 12, 28, 0.92) 0%, rgba(27, 18, 46, 0.78) 48%, rgba(16, 12, 28, 0.92) 100%);
+}
+.section-bg-overlay-feature-list {
+  background: linear-gradient(140deg, rgba(31, 23, 53, 0.9) 0%, rgba(70, 36, 26, 0.68) 50%, rgba(31, 23, 53, 0.9) 100%);
+}
+.section-bg-overlay-progress {
+  background: linear-gradient(140deg, rgba(14, 22, 33, 0.9) 0%, rgba(36, 18, 52, 0.74) 52%, rgba(14, 22, 33, 0.92) 100%);
+}
+.media-section .section-inner {
+  position: relative;
+  z-index: 2;
+}
+
 /* ── FEATURE GRID ── */
 .feature-grid {
   display: grid;
@@ -341,7 +374,7 @@ h1 {
 /* -- HOME SNAPSHOT -- */
 .snapshot-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 .snapshot-block {

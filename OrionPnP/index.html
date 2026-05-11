@@ -63,7 +63,11 @@
         </div>
       </section>
 
-      <section class="section reveal" id="home-features">
+      <section class="section reveal media-section" id="home-features">
+        <video class="section-bg-video" autoplay muted loop playsinline>
+          <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="section-bg-overlay section-bg-overlay-features"></div>
         <div class="section-inner">
           <h2 class="section-title" data-i18n="featuresTitle">Why OrionPnP?</h2>
           <div class="feature-grid">
@@ -91,14 +95,26 @@
         </div>
       </section>
 
-      <section class="section reveal" id="home-snapshot">
-        <div class="section-inner snapshot-grid">
+      <section class="section reveal media-section" id="home-feature-list">
+        <video class="section-bg-video" autoplay muted loop playsinline>
+          <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="section-bg-overlay section-bg-overlay-feature-list"></div>
+        <div class="section-inner">
           <div class="snapshot-block">
             <h2 class="section-title" data-i18n="buildPlatesTitle">Build Plate Configurations</h2>
             <p class="section-sub" data-i18n="buildPlatesSubtitle">Choose the setup that matches your board size and feeder count.</p>
             <div id="buildPlateList" class="build-plate-list"></div>
           </div>
+        </div>
+      </section>
 
+      <section class="section reveal media-section" id="home-snapshot">
+        <video class="section-bg-video" autoplay muted loop playsinline>
+          <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="section-bg-overlay section-bg-overlay-progress"></div>
+        <div class="section-inner">
           <div class="snapshot-block">
             <h2 class="section-title" data-i18n="snapshotTitle">Development Snapshot</h2>
             <p class="section-sub" data-i18n="snapshotSubtitle">Latest update and current milestone, at a glance.</p>
@@ -167,7 +183,7 @@
         <div class="page-hero-inner">
           <p class="eyebrow" data-i18n="registerEyebrow">Early Access</p>
           <h1 data-i18n="registerTitle">Stay in the loop</h1>
-          <p class="lead" data-i18n="registerSubtitle">Tell us how you want to follow the project â€” or whether you'd buy one when it's ready.</p>
+          <p class="lead" data-i18n="registerSubtitle">Tell us how you want to follow the project &mdash; or whether you'd buy one when it's ready.</p>
         </div>
       </section>
 
@@ -179,19 +195,19 @@
             <div class="intent-options" id="intentOptions">
               <label class="intent-card">
                 <input type="radio" name="intent" value="stay_posted" checked>
-                <span class="intent-icon">ðŸ“¬</span>
+                <span class="intent-icon">&#x1F4EC;</span>
                 <span class="intent-name" data-i18n="intentPosted">Stay posted</span>
                 <span class="intent-desc" data-i18n="intentPostedDesc">Get updates when major milestones are hit.</span>
               </label>
               <label class="intent-card">
                 <input type="radio" name="intent" value="buy_if_price">
-                <span class="intent-icon">ðŸ›’</span>
+                <span class="intent-icon">&#x1F6D2;</span>
                 <span class="intent-name" data-i18n="intentBuy">Buy if price fits</span>
                 <span class="intent-desc" data-i18n="intentBuyDesc">I'm interested in buying if the final price works for me.</span>
               </label>
               <label class="intent-card">
                 <input type="radio" name="intent" value="contribute">
-                <span class="intent-icon">ðŸ”§</span>
+                <span class="intent-icon">&#x1F527;</span>
                 <span class="intent-name" data-i18n="intentContrib">Contribute</span>
                 <span class="intent-desc" data-i18n="intentContribDesc">I'd like to help with testing, design, or firmware.</span>
               </label>
