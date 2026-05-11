@@ -13,6 +13,13 @@ const i18n = {
     feat2Title: "Vision Aligned", feat2Body: "Camera-assisted placement with sub-millimeter accuracy for 0402 and finer components.",
     feat3Title: "Maker-First", feat3Body: "Designed around real workflows. Tape feeders, tray feeders, no-fuss calibration.",
     feat4Title: "Community Driven", feat4Body: "Built in the open, improved together. Join the early access list to shape the roadmap.",
+    buildPlatesTitle: "Build Plate Configurations",
+    buildPlatesSubtitle: "Choose the setup that matches your board size and feeder count.",
+    snapshotTitle: "Development Snapshot",
+    snapshotSubtitle: "Latest update and current milestone, at a glance.",
+    latestUpdateLabel: "Latest update",
+    currentMilestoneLabel: "Current milestone",
+    noSnapshotData: "No data available yet.",
     statusEyebrow: "Project Status", statusTitle: "Where we are", statusSubtitle: "Live milestones and planned work as the project evolves.",
     milestonesTitle: "Milestones", milestonesSubtitle: "Measurable goals and current progress.",
     plannedTitle: "Planned Work", plannedSubtitle: "What is coming next on the roadmap.",
@@ -38,6 +45,10 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
+    snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
+    latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
+    noSnapshotData: PLACEHOLDER,
     statusEyebrow: PLACEHOLDER, statusTitle: PLACEHOLDER, statusSubtitle: PLACEHOLDER,
     milestonesTitle: PLACEHOLDER, milestonesSubtitle: PLACEHOLDER,
     plannedTitle: PLACEHOLDER, plannedSubtitle: PLACEHOLDER,
@@ -57,6 +68,10 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
+    snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
+    latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
+    noSnapshotData: PLACEHOLDER,
     statusEyebrow: PLACEHOLDER, statusTitle: PLACEHOLDER, statusSubtitle: PLACEHOLDER,
     milestonesTitle: PLACEHOLDER, milestonesSubtitle: PLACEHOLDER,
     plannedTitle: PLACEHOLDER, plannedSubtitle: PLACEHOLDER,
@@ -76,6 +91,10 @@ const i18n = {
     heroCta: PLACEHOLDER, heroSecondary: PLACEHOLDER, featuresTitle: PLACEHOLDER,
     feat1Title: PLACEHOLDER, feat1Body: PLACEHOLDER, feat2Title: PLACEHOLDER, feat2Body: PLACEHOLDER,
     feat3Title: PLACEHOLDER, feat3Body: PLACEHOLDER, feat4Title: PLACEHOLDER, feat4Body: PLACEHOLDER,
+    buildPlatesTitle: PLACEHOLDER, buildPlatesSubtitle: PLACEHOLDER,
+    snapshotTitle: PLACEHOLDER, snapshotSubtitle: PLACEHOLDER,
+    latestUpdateLabel: PLACEHOLDER, currentMilestoneLabel: PLACEHOLDER,
+    noSnapshotData: PLACEHOLDER,
     statusEyebrow: PLACEHOLDER, statusTitle: PLACEHOLDER, statusSubtitle: PLACEHOLDER,
     milestonesTitle: PLACEHOLDER, milestonesSubtitle: PLACEHOLDER,
     plannedTitle: PLACEHOLDER, plannedSubtitle: PLACEHOLDER,
@@ -97,6 +116,21 @@ const state = {
   page: "home",
   content: { updates: [], milestones: [], planned_work: [], timeline: [] }
 };
+
+const buildPlateConfigs = [
+  {
+    name: "Compact Plate",
+    boardRange: "up to 100 x 100 mm",
+    feeders: "up to 16 tape feeders",
+    notes: "Best for quick prototype runs and small-batch boards."
+  },
+  {
+    name: "Extended Plate",
+    boardRange: "up to 200 x 150 mm",
+    feeders: "up to 32 tape feeders",
+    notes: "Supports larger boards and mixed feeder layouts for longer jobs."
+  }
+];
 
 /* ── HELPERS ── */
 function t(key) {
@@ -284,11 +318,64 @@ function renderTimeline() {
   });
 }
 
+function renderHomeSnapshot() {
+  const platesBox = document.getElementById("buildPlateList");
+  const updateBox = document.getElementById("latestUpdateCard");
+  const milestoneBox = document.getElementById("currentMilestoneCard");
+  if (!platesBox || !updateBox || !milestoneBox) return;
+
+  platesBox.innerHTML = "";
+  buildPlateConfigs.forEach((cfg) => {
+    const el = document.createElement("article");
+    el.className = "build-plate-card";
+    el.innerHTML = `
+      <h3>${cfg.name}</h3>
+      <p><strong>Board size:</strong> ${cfg.boardRange}</p>
+      <p><strong>Feeders:</strong> ${cfg.feeders}</p>
+      <p>${cfg.notes}</p>
+    `;
+    platesBox.appendChild(el);
+  });
+
+  const latestUpdate = (state.content.updates || [])[0];
+  if (latestUpdate) {
+    updateBox.innerHTML = `
+      <p class="snapshot-label">${t("latestUpdateLabel")}</p>
+      <h3>${pickText(latestUpdate.title)}</h3>
+      <p class="snapshot-meta">${latestUpdate.date || ""}</p>
+      <p>${pickText(latestUpdate.body)}</p>
+    `;
+  } else {
+    updateBox.innerHTML = `<p class="empty-note">${t("noSnapshotData")}</p>`;
+  }
+
+  const currentMilestone = (state.content.milestones || [])
+    .filter((m) => Number(m.progress || 0) < 100)
+    .sort((a, b) => Number(b.progress || 0) - Number(a.progress || 0))[0] || (state.content.milestones || [])[0];
+
+  if (currentMilestone) {
+    const progress = Math.max(0, Math.min(100, Number(currentMilestone.progress || 0)));
+    milestoneBox.innerHTML = `
+      <p class="snapshot-label">${t("currentMilestoneLabel")}</p>
+      <h3>${pickText(currentMilestone.name)}</h3>
+      <p class="snapshot-meta">${currentMilestone.target || ""}</p>
+      <p>${pickText(currentMilestone.description)}</p>
+      <div class="progress-track" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-fill" style="width:${progress}%"></div>
+      </div>
+      <p class="progress-label">${progress}%</p>
+    `;
+  } else {
+    milestoneBox.innerHTML = `<p class="empty-note">${t("noSnapshotData")}</p>`;
+  }
+}
+
 function renderAll() {
   renderUpdates();
   renderMilestones();
   renderPlanned();
   renderTimeline();
+  renderHomeSnapshot();
 }
 
 /* ── CONTENT LOAD ── */

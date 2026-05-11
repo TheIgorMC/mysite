@@ -162,4 +162,5 @@ def serve_files(path: str):
 if __name__ == "__main__":
     _ensure_data_files()
     port = int(os.getenv("PORT", "1080"))
-    app.run(host="0.0.0.0", port=port)
+    host = os.getenv("HOST", "127.0.0.1")
+    app.run(host=host, port=port)

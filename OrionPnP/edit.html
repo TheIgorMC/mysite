@@ -90,6 +90,8 @@
     <span class="hdr-logo">⚙ OrionPnP <span class="badge">CMS</span></span>
     <div class="hdr-right">
       <span class="save-status" id="saveStatus"></span>
+      <button class="btn btn-sm" id="importBtn" type="button">Import content.json</button>
+      <input id="importFile" type="file" accept="application/json,.json" style="display:none">
       <button class="btn btn-primary" id="saveBtn" disabled>Save Changes</button>
     </div>
   </div>
@@ -388,6 +390,54 @@ function renderAll() {
   renderMain();
 }
 
+function normalizeImportedContent(data) {
+  if (!data || typeof data !== 'object') throw new Error('Invalid JSON object');
+  const normalized = {
+    updates: Array.isArray(data.updates) ? data.updates : [],
+    timeline: Array.isArray(data.timeline) ? data.timeline : [],
+    milestones: Array.isArray(data.milestones) ? data.milestones : [],
+    planned_work: Array.isArray(data.planned_work) ? data.planned_work : []
+  };
+  return normalized;
+}
+
+function setupImport() {
+  const importBtn = document.getElementById('importBtn');
+  const importFile = document.getElementById('importFile');
+  if (!importBtn || !importFile) return;
+
+  importBtn.addEventListener('click', () => importFile.click());
+
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files && importFile.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const next = normalizeImportedContent(parsed);
+
+      if (dirty && !confirm('You have unsaved changes. Replace editor content with imported file?')) {
+        importFile.value = '';
+        return;
+      }
+
+      content = next;
+      openCards.updates.clear();
+      openCards.timeline.clear();
+      openCards.milestones.clear();
+      openCards.planned_work.clear();
+      markDirty();
+      renderAll();
+      setStatus('Imported content.json. Click Save Changes to apply.', 'ok');
+    } catch {
+      setStatus('Import failed: invalid JSON file', 'err');
+    } finally {
+      importFile.value = '';
+    }
+  });
+}
+
 /* ─────────────────────────────────────────────────────── load / save */
 async function load() {
   try {
@@ -426,6 +476,7 @@ async function save() {
 }
 
 document.getElementById('saveBtn').addEventListener('click', save);
+setupImport();
 
 window.addEventListener('beforeunload', e => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }
