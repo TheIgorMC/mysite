@@ -458,14 +458,15 @@ function renderHomeSnapshot() {
 
 
   platesBox.innerHTML = "";
-  buildPlateConfigs.forEach((cfg) => {
+  buildPlateConfigs.forEach((cfg, index) => {
     const el = document.createElement("article");
     el.className = "build-plate-card";
+    const sharedNote = index === 0 ? `<p>${t(cfg.notesKey)}</p>` : "";
     el.innerHTML = `
       <h3>${t(cfg.nameKey)}</h3>
       <p><strong>${t("workingAreaLabel")}:</strong> ${cfg.workingArea}</p>
       <p><strong>${t("feedersLabel")}:</strong> ${t(cfg.feedersKey)}</p>
-      <p>${t(cfg.notesKey)}</p>
+      ${sharedNote}
     `;
     platesBox.appendChild(el);
   });
