@@ -1,7 +1,6 @@
 ﻿import json
 import os
 import re
-import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,12 +25,13 @@ app = Flask(__name__)
 
 
 def _atomic_write_json(path: Path, data) -> None:
-    with tempfile.NamedTemporaryFile("w", delete=False, dir=path.parent, encoding="utf-8") as tmp:
-        json.dump(data, tmp, ensure_ascii=False, indent=2)
-        tmp.flush()
-        os.fsync(tmp.fileno())
-        tmp_path = Path(tmp.name)
-    tmp_path.replace(path)
+    # Write directly with an explicit flush+fsync. The caller holds WRITE_LOCK
+    # so concurrent writes are already serialised. A temp-file rename is not
+    # used because Docker bind-mount volumes return EBUSY on os.replace().
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def _load_json(path: Path, fallback):
