@@ -92,10 +92,14 @@
     .locale-grid{display:grid;grid-template-columns:1fr;gap:.55rem;}
     .locale-row{display:grid;grid-template-columns:minmax(180px, 260px) 1fr;gap:.65rem;align-items:start;}
     .locale-key{font-size:.78rem;color:var(--muted);padding-top:.45rem;word-break:break-word;}
+    .locale-values{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;}
+    .locale-col{display:flex;flex-direction:column;gap:.3rem;}
+    .locale-col label{font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
     .locale-row textarea{
       background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;
       color:var(--text);font-family:inherit;font-size:.88rem;padding:.45rem .65rem;min-height:56px;resize:vertical;
     }
+    .locale-row textarea.ref{opacity:.8;}
 
     /* gallery tab */
     .asset-browser{margin-bottom:1.4rem;}
@@ -120,6 +124,7 @@
     @media (max-width: 780px) {
       .locale-row{grid-template-columns:1fr;}
       .locale-key{padding-top:0;}
+      .locale-values{grid-template-columns:1fr;}
       .gallery-item-card{grid-template-columns:1fr;}
     }
   </style>
@@ -147,7 +152,8 @@ let content = null;
 let locales = null;
 let dirty   = false;
 let activeTab = 'updates';
-let activeLocale = 'en';
+let sourceLocale = 'en';
+let targetLocale = 'it';
 const openCards = { updates: new Set(), timeline: new Set(), milestones: new Set(), planned_work: new Set() };
 
 /* ─────────────────────────────────────────────────────── schema */
@@ -570,42 +576,69 @@ async function uploadAssetFile(file) {
 
 function renderLocalesPanel() {
   const main = document.getElementById('main');
-  const enKeys = Object.keys((locales && locales.en) || {}).sort();
-  const rows = enKeys.map((key) => {
-    const val = (locales[activeLocale] && locales[activeLocale][key]) || '';
+  const keySet = new Set();
+  ['en', 'it', 'fr', 'es'].forEach((lang) => {
+    Object.keys((locales && locales[lang]) || {}).forEach((k) => keySet.add(k));
+  });
+  const allKeys = [...keySet].sort();
+
+  const rows = allKeys.map((key) => {
+    const sourceVal = (locales[sourceLocale] && locales[sourceLocale][key]) || '';
+    const targetVal = (locales[targetLocale] && locales[targetLocale][key]) || '';
     return `<div class="locale-row">
       <div class="locale-key">${esc(key)}</div>
-      <textarea data-locale-key="${esc(key)}">${esc(val)}</textarea>
+      <div class="locale-values">
+        <div class="locale-col">
+          <label>${sourceLocale.toUpperCase()} (Reference)</label>
+          <textarea class="ref" readonly tabindex="-1">${esc(sourceVal)}</textarea>
+        </div>
+        <div class="locale-col">
+          <label>${targetLocale.toUpperCase()} (Translation)</label>
+          <textarea data-locale-target-key="${esc(key)}">${esc(targetVal)}</textarea>
+        </div>
+      </div>
     </div>`;
   }).join('');
 
   main.innerHTML = `<div class="panel">
     <div class="panel-header">
       <h2>Locales</h2>
-      <span class="cnt">${enKeys.length} keys</span>
+      <span class="cnt">${allKeys.length} keys</span>
     </div>
     <div class="locale-toolbar">
-      <label for="localeSelect">Language</label>
-      <select id="localeSelect">
-        <option value="en" ${activeLocale==='en'?'selected':''}>EN</option>
-        <option value="it" ${activeLocale==='it'?'selected':''}>IT</option>
-        <option value="fr" ${activeLocale==='fr'?'selected':''}>FR</option>
-        <option value="es" ${activeLocale==='es'?'selected':''}>ES</option>
+      <label for="localeSourceSelect">Reference</label>
+      <select id="localeSourceSelect">
+        <option value="en" ${sourceLocale==='en'?'selected':''}>EN</option>
+        <option value="it" ${sourceLocale==='it'?'selected':''}>IT</option>
+        <option value="fr" ${sourceLocale==='fr'?'selected':''}>FR</option>
+        <option value="es" ${sourceLocale==='es'?'selected':''}>ES</option>
+      </select>
+      <label for="localeTargetSelect">Translate To</label>
+      <select id="localeTargetSelect">
+        <option value="en" ${targetLocale==='en'?'selected':''}>EN</option>
+        <option value="it" ${targetLocale==='it'?'selected':''}>IT</option>
+        <option value="fr" ${targetLocale==='fr'?'selected':''}>FR</option>
+        <option value="es" ${targetLocale==='es'?'selected':''}>ES</option>
       </select>
     </div>
     <div class="locale-grid">${rows || '<p class="empty">No locale keys found</p>'}</div>
   </div>`;
 
-  document.getElementById('localeSelect').addEventListener('change', (e) => {
-    activeLocale = e.target.value;
+  document.getElementById('localeSourceSelect').addEventListener('change', (e) => {
+    sourceLocale = e.target.value;
     renderAll();
   });
 
-  main.querySelectorAll('[data-locale-key]').forEach((el) => {
+  document.getElementById('localeTargetSelect').addEventListener('change', (e) => {
+    targetLocale = e.target.value;
+    renderAll();
+  });
+
+  main.querySelectorAll('[data-locale-target-key]').forEach((el) => {
     const onChange = () => {
-      const key = el.dataset.localeKey;
-      locales[activeLocale] = locales[activeLocale] || {};
-      locales[activeLocale][key] = el.value;
+      const key = el.dataset.localeTargetKey;
+      locales[targetLocale] = locales[targetLocale] || {};
+      locales[targetLocale][key] = el.value;
       markDirty();
     };
     el.addEventListener('input', onChange);
