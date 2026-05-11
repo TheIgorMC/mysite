@@ -45,6 +45,10 @@ def _ensure_data_files() -> None:
     _load_json(REGISTRATIONS_FILE, [])
 
 
+# Ensure data files exist whether the app is started via `python app.py` or imported by Gunicorn.
+_ensure_data_files()
+
+
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"})
@@ -160,7 +164,6 @@ def serve_files(path: str):
 
 
 if __name__ == "__main__":
-    _ensure_data_files()
     port = int(os.getenv("PORT", "1080"))
     host = os.getenv("HOST", "127.0.0.1")
     app.run(host=host, port=port)

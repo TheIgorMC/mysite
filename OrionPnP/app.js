@@ -119,16 +119,29 @@ const state = {
 
 const buildPlateConfigs = [
   {
-    name: "Compact Plate",
+    name: "Compact Plate (Option 1)",
     boardRange: "up to 100 x 100 mm",
     feeders: "up to 16 tape feeders",
-    notes: "Best for quick prototype runs and small-batch boards."
+    notes: "Quick swap: Both build plate options are fully supported. Swap the buildplate to switch between compact and extended. Ideal for small boards and fast prototyping."
   },
   {
-    name: "Extended Plate",
+    name: "Extended Plate (Option 2)",
     boardRange: "up to 200 x 150 mm",
     feeders: "up to 32 tape feeders",
-    notes: "Supports larger boards and mixed feeder layouts for longer jobs."
+    notes: "Quick swap: Both build plate options are fully supported. Swap the buildplate to switch between compact and extended. Best for larger boards and more feeders."
+  }
+];
+
+const feederAndConveyorNotes = [
+  {
+    icon: "\uD83D\uDD27", // wrench
+    label: "Feeder Support",
+    text: "8mm tape feeders supported now. 12mm, 16mm, and vibration feeders coming soon. Modular design for future expansion."
+  },
+  {
+    icon: "\uD83D\uDE9A", // delivery truck
+    label: "Conveyor Ready",
+    text: "Mechanical design allows for conveyor belt integration by modding. Predisposed for future automation upgrades."
   }
 ];
 
@@ -324,6 +337,7 @@ function renderHomeSnapshot() {
   const milestoneBox = document.getElementById("currentMilestoneCard");
   if (!platesBox || !updateBox || !milestoneBox) return;
 
+
   platesBox.innerHTML = "";
   buildPlateConfigs.forEach((cfg) => {
     const el = document.createElement("article");
@@ -334,6 +348,14 @@ function renderHomeSnapshot() {
       <p><strong>Feeders:</strong> ${cfg.feeders}</p>
       <p>${cfg.notes}</p>
     `;
+    platesBox.appendChild(el);
+  });
+
+  // Add feeder and conveyor notes visually below the build plate cards
+  feederAndConveyorNotes.forEach((note) => {
+    const el = document.createElement("div");
+    el.className = "build-plate-note";
+    el.innerHTML = `<span class="note-icon">${note.icon}</span> <strong>${note.label}:</strong> ${note.text}`;
     platesBox.appendChild(el);
   });
 

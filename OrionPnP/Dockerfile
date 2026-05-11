@@ -10,4 +10,4 @@ COPY . .
 EXPOSE 1080
 
 ENV PORT=1080
-CMD ["python", "app.py"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-1080} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-60} app:app"]
