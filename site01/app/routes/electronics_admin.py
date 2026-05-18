@@ -565,6 +565,13 @@ def api_proxy_check_job_stock(job_id):
     result = api_request(f'/api/elec/jobs/{job_id}/check_stock')
     return api_result(result, 'Failed to check stock')
 
+@api_bp.route('/jobs/<job_id>', methods=['PATCH'])
+@login_required
+def api_proxy_update_job(job_id):
+    """Proxy: Update job status/quantity/due_date"""
+    result = api_request(f'/api/elec/jobs/{job_id}', method='PATCH', data=request.get_json())
+    return api_result(result, 'Failed to update job')
+
 @api_bp.route('/pnp', methods=['GET'])
 @login_required
 def api_proxy_get_pnp_files():

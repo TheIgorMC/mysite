@@ -1155,30 +1155,35 @@ function renderComponentsTable(components) {
 
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-3 py-3 text-sm text-gray-400 dark:text-gray-500 font-mono text-xs">${comp.id || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${comp.product_type || '-'}</td>
-            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${comp.value || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs" title="${comp.manufacturer_code ? 'Click to copy' : ''}">${comp.manufacturer_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.manufacturer_code.replace(/'/g, "\\'")}')">` + comp.manufacturer_code + ' <i class="fas fa-copy text-gray-400 text-[10px]"></i></span>' : '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.manufacturer || '-'}</td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
-                <div class="max-w-xs">
-                    <div class="font-medium">${comp.seller || '-'}</div>
-                    <div class="text-xs text-gray-500 truncate" title="${comp.seller_code ? 'Click to copy' : ''}">${comp.seller_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.seller_code.replace(/'/g, "\\'")}')">` + comp.seller_code + ' <i class="fas fa-copy text-gray-400 text-[10px]"></i></span>' : '-'}</div>
+            <td class="px-2 py-2 text-xs text-gray-400 dark:text-gray-500 font-mono">${comp.id || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 max-w-[6rem] truncate" title="${comp.product_type || ''}">${comp.product_type || '-'}</td>
+            <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-gray-100 max-w-[5rem] truncate" title="${comp.value || ''}">${comp.value || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 font-mono max-w-[8rem] truncate" title="${comp.manufacturer_code ? 'Click to copy: ' + comp.manufacturer_code : ''}">${comp.manufacturer_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.manufacturer_code.replace(/'/g, "\\'")}')">` + comp.manufacturer_code + ' <i class="fas fa-copy text-gray-400 text-[9px]"></i></span>' : '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">${comp.package || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[6rem] truncate" title="${comp.manufacturer || ''}">${comp.manufacturer || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300">
+                <div class="whitespace-nowrap">
+                    <span class="font-medium">${comp.seller || '-'}</span>
+                    ${comp.seller_code ? ` <span class="text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition font-mono" title="Click to copy: ${comp.seller_code.replace(/"/g, '&quot;')}" onclick="copyToClipboard('${comp.seller_code.replace(/'/g, "\\'")}')">· ${comp.seller_code} <i class="fas fa-copy text-[9px]"></i></span>` : ''}
                 </div>
             </td>
-            <td class="px-3 py-3 text-sm text-center">
+            <td class="px-2 py-2 text-xs text-center">
                 ${lcscLink}
             </td>
-            <td class="px-3 py-3 text-sm">
+            <td class="px-2 py-2 text-xs">
                 ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0))}
             </td>
-            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 €${(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0).toFixed(4)}
             </td>
-            <td class="px-3 py-3 text-sm text-right whitespace-nowrap">
+            <td class="px-2 py-2 text-xs text-right whitespace-nowrap">
+                <button onclick="showUsedInBoards(${comp.id})" 
+                        class="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 mr-2"
+                        title="Used in boards">
+                    <i class="fas fa-microchip"></i>
+                </button>
                 <button onclick="editComponent(${comp.id})" 
-                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-2"
                         title="Edit component">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -1325,6 +1330,65 @@ async function deleteComponent(id) {
     }
 }
 
+async function showUsedInBoards(componentId) {
+    const modal = document.getElementById('used-in-boards-modal');
+    const titleEl = document.getElementById('used-in-boards-title');
+    const listEl = document.getElementById('used-in-boards-list');
+
+    // Find component info
+    const comp = allComponents.find(c => c.id === componentId);
+    const compLabel = comp ? `${comp.value || comp.manufacturer_code || 'Component'} #${componentId}` : `Component #${componentId}`;
+    titleEl.textContent = `Boards using: ${compLabel}`;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // If boards not yet loaded with BOM data, load them first
+    if (allBoards.length === 0 || allBoards[0].bom_items === undefined) {
+        listEl.innerHTML = '<p class="text-center text-gray-500 py-6"><i class="fas fa-spinner fa-spin mr-2"></i>Loading boards…</p>';
+        await loadBoards();
+    }
+
+    // Find all boards containing this component
+    const usages = [];
+    for (const board of allBoards) {
+        const items = board.bom_items || [];
+        const match = items.find(item => item.component_id === componentId);
+        if (match) {
+            usages.push({ board, item: match });
+        }
+    }
+
+    if (usages.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-6">This component is not used in any board.</p>';
+        return;
+    }
+
+    listEl.innerHTML = usages.map(({ board, item }) => {
+        const boardName = board.name || board.board_name || 'Unnamed';
+        const designators = item.designators || '-';
+        const qty = item.qty || item.quantity || '?';
+        return `
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-white">${boardName}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">v${board.version || '?'} · ID ${board.id}</p>
+                    ${designators !== '-' ? `<p class="text-xs text-blue-600 dark:text-blue-400 font-mono mt-1">${designators}</p>` : ''}
+                </div>
+                <div class="text-right">
+                    <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">${qty}</p>
+                    <p class="text-xs text-gray-500">per board</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function closeUsedInBoardsModal() {
+    document.getElementById('used-in-boards-modal').classList.add('hidden');
+    document.getElementById('used-in-boards-modal').classList.remove('flex');
+}
+
 // ===== BOARDS TAB =====
 
 async function loadBoards() {
@@ -1384,12 +1448,15 @@ async function loadBoards() {
                 const bomResponse = await fetch(`${ELECTRONICS_API_BASE}/boards/${board.id}/bom`);
                 if (bomResponse.ok) {
                     const bom = await bomResponse.json();
-                    board.bom_count = Array.isArray(bom) ? bom.length : 0;
+                    board.bom_items = Array.isArray(bom) ? bom : [];
+                    board.bom_count = board.bom_items.length;
                 } else {
+                    board.bom_items = [];
                     board.bom_count = 0;
                 }
             } catch (error) {
                 console.error(`Error loading BOM for board ${board.id}:`, error);
+                board.bom_items = [];
                 board.bom_count = 0;
             }
             
@@ -2660,6 +2727,70 @@ function closeJobDetailsModal() {
     document.getElementById('job-details-modal').classList.remove('flex');
     currentJobId = null;
 }
+
+function showEditJobModal() {
+    if (!currentJobId) return;
+    const job = allJobs.find(j => (j.job_id || j.id) === currentJobId);
+    if (!job) return;
+
+    document.getElementById('edit-job-status').value = job.status || 'created';
+    document.getElementById('edit-job-quantity').value = job.quantity || 1;
+    document.getElementById('edit-job-pnp').value = job.pnp_job || 0;
+    document.getElementById('edit-job-due-date').value = job.due_date ? job.due_date.split('T')[0] : '';
+
+    document.getElementById('edit-job-modal').classList.remove('hidden');
+    document.getElementById('edit-job-modal').classList.add('flex');
+}
+
+function closeEditJobModal() {
+    document.getElementById('edit-job-modal').classList.add('hidden');
+    document.getElementById('edit-job-modal').classList.remove('flex');
+    document.getElementById('edit-job-form').reset();
+}
+
+document.getElementById('edit-job-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!currentJobId) return;
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    const updateData = {
+        status: data.status,
+        quantity: parseInt(data.quantity),
+        pnp_job: parseInt(data.pnp_job) || 0
+    };
+    if (data.due_date) {
+        updateData.due_date = data.due_date;
+    }
+
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/jobs/${currentJobId}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+            showToast('Job updated successfully', 'success');
+            closeEditJobModal();
+            // Update local job data and refresh UI
+            const idx = allJobs.findIndex(j => (j.job_id || j.id) === currentJobId);
+            if (idx !== -1) {
+                allJobs[idx] = { ...allJobs[idx], ...updateData };
+            }
+            // Re-open details with updated data
+            viewJobDetails(currentJobId);
+            renderJobsGrid(allJobs);
+        } else {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || err.detail || 'Failed to update job');
+        }
+    } catch (error) {
+        console.error('[Job Edit] Error:', error);
+        showToast('Failed to update job: ' + error.message, 'error');
+    }
+});
 
 async function loadJobBoards(jobId) {
     try {
