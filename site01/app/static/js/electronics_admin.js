@@ -970,7 +970,7 @@ function switchTab(tabName) {
     switch(tabName) {
         case 'components':
             if (allComponents.length === 0) {
-                console.log('[Electronics] Components not loaded, loading now');
+                console.log('[Components] Components not loaded, loading now');
                 loadComponents();
             } else {
                 renderComponentsTable(allComponents);
@@ -978,7 +978,7 @@ function switchTab(tabName) {
             break;
         case 'boards':
             if (allBoards.length === 0) {
-                console.log('[Electronics] Boards not loaded, loading now');
+                console.log('[Boards] Boards not loaded, loading now');
                 loadBoards();
             } else {
                 renderBoardsGrid(allBoards);
@@ -1366,14 +1366,18 @@ async function showUsedInBoards(componentId) {
 
     listEl.innerHTML = usages.map(({ board, item }) => {
         const boardName = board.name || board.board_name || 'Unnamed';
-        const designators = item.designators || '-';
-        const qty = item.qty || item.quantity || '?';
+        const version = board.version || 'v1.0';
+        const variant = board.variant || '';
+        const description = board.description || '';
+        const bomCount = board.bom_count || 0;
+        const filesCount = board.files_count || 0;
+        
         return `
             <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div>
                     <p class="font-medium text-gray-900 dark:text-white">${boardName}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">v${board.version || '?'} · ID ${board.id}</p>
-                    ${designators !== '-' ? `<p class="text-xs text-blue-600 dark:text-blue-400 font-mono mt-1">${designators}</p>` : ''}
+                    <p class="text-xs text-gray-500 dark:text-gray-400">v${version} - ID ${board.id}</p>
+                    ${description !== '-' ? `<p class="text-xs text-blue-600 dark:text-blue-400 font-mono mt-1">${description}</p>` : ''}
                 </div>
                 <div class="text-right">
                     <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">${qty}</p>
@@ -1652,6 +1656,7 @@ async function loadBoardBOM(boardId) {
                 <td class="px-4 py-3 text-sm">${item.component_id ? getStockBadge(item.qty_left) : '<span class="text-xs text-gray-400">Not linked</span>'}</td>
             </tr>
         `).join('');
+        
     } catch (error) {
         console.error('Error loading BOM:', error);
         tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error loading BOM</td></tr>';
@@ -3018,13 +3023,16 @@ function downloadCombinedShoppingList() {
     for (const [supplier, items] of Object.entries(bySupplier)) {
         const csvLines = ['Supplier Code,Manufacturer Code,Quantity'];
         for (const item of items) {
+            // Escape fields that might contain commas
             const sc = item.supplier_code.includes(',') ? `"${item.supplier_code}"` : item.supplier_code;
             const mc = item.manufacturer_code.includes(',') ? `"${item.manufacturer_code}"` : item.manufacturer_code;
             csvLines.push(`${sc},${mc},${item.quantity}`);
         }
         
-        const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = csvLines.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
         a.href = url;
         a.download = `${supplier}_ORDER_COMBINED.csv`;
@@ -3388,7 +3396,7 @@ function showRegisterFileModal() {
     // Populate board select
     const select = document.getElementById('register-file-board');
     select.innerHTML = '<option value="">Select a board...</option>' + 
-        allBoards.map(board => `<option value="${board.id}">${board.name || 'Unnamed'} - ${board.version}</option>`).join('');
+        allBoards.map(board => `<option value="${board.id}">${board.name || board.board_name || 'Unnamed'} - ${board.version}</option>`).join('');
 }
 
 function closeRegisterFileModal() {
@@ -4062,7 +4070,7 @@ function renderStockTable(components) {
     tbody.innerHTML = components.map(comp => {
         const qty = comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty;
         const price = comp.price !== undefined ? comp.price : comp.unit_price || 0;
-        const totalValue = qty * price;
+        const totalValue = (qty * price).toFixed(2);
         
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -4698,31 +4706,41 @@ async function viewPnPDetails(pnpId) {
         const tbody = document.getElementById('pnp-data-table');
         tbody.innerHTML = items.map(item => {
             const isFiducial = fiducials.includes(item.designator);
-            const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10' : '';
+            const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10'
+                : item.isExcluded ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60'
+                : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : '';
+            
             return `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${rowClass}">
-                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    ${item.designator || '-'}
-                    ${isFiducial ? '<i class="fas fa-crosshairs text-yellow-600 ml-1" title="Fiducial"></i>' : ''}
-                </td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_x || item.x || '-'}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.mid_y || item.y || '-'}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                    <span class="px-2 py-1 rounded text-xs font-semibold ${item.layer === 'T' || item.layer === 'Top' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}">
-                        ${item.layer || '-'}
-                    </span>
-                </td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.rotation || '0'}°</td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.comment || '-'}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.device || '-'}</td>
-                <td class="px-4 py-2 text-center">
-                    <input type="checkbox" ${isFiducial ? 'checked' : ''}
+            <tr class="text-sm ${rowClass}">
+                <td class="px-3 py-2 text-center">
+                    <input type="checkbox" 
+                           ${item.selected ? 'checked' : ''}
                            onchange="toggleFiducial(${pnpId}, '${(item.designator || '').replace(/'/g, '\\\'')}', this.checked)"
-                           class="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                           title="Mark as fiducial">
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                 </td>
+                <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">${item.designator || '-'}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.mid_x || item.x || '-'}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.mid_y || item.y || '-'}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.layer || '-'}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.rotation || '0'}°</td>
+                <td class="px-3 py-2">
+                    <input type="number" 
+                           value="${item.component_id || ''}" 
+                           onchange="updateOpenPnPMapping(${idx}, 'component_id', this.value)"
+                           placeholder="Component ID"
+                           class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </td>
+                <td class="px-3 py-2">
+                    <input type="text" 
+                           value="${item.footprint || ''}" 
+                           onchange="updateOpenPnPMapping(${idx}, 'footprint', this.value)"
+                           placeholder="Footprint"
+                           class="w-32 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                </td>
+                <td class="px-3 py-2">${statusBadge}</td>
             </tr>
-        `}).join('');
+        `;
+    }).join('');
         
         document.getElementById('pnp-details-modal').classList.remove('hidden');
         document.getElementById('pnp-details-modal').classList.add('flex');
