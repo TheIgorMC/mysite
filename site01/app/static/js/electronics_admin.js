@@ -10,6 +10,8 @@ let allJobs = [];
 let allFiles = [];
 let selectedJobIds = [];
 let parsedCSVData = null;
+let componentSortField = 'id';
+let componentSortDirection = 'asc';
 
 // Check for required variables
 if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
@@ -1088,6 +1090,10 @@ async function loadComponents() {
 }
 
 function searchComponents() {
+    renderComponentsTable(getFilteredComponents());
+}
+
+function getFilteredComponents() {
     const search = document.getElementById('component-search').value.toLowerCase();
     const type = document.getElementById('component-type-filter').value;
     const pkg = document.getElementById('component-package-filter').value;
@@ -1119,15 +1125,71 @@ function searchComponents() {
     if (pkg) {
         filtered = filtered.filter(comp => comp.package === pkg);
     }
-    
+
     console.log('[Search] Filtered to:', filtered.length, 'components');
-    renderComponentsTable(filtered);
+    return filtered;
 }
 
-function renderComponentsTable(components) {
+function getComponentSortValue(comp, field) {
+    if (field === 'id') return Number(comp.id || 0);
+    if (field === 'stock') return Number(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0));
+    if (field === 'price') return Number(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0);
+
+    const value = comp[field];
+    return value === null || value === undefined ? '' : String(value).toLowerCase();
+}
+
+function sortComponents(field) {
+    if (componentSortField === field) {
+        componentSortDirection = componentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        componentSortField = field;
+        componentSortDirection = 'asc';
+    }
+
+    renderComponentsTable(getFilteredComponents());
+}
+
+function updateComponentSortIndicators() {
+    const map = {
+        id: 'components-sort-id',
+        product_type: 'components-sort-type',
+        value: 'components-sort-value',
+        manufacturer_code: 'components-sort-mpn',
+        package: 'components-sort-pkg',
+        manufacturer: 'components-sort-mfr',
+        seller: 'components-sort-supplier',
+        stock: 'components-sort-stock',
+        price: 'components-sort-price'
+    };
+
+    Object.values(map).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '';
+    });
+
+    const activeId = map[componentSortField];
+    if (!activeId) return;
+
+    const active = document.getElementById(activeId);
+    if (active) {
+        active.textContent = componentSortDirection === 'asc' ? ' ▲' : ' ▼';
+    }
+}
+
+function renderComponentsTable(components = allComponents) {
     const tbody = document.getElementById('components-table-body');
+
+    const sortedComponents = [...components].sort((a, b) => {
+        const av = getComponentSortValue(a, componentSortField);
+        const bv = getComponentSortValue(b, componentSortField);
+
+        if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
+        if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
     
-    if (components.length === 0) {
+    if (sortedComponents.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="11" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
@@ -1135,12 +1197,13 @@ function renderComponentsTable(components) {
                 </td>
             </tr>
         `;
+        updateComponentSortIndicators();
         return;
     }
     
-    tbody.innerHTML = components.map(comp => {
+    tbody.innerHTML = sortedComponents.map(comp => {
         // Debug first component to see actual field names from API
-        if (comp.id === components[0].id) {
+        if (comp.id === sortedComponents[0].id) {
             console.log('[Component Render] Sample component fields:', {
                 id: comp.id,
                 seller: comp.seller,
@@ -1196,6 +1259,8 @@ function renderComponentsTable(components) {
         </tr>
     `;
     }).join('');
+
+    updateComponentSortIndicators();
 }
 
 function copyToClipboard(text) {
@@ -4704,8 +4769,15 @@ async function viewPnPDetails(pnpId) {
         
         // Render table
         const tbody = document.getElementById('pnp-data-table');
-        tbody.innerHTML = items.map(item => {
+        tbody.innerHTML = items.map((item, idx) => {
             const isFiducial = fiducials.includes(item.designator);
+            const statusBadge = isFiducial
+                ? '<span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded"><i class="fas fa-crosshairs mr-1"></i>Fiducial</span>'
+                : item.isExcluded
+                ? '<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">Excluded</span>'
+                : item.status === 'mapped'
+                ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
+                : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
             const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10'
                 : item.isExcluded ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60'
                 : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : '';

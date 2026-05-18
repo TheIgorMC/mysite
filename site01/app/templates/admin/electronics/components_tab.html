@@ -65,35 +65,35 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            ID
+                        <th onclick="sortComponents('id')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            ID<span id="components-sort-id"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Type
+                        <th onclick="sortComponents('product_type')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Type<span id="components-sort-type"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Value
+                        <th onclick="sortComponents('value')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Value<span id="components-sort-value"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            MPN
+                        <th onclick="sortComponents('manufacturer_code')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            MPN<span id="components-sort-mpn"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Pkg
+                        <th onclick="sortComponents('package')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Pkg<span id="components-sort-pkg"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Mfr
+                        <th onclick="sortComponents('manufacturer')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Mfr<span id="components-sort-mfr"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Supplier
+                        <th onclick="sortComponents('seller')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Supplier<span id="components-sort-supplier"></span>
                         </th>
                         <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                             Lnk
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Stock
+                        <th onclick="sortComponents('stock')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Stock<span id="components-sort-stock"></span>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Price
+                        <th onclick="sortComponents('price')" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-100">
+                            Price<span id="components-sort-price"></span>
                         </th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                             Actions
