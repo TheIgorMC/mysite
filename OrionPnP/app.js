@@ -655,6 +655,16 @@ function applyTheme(theme) {
   localStorage.setItem('orion_theme', theme);
   const btn = document.getElementById('themeToggle');
   if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  updateThemeLogos(theme);
+}
+
+function updateThemeLogos(theme) {
+  const isDark = theme === 'dark';
+  document.querySelectorAll('[data-logo-light][data-logo-dark]').forEach((element) => {
+    const lightLogo = element.getAttribute('data-logo-light');
+    const darkLogo = element.getAttribute('data-logo-dark');
+    element.setAttribute('src', isDark ? darkLogo : lightLogo);
+  });
 }
 
 /* ── BOOT ── */

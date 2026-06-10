@@ -7,8 +7,14 @@
     <title>{% block title %}{{ t('site.title') }}{% endblock %}</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='media/logoOrion.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='media/logoOrion.png') }}">
+        <link id="site-favicon" rel="icon" type="image/svg+xml"
+            href="{{ url_for('static', filename='media/logo_orion_new.svg') }}"
+            data-logo-light="{{ url_for('static', filename='media/logo_orion_new.svg') }}"
+            data-logo-dark="{{ url_for('static', filename='media/logo_orion_new_dark.svg') }}">
+            <link rel="apple-touch-icon"
+                href="{{ url_for('static', filename='media/logo_orion_new.svg') }}"
+                data-logo-light="{{ url_for('static', filename='media/logo_orion_new.svg') }}"
+                data-logo-dark="{{ url_for('static', filename='media/logo_orion_new_dark.svg') }}">
     
     <!-- Inline theme script to prevent flash -->
     <script>
@@ -227,9 +233,11 @@
                 <!-- Logo -->
                 <div class="flex items-center space-x-3">
                     <a href="{{ url_for('main.index') }}" class="flex items-center">
-                        <img src="{{ url_for('static', filename='media/logoOrion.png') }}" 
+                        <img src="{{ url_for('static', filename='media/logo_orion_new.svg') }}" 
                              alt="Orion Logo" 
-                             class="h-12 w-auto invert dark:invert-0">
+                             class="h-12 w-auto"
+                             data-logo-light="{{ url_for('static', filename='media/logo_orion_new.svg') }}"
+                             data-logo-dark="{{ url_for('static', filename='media/logo_orion_new_dark.svg') }}">
                         <span class="ml-3 text-xl font-bold text-gray-800 dark:text-white hidden sm:block">Orion Project</span>
                     </a>
                 </div>

@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     updateThemeIcon(currentTheme);
+    updateThemeLogo(currentTheme);
     
     // Theme toggle button
     const themeToggle = document.getElementById('theme-toggle');
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
+            updateThemeLogo(newTheme);
         });
     }
 });
@@ -44,5 +46,25 @@ function updateThemeIcon(theme) {
         } else {
             themeIcon.className = 'fas fa-sun text-xl';
         }
+    }
+}
+
+function updateThemeLogo(theme) {
+    const isDark = theme === 'dark';
+
+    document.querySelectorAll('[data-logo-light][data-logo-dark]').forEach(function(element) {
+        const lightLogo = element.getAttribute('data-logo-light');
+        const darkLogo = element.getAttribute('data-logo-dark');
+
+        if (element.tagName === 'IMG') {
+            element.setAttribute('src', isDark ? darkLogo : lightLogo);
+        } else {
+            element.setAttribute('href', isDark ? darkLogo : lightLogo);
+        }
+    });
+
+    const favicon = document.getElementById('site-favicon');
+    if (favicon) {
+        favicon.setAttribute('href', isDark ? favicon.getAttribute('data-logo-dark') : favicon.getAttribute('data-logo-light'));
     }
 }
