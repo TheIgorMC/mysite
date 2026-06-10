@@ -17,7 +17,7 @@
   --danger:    #f87171;
   /* theme-switchable computed values */
   --logo-filter:       none;
-  --foot-logo-filter:  opacity(0.6);
+  --foot-logo-filter:  none;
   --hero-overlay:      linear-gradient(135deg, rgba(16,12,28,0.86) 0%, rgba(16,12,28,0.52) 55%, rgba(16,12,28,0.9) 100%);
   --input-bg:          rgba(16, 12, 28, 0.85);
   --nav-bg:            rgba(16, 12, 28, 0.65);
@@ -48,8 +48,8 @@
   --accent-3:  #d97706;
   --success:   #16a34a;
   --danger:    #dc2626;
-  --logo-filter:       brightness(0);
-  --foot-logo-filter:  brightness(0) opacity(0.5);
+  --logo-filter:       none;
+  --foot-logo-filter:  none;
   --hero-overlay:      linear-gradient(135deg, rgba(16,12,28,0.82) 0%, rgba(16,12,28,0.48) 55%, rgba(16,12,28,0.88) 100%);
   --input-bg:          rgba(249, 250, 251, 0.92);
   --nav-bg:            rgba(249, 250, 251, 0.75);
