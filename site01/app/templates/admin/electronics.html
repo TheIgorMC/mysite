@@ -117,6 +117,50 @@
     </div>
 </div>
 
+<!-- Quick Stock Quantity Modal (global, outside tab panels) -->
+<div id="stock-qty-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-boxes text-blue-600 mr-2"></i>Update Stock Quantity
+                </h3>
+                <button onclick="closeStockQtyModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="stock-qty-form" class="space-y-4">
+                <input type="hidden" id="stock-qty-component-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Component
+                    </label>
+                    <p id="stock-qty-component-name" class="text-gray-900 dark:text-gray-100 font-medium"></p>
+                </div>
+                <div>
+                    <label for="stock-qty-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        New Quantity
+                    </label>
+                    <input type="number" id="stock-qty-input" min="0" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Press Enter to save</p>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeStockQtyModal()"
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Pass storage URL to JavaScript -->
 <script>
     window.ELECTRONICS_STORAGE_URL = "{{ storage_url }}";
