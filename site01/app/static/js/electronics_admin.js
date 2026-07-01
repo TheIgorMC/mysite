@@ -1234,7 +1234,7 @@ function renderComponentsTable(components = allComponents) {
                 ${lcscLink}
             </td>
             <td class="px-2 py-2 text-xs">
-                ${getStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0))}
+                ${getEditableStockBadge(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty !== undefined ? comp.stock_qty : 0), comp.id)}
             </td>
             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 €${(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0).toFixed(4)}
@@ -1281,6 +1281,19 @@ function getStockBadge(qty) {
     } else {
         return `<span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold rounded">${qty}</span>`;
     }
+}
+
+function getEditableStockBadge(qty, componentId) {
+    const stockBadgeClass = qty === 0
+        ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+        : qty <= 10
+        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+        : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+
+    return `<button type="button"
+                    onclick="openStockQtyModal(${componentId})"
+                    class="px-2 py-1 ${stockBadgeClass} text-xs font-semibold rounded hover:opacity-90 transition"
+                    title="Click to edit stock quantity">${qty}</button>`;
 }
 
 function showAddComponentModal() {
@@ -4136,11 +4149,6 @@ function renderStockTable(components) {
         const qty = comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty;
         const price = comp.price !== undefined ? comp.price : comp.unit_price || 0;
         const totalValue = (qty * price).toFixed(2);
-        const stockBadgeClass = qty === 0
-            ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-            : qty <= 10
-            ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-            : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
         
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -4149,16 +4157,9 @@ function renderStockTable(components) {
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.seller || comp.supplier || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs">${comp.seller_code || comp.supplier_code || '-'}</td>
-            <td class="px-4 py-3 text-sm">
-                <button type="button"
-                        onclick="openStockQtyModal(${comp.id})"
-                        class="px-2 py-1 ${stockBadgeClass} text-xs font-semibold rounded hover:opacity-90 transition"
-                        title="Click to edit stock quantity">
-                    ${qty}
-                </button>
-            </td>
+            <td class="px-4 py-3 text-sm">${getEditableStockBadge(qty, comp.id)}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">€${price.toFixed(4)}</td>
-            <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">€${totalValue.toFixed(2)}</td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">€${totalValue}</td>
         </tr>
     `;
     }).join('');
@@ -4227,6 +4228,7 @@ document.getElementById('stock-qty-form')?.addEventListener('submit', async func
         }
 
         closeStockQtyModal();
+        renderComponentsTable(getFilteredComponents());
         filterStockOverview();
         showToast('Stock quantity updated', 'success');
     } catch (error) {
