@@ -25,6 +25,7 @@ When you are already inside `OrionPnP` and want to update from git:
 
 ```bash
 git pull --ff-only origin main
+python scripts/setup_local_data.py
 docker compose up -d --build
 ```
 
@@ -81,6 +82,7 @@ Daily update flow (run from inside `stacks/OrionPnP`):
 
 ```bash
 git -C ../.mysite_upstream pull --ff-only origin main
+python ../.mysite_upstream/OrionPnP/scripts/setup_local_data.py
 rsync -a --delete \
 	--filter='P content.json' \
 	--filter='P registrations.json' \
@@ -93,7 +95,8 @@ docker compose up -d --build
 Notes:
 
 - This keeps your login folder as `stacks/OrionPnP`.
-- `content.json` and `registrations.json` are protected from deletion and excluded from overwrite during sync.
+- `local_data/` stores the persistent runtime copies and the editor password hash.
+- `content.json` and `registrations.json` are protected from deletion and excluded from overwrite during sync when using the legacy copy flow.
 - If you also want to overwrite those two files from git, remove the `--exclude` flags.
 
 ## Optional security for registration export endpoint

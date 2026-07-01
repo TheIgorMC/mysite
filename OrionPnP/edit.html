@@ -22,6 +22,19 @@
     .save-status{font-size:.82rem;transition:color .3s;}
     .save-status.ok{color:var(--success);}
     .save-status.err{color:var(--danger);}
+    .btn-sm:disabled{opacity:.38;cursor:not-allowed;}
+    .locked .tabs,.locked .main{filter:blur(1px);pointer-events:none;user-select:none;}
+    .auth-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:1.5rem;background:rgba(3,8,18,.84);backdrop-filter:blur(12px);}
+    .auth-overlay.show{display:flex;}
+    .auth-card{width:min(460px,100%);background:var(--surface);border:1px solid var(--border-hi);border-radius:18px;padding:1.35rem;box-shadow:0 24px 80px rgba(0,0,0,.45);}
+    .auth-card h2{font-size:1.05rem;margin-bottom:.35rem;}
+    .auth-card p{color:var(--muted);line-height:1.5;margin-bottom:1rem;}
+    .auth-form{display:grid;gap:.75rem;}
+    .auth-form label{display:flex;flex-direction:column;gap:.35rem;font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+    .auth-form input{background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.95rem;padding:.62rem .8rem;width:100%;transition:border-color .15s;}
+    .auth-form input:focus{outline:none;border-color:var(--accent2);}
+    .auth-actions{display:flex;justify-content:flex-end;gap:.6rem;align-items:center;flex-wrap:wrap;}
+    .auth-note{font-size:.82rem;color:var(--muted);min-height:1.2em;}
     /* ── buttons ── */
     .btn{border:none;border-radius:var(--radius);cursor:pointer;font-size:.88rem;font-weight:600;padding:.5rem 1.2rem;transition:opacity .15s;}
     .btn-primary{background:var(--accent);color:#fff;}
@@ -138,10 +151,28 @@
       <span class="save-status" id="saveStatus"></span>
       <button class="btn btn-sm" id="importBtn" type="button">Import content.json</button>
       <input id="importFile" type="file" accept="application/json,.json" style="display:none">
+      <button class="btn btn-sm" id="logoutBtn" type="button" style="display:none">Logout</button>
       <button class="btn btn-primary" id="saveBtn" disabled>Save Changes</button>
     </div>
   </div>
 </header>
+
+<div class="auth-overlay show" id="authOverlay" aria-live="polite">
+  <div class="auth-card">
+    <h2>Admin access</h2>
+    <p id="authMessage">Sign in to unlock content, locales, and asset editing.</p>
+    <form class="auth-form" id="loginForm">
+      <label>
+        Password
+        <input id="authPassword" type="password" autocomplete="current-password" required>
+      </label>
+      <div class="auth-actions">
+        <span class="auth-note" id="authStatus">Locked.</span>
+        <button class="btn btn-primary" type="submit">Unlock editor</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <nav class="tabs" id="tabs"></nav>
 <main class="main" id="main"><p class="loading">Loading…</p></main>
@@ -154,6 +185,8 @@ let dirty   = false;
 let activeTab = 'updates';
 let sourceLocale = 'en';
 let targetLocale = 'it';
+let adminAuthenticated = false;
+let adminConfigured = false;
 const openCards = { updates: new Set(), timeline: new Set(), milestones: new Set(), planned_work: new Set() };
 
 /* ─────────────────────────────────────────────────────── schema */
@@ -239,7 +272,8 @@ function setVal(item, f, raw, lang='en') {
 /* ─────────────────────────────────────────────────────── dirty */
 function markDirty() {
   dirty = true;
-  document.getElementById('saveBtn').disabled = false;
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = !adminAuthenticated;
   setStatus('');
 }
 
@@ -247,6 +281,62 @@ function setStatus(msg, cls='') {
   const el = document.getElementById('saveStatus');
   el.textContent = msg;
   el.className = 'save-status' + (cls ? ' '+cls : '');
+}
+
+function updateAuthUI() {
+  const overlay = document.getElementById('authOverlay');
+  const message = document.getElementById('authMessage');
+  const authStatus = document.getElementById('authStatus');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const importBtn = document.getElementById('importBtn');
+  const saveBtn = document.getElementById('saveBtn');
+
+  document.body.classList.toggle('locked', !adminAuthenticated);
+  overlay.classList.toggle('show', !adminAuthenticated);
+  logoutBtn.style.display = adminAuthenticated ? 'inline-flex' : 'none';
+  importBtn.disabled = !adminAuthenticated;
+  saveBtn.disabled = !adminAuthenticated || !dirty;
+
+  if (adminConfigured) {
+    message.textContent = 'Sign in to unlock content, locales, and asset editing.';
+    authStatus.textContent = adminAuthenticated ? 'Unlocked.' : 'Locked.';
+  } else {
+    message.textContent = 'Admin password is not configured yet. Run the local setup script to create one.';
+    authStatus.textContent = 'Configuration required.';
+  }
+}
+
+async function loadAuthStatus() {
+  try {
+    const res = await fetch('/api/auth/status', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    adminConfigured = Boolean(data.configured);
+    adminAuthenticated = Boolean(data.authenticated);
+  } catch {
+    adminConfigured = false;
+    adminAuthenticated = false;
+  }
+  updateAuthUI();
+}
+
+async function loginWithPassword(password) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data.error || 'Login failed');
+  adminAuthenticated = true;
+  updateAuthUI();
+}
+
+async function logoutAdmin() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  adminAuthenticated = false;
+  updateAuthUI();
 }
 
 /* ─────────────────────────────────────────────────────── render */
@@ -394,7 +484,7 @@ function renderGalleryPanel() {
         <div class="asset-tile-name" title="${esc(a.name)}">${esc(a.name)}</div>
         <div class="asset-tile-btns">
           <button class="btn-add-gallery" data-add-asset="${esc(a.url)}">+ Gallery</button>
-          <button class="btn-sm btn-del" data-del-asset="${esc(a.name)}">✕</button>
+          <button class="btn-sm btn-del" data-del-asset="${esc(a.name)}" ${a.deletable ? '' : 'disabled title="Tracked asset"'}>✕</button>
         </div>
       </div>
     </div>`).join('');
@@ -490,6 +580,7 @@ function renderGalleryPanel() {
   // add to gallery
   main.querySelectorAll('[data-add-asset]').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
       const src = btn.dataset.addAsset;
       content.gallery = content.gallery || [];
       content.gallery.push({ src, alt:{en:'',it:'',fr:'',es:''}, caption:{en:'',it:'',fr:'',es:''} });
@@ -501,11 +592,16 @@ function renderGalleryPanel() {
   // delete asset
   main.querySelectorAll('[data-del-asset]').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
       const name = btn.dataset.delAsset;
       if (!confirm(`Delete asset "${name}"?\nThis cannot be undone.`)) return;
       try {
         const res = await fetch(`/api/assets/${encodeURIComponent(name)}`, {method:'DELETE'});
-        if (!res.ok) { setStatus('Delete failed','err'); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setStatus(data.error || 'Delete failed','err');
+          return;
+        }
         await refreshAssets();
         renderAll();
       } catch { setStatus('Delete failed','err'); }
@@ -563,6 +659,7 @@ function applyGalleryField(el) {
 }
 
 async function uploadAssetFile(file) {
+  if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
   const fd = new FormData();
   fd.append('file', file);
   try {
@@ -743,7 +840,14 @@ function setupImport() {
   const importFile = document.getElementById('importFile');
   if (!importBtn || !importFile) return;
 
-  importBtn.addEventListener('click', () => importFile.click());
+  importBtn.addEventListener('click', () => {
+    if (!adminAuthenticated) {
+      setStatus('Login required', 'err');
+      updateAuthUI();
+      return;
+    }
+    importFile.click();
+  });
 
   importFile.addEventListener('change', async () => {
     const file = importFile.files && importFile.files[0];
@@ -778,14 +882,18 @@ function setupImport() {
 /* ─────────────────────────────────────────────────────── load / save */
 async function load() {
   try {
-    const [contentRes, localesRes] = await Promise.all([
+    const [contentRes, localesRes, authRes] = await Promise.all([
       fetch('/api/content', {headers:{Accept:'application/json'}}),
       fetch('/api/locales', {headers:{Accept:'application/json'}}),
+      fetch('/api/auth/status', {headers:{Accept:'application/json'}}),
     ]);
-    if (!contentRes.ok || !localesRes.ok) throw new Error();
+    if (!contentRes.ok || !localesRes.ok || !authRes.ok) throw new Error();
 
     content = await contentRes.json();
     locales = await localesRes.json();
+    const auth = await authRes.json();
+    adminConfigured = Boolean(auth.configured);
+    adminAuthenticated = Boolean(auth.authenticated);
 
     content.updates      = content.updates      || [];
     content.timeline     = content.timeline     || [];
@@ -799,6 +907,7 @@ async function load() {
     });
 
     await refreshAssets();
+    updateAuthUI();
     renderAll();
   } catch {
     document.getElementById('main').innerHTML = '<p class="loading" style="color:var(--danger)">Failed to load content/locales</p>';
@@ -806,6 +915,11 @@ async function load() {
 }
 
 async function save() {
+  if (!adminAuthenticated) {
+    setStatus('Login required', 'err');
+    updateAuthUI();
+    return;
+  }
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
   setStatus('Saving…');
@@ -837,7 +951,28 @@ async function save() {
 }
 
 document.getElementById('saveBtn').addEventListener('click', save);
+document.getElementById('logoutBtn').addEventListener('click', logoutAdmin);
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const passwordInput = document.getElementById('authPassword');
+  const authStatus = document.getElementById('authStatus');
+  authStatus.textContent = 'Checking password…';
+  try {
+    await loginWithPassword(passwordInput.value);
+    passwordInput.value = '';
+    authStatus.textContent = 'Unlocked.';
+    setStatus('Logged in', 'ok');
+    await refreshAssets();
+    renderAll();
+  } catch (err) {
+    authStatus.textContent = err.message || 'Login failed';
+    setStatus(err.message || 'Login failed', 'err');
+    passwordInput.focus();
+    passwordInput.select();
+  }
+});
 setupImport();
+updateAuthUI();
 
 window.addEventListener('beforeunload', e => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }

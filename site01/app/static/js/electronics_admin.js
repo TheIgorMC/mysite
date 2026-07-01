@@ -4136,6 +4136,11 @@ function renderStockTable(components) {
         const qty = comp.qty_left !== undefined ? comp.qty_left : comp.stock_qty;
         const price = comp.price !== undefined ? comp.price : comp.unit_price || 0;
         const totalValue = (qty * price).toFixed(2);
+        const stockBadgeClass = qty === 0
+            ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+            : qty <= 10
+            ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+            : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
         
         return `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -4144,13 +4149,91 @@ function renderStockTable(components) {
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.package || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.seller || comp.supplier || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono text-xs">${comp.seller_code || comp.supplier_code || '-'}</td>
-            <td class="px-4 py-3 text-sm">${getStockBadge(qty)}</td>
+            <td class="px-4 py-3 text-sm">
+                <button type="button"
+                        onclick="openStockQtyModal(${comp.id})"
+                        class="px-2 py-1 ${stockBadgeClass} text-xs font-semibold rounded hover:opacity-90 transition"
+                        title="Click to edit stock quantity">
+                    ${qty}
+                </button>
+            </td>
             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">€${price.toFixed(4)}</td>
             <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">€${totalValue.toFixed(2)}</td>
         </tr>
     `;
     }).join('');
 }
+
+function openStockQtyModal(componentId) {
+    const comp = allComponents.find(c => c.id == componentId);
+    if (!comp) {
+        showToast('Component not found', 'error');
+        return;
+    }
+
+    const currentQty = comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0);
+    const displayName = `${comp.product_type || comp.category || 'Component'} ${comp.manufacturer_code || comp.mpn || comp.value || ''} (${comp.package || 'N/A'})`;
+
+    document.getElementById('stock-qty-component-id').value = comp.id;
+    document.getElementById('stock-qty-component-name').textContent = displayName;
+    document.getElementById('stock-qty-input').value = currentQty;
+
+    const modal = document.getElementById('stock-qty-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const qtyInput = document.getElementById('stock-qty-input');
+    qtyInput.focus();
+    qtyInput.select();
+}
+
+function closeStockQtyModal() {
+    const modal = document.getElementById('stock-qty-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+document.getElementById('stock-qty-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('stock-qty-component-id').value;
+    const qty = parseInt(document.getElementById('stock-qty-input').value, 10);
+
+    if (Number.isNaN(qty) || qty < 0) {
+        showToast('Quantity must be 0 or greater', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${ELECTRONICS_API_BASE}/components/${id}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                qty_left: qty,
+                stock_qty: qty
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[Stock Qty Update] Error:', errorText);
+            throw new Error('Failed to update stock quantity');
+        }
+
+        const localComp = allComponents.find(c => c.id == id);
+        if (localComp) {
+            localComp.qty_left = qty;
+            localComp.stock_qty = qty;
+        }
+
+        closeStockQtyModal();
+        filterStockOverview();
+        showToast('Stock quantity updated', 'success');
+    } catch (error) {
+        console.error('Error updating stock quantity:', error);
+        showToast('Failed to update stock quantity', 'error');
+    }
+});
 
 async function exportStockReport() {
     try {

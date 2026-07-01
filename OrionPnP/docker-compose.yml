@@ -10,5 +10,4 @@ services:
       # Optional: set this to protect the export endpoint.
       # - ORION_ADMIN_TOKEN=change-me
     volumes:
-      - ./content.json:/app/content.json
-      - ./registrations.json:/app/registrations.json
+      - ./local_data:/app/local_data
