@@ -7,10 +7,16 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-robot mr-2"></i>Pick & Place Files
             </h3>
-            <button onclick="showUploadPnPModal()" 
-                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                <i class="fas fa-upload mr-2"></i>Upload PnP File
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="showUpdatePartsLibraryModal()"
+                        class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                    <i class="fas fa-sync-alt mr-2"></i>Update Parts Library
+                </button>
+                <button onclick="showUploadPnPModal()"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                    <i class="fas fa-upload mr-2"></i>Upload PnP File
+                </button>
+            </div>
         </div>
         
         <!-- Board Filter -->
@@ -231,14 +237,24 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
             </div>
             
             <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button onclick="closeOpenPnPExportModal()" 
+                <button onclick="closeOpenPnPExportModal()"
                         class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                     Cancel
                 </button>
-                <button onclick="downloadOpenPnPCSV()" 
-                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    <i class="fas fa-download mr-2"></i>Download OpenPnP CSV (<span id="openpnp-download-count">0</span> selected)
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="downloadOpenPnPCSV()"
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>CSV (<span id="openpnp-download-count">0</span>)
+                    </button>
+                    <button onclick="downloadOpenPnPBoardXML()"
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>board.xml
+                    </button>
+                    <button onclick="downloadOpenPnPJobXML()"
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>job.xml
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -333,6 +349,64 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
                             <!-- Populated by JavaScript -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update OpenPnP Parts Library Modal -->
+<div id="update-parts-library-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-sync-alt text-purple-600 mr-2"></i>Update Parts Library
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Upload your local OpenPnP <code>parts.xml</code> and get back a copy with any components
+                        added to the server since your last export appended to it.
+                    </p>
+                </div>
+                <button onclick="closeUpdatePartsLibraryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Existing parts are never modified or removed &mdash; only parts whose ID (our component ID)
+                    isn't already in your file are added, using the component's manufacturer code and package.
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    parts.xml *
+                </label>
+                <input type="file" id="parts-library-file" accept=".xml"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+
+            <div id="parts-library-summary" class="hidden mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300">
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeUpdatePartsLibraryModal()"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Cancel
+                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="processPartsLibraryFile()"
+                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                        <i class="fas fa-cogs mr-2"></i>Process
+                    </button>
+                    <button id="parts-library-download-btn" onclick="downloadUpdatedPartsLibrary()" disabled
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-download mr-2"></i>Download Updated parts.xml
+                    </button>
                 </div>
             </div>
         </div>

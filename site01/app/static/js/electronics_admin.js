@@ -13,6 +13,10 @@ let parsedCSVData = null;
 let componentSortField = 'id';
 let componentSortDirection = 'asc';
 
+// Designators matching this pattern (FID1, FID2, ...) are auto-treated as fiducials
+// in OpenPnP exports, on top of any manually-toggled designators.
+const FIDUCIAL_DESIGNATOR_RE = /^FID\d+$/i;
+
 // Check for required variables
 if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
     console.error('[Electronics] ELECTRONICS_STORAGE_URL is not defined!');
@@ -4844,7 +4848,7 @@ async function viewPnPDetails(pnpId) {
         const topLayer = items.filter(item => item.layer === 'T' || item.layer === 'Top').length;
         const bottomLayer = items.filter(item => item.layer === 'B' || item.layer === 'Bottom').length;
         const uniqueParts = new Set(items.map(item => item.device || item.comment)).size;
-        const fiducialCount = items.filter(item => fiducials.includes(item.designator)).length;
+        const fiducialCount = items.filter(item => fiducials.includes(item.designator) || FIDUCIAL_DESIGNATOR_RE.test(item.designator || '')).length;
         
         document.getElementById('pnp-total-count').textContent = total;
         document.getElementById('pnp-top-count').textContent = topLayer;
@@ -4855,7 +4859,7 @@ async function viewPnPDetails(pnpId) {
         // Render table
         const tbody = document.getElementById('pnp-data-table');
         tbody.innerHTML = items.map((item, idx) => {
-            const isFiducial = fiducials.includes(item.designator);
+            const isFiducial = fiducials.includes(item.designator) || FIDUCIAL_DESIGNATOR_RE.test(item.designator || '');
             const statusBadge = isFiducial
                 ? '<span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded"><i class="fas fa-crosshairs mr-1"></i>Fiducial</span>'
                 : item.isExcluded
@@ -5054,7 +5058,7 @@ async function showOpenPnPExportModal() {
         openPnPMappingData = pnpItems.map(item => {
             const designator = item.designator || '';
             const bomMatch = designatorMap[designator];
-            const isFiducial = fiducials.includes(designator);
+            const isFiducial = fiducials.includes(designator) || FIDUCIAL_DESIGNATOR_RE.test(designator);
             const rawFootprint = bomMatch ? (bomMatch.footprint || '') : '';
             const isTHT = rawFootprint.toUpperCase().includes('THT');
             const noFootprint = !isFiducial && !rawFootprint;
@@ -5295,11 +5299,256 @@ function downloadOpenPnPCSV() {
         console.log('[OpenPnP] Exported', rows.length, 'selected components');
         showToast(`OpenPnP CSV exported: ${rows.length} selected components`, 'success');
         closeOpenPnPExportModal();
-        
+
     } catch (error) {
         console.error('[OpenPnP Export] Error:', error);
         showToast('Failed to export OpenPnP CSV: ' + error.message, 'error');
     }
+}
+
+// ===== OPENPNP BOARD.XML / JOB.XML CREATOR =====
+
+function xmlEscape(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+// OpenPnP uses a signed rotation range (-180, 180], while our PnP data uses 0-360
+function normalizeOpenPnPRotation(rotation) {
+    let rot = parseFloat(rotation) || 0;
+    rot = rot % 360;
+    if (rot > 180) rot -= 360;
+    if (rot <= -180) rot += 360;
+    // Avoid "-0"
+    return rot === 0 ? 0 : rot;
+}
+
+function getOpenPnPBoardBaseName() {
+    const board = currentPnPData ? allBoards.find(b => b.id === currentPnPData.board_id) : null;
+    let base = board ? `${board.name || board.board_name || ''}${board.version ? ' ' + board.version : ''}`.trim() : '';
+    if (!base) {
+        base = (currentPnPData && currentPnPData.filename) ? currentPnPData.filename : 'board';
+        base = base.replace(/\.[^./\\]+$/, ''); // strip existing extension
+    }
+    // Keep it filesystem-friendly, same spirit as the OpenPnP sample (FeederDK.board.xml)
+    return base.replace(/[\\/:*?"<>|]/g, '_');
+}
+
+function downloadXMLFile(xmlString, filename) {
+    const blob = new Blob([xmlString], { type: 'application/xml;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function buildOpenPnPBoardXML(boardBaseName) {
+    const selectedComponents = openPnPMappingData.filter(item => item.selected);
+
+    if (selectedComponents.length === 0) {
+        return null;
+    }
+
+    const placements = selectedComponents.map(item => {
+        const id = xmlEscape(item.designator || '');
+        // Side is normalized the same way downloadOpenPnPCSV does it
+        let normSide = (item._pnpData && item._pnpData.layer) || item.layer || '';
+        if (normSide.toUpperCase() === 'T') normSide = 'Top';
+        else if (normSide.toUpperCase() === 'B') normSide = 'Bottom';
+        else if (!/top|bottom/i.test(normSide)) normSide = 'Top';
+
+        const rotation = normalizeOpenPnPRotation(item.rotation);
+        const x = (String(item.x || '').replace(/[^0-9.-]/g, '')) || '0';
+        const y = (String(item.y || '').replace(/[^0-9.-]/g, '')) || '0';
+
+        const type = item.isFiducial ? 'Fiducial' : 'Placement';
+        const partId = (!item.isFiducial && item.component_id) ? ` part-id="${xmlEscape(item.component_id)}"` : '';
+
+        return `      <placement version="1.4" id="${id}" side="${normSide}"${partId} type="${type}" enabled="true">
+         <location units="Millimeters" x="${x}" y="${y}" z="0.0" rotation="${rotation}"/>
+         <error-handling>Alert</error-handling>
+      </placement>`;
+    }).join('\n');
+
+    return `<openpnp-board version="1.1" name="${xmlEscape(boardBaseName)}.board.xml">
+   <dimensions units="Millimeters" x="0.0" y="0.0" z="0.0" rotation="0.0"/>
+   <fiducials/>
+   <placements>
+${placements}
+   </placements>
+   <solder-paste-pads/>
+</openpnp-board>`;
+}
+
+function downloadOpenPnPBoardXML() {
+    try {
+        const boardBaseName = getOpenPnPBoardBaseName();
+        const xml = buildOpenPnPBoardXML(boardBaseName);
+
+        if (!xml) {
+            showToast('No components selected for export', 'warning');
+            return;
+        }
+
+        downloadXMLFile(xml, `${boardBaseName}.board.xml`);
+
+        const selectedCount = openPnPMappingData.filter(item => item.selected).length;
+        console.log('[OpenPnP] Exported board.xml with', selectedCount, 'placements');
+        showToast(`board.xml exported: ${selectedCount} placements`, 'success');
+    } catch (error) {
+        console.error('[OpenPnP board.xml Export] Error:', error);
+        showToast('Failed to export board.xml: ' + error.message, 'error');
+    }
+}
+
+function downloadOpenPnPJobXML() {
+    try {
+        const boardBaseName = getOpenPnPBoardBaseName();
+        const boardFilename = `${boardBaseName}.board.xml`;
+
+        const xml = `<openpnp-job>
+   <panels/>
+   <board-locations>
+      <board-location side="Top" board-file="${xmlEscape(boardFilename)}" panel-id="Panel1" check-fiducials="true" enabled="true">
+         <location units="Millimeters" x="0.0" y="0.0" z="0.0" rotation="0.0"/>
+         <placed class="java.util.HashMap"/>
+      </board-location>
+   </board-locations>
+</openpnp-job>`;
+
+        downloadXMLFile(xml, `${boardBaseName}.job.xml`);
+        console.log('[OpenPnP] Exported job.xml referencing', boardFilename);
+        showToast('job.xml exported', 'success');
+    } catch (error) {
+        console.error('[OpenPnP job.xml Export] Error:', error);
+        showToast('Failed to export job.xml: ' + error.message, 'error');
+    }
+}
+
+// ===== OPENPNP PARTS LIBRARY UPDATER =====
+
+let partsLibraryUpdateResult = null; // { xmlString, filename, existingCount, addedCount }
+
+function showUpdatePartsLibraryModal() {
+    partsLibraryUpdateResult = null;
+    const fileInput = document.getElementById('parts-library-file');
+    if (fileInput) fileInput.value = '';
+    const summary = document.getElementById('parts-library-summary');
+    if (summary) summary.classList.add('hidden');
+    const downloadBtn = document.getElementById('parts-library-download-btn');
+    if (downloadBtn) downloadBtn.disabled = true;
+
+    document.getElementById('update-parts-library-modal').classList.remove('hidden');
+    document.getElementById('update-parts-library-modal').classList.add('flex');
+}
+
+function closeUpdatePartsLibraryModal() {
+    document.getElementById('update-parts-library-modal').classList.add('hidden');
+    document.getElementById('update-parts-library-modal').classList.remove('flex');
+    partsLibraryUpdateResult = null;
+}
+
+async function processPartsLibraryFile() {
+    const fileInput = document.getElementById('parts-library-file');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+
+    if (!file) {
+        showToast('Please choose a parts.xml file', 'warning');
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/xml');
+
+        const parseError = doc.querySelector('parsererror');
+        if (parseError) {
+            throw new Error('Not a valid XML file');
+        }
+
+        const root = doc.documentElement;
+        if (!root || root.tagName !== 'openpnp-parts') {
+            throw new Error('This does not look like an OpenPnP parts.xml file (expected <openpnp-parts> root)');
+        }
+
+        // Existing part ids in the uploaded library (skip the non-numeric FIDUCIAL-HOME entry)
+        const existingIds = new Set();
+        root.querySelectorAll('part').forEach(part => {
+            const id = part.getAttribute('id');
+            if (id) existingIds.add(id);
+        });
+
+        // Make sure we have the full component list to diff against
+        if (!allComponents || allComponents.length === 0) {
+            await loadComponents();
+        }
+
+        let addedCount = 0;
+        allComponents.forEach(comp => {
+            const compId = String(comp.id);
+            if (existingIds.has(compId)) return;
+
+            const name = comp.manufacturer_code || comp.value || comp.mpn || `C${compId}`;
+            const packageId = comp.package || comp.smd_footprint || '';
+
+            const part = doc.createElement('part');
+            part.setAttribute('id', compId);
+            part.setAttribute('name', name);
+            part.setAttribute('height-units', 'Millimeters');
+            part.setAttribute('height', '0.5');
+            part.setAttribute('package-id', packageId);
+            part.setAttribute('speed', '1.0');
+            part.setAttribute('pick-retry-count', '0');
+
+            root.appendChild(part);
+            existingIds.add(compId);
+            addedCount++;
+        });
+
+        const serializer = new XMLSerializer();
+        const xmlString = serializer.serializeToString(doc);
+
+        const baseName = (file.name || 'parts.xml').replace(/\.xml$/i, '');
+        partsLibraryUpdateResult = {
+            xmlString,
+            filename: `${baseName}_updated.xml`,
+            existingCount: existingIds.size - addedCount,
+            addedCount
+        };
+
+        const summary = document.getElementById('parts-library-summary');
+        if (summary) {
+            summary.textContent = `${partsLibraryUpdateResult.existingCount} existing parts, ${addedCount} new part${addedCount === 1 ? '' : 's'} added.` +
+                (addedCount > 0 ? ' New parts default to 0.5mm height — adjust for tall components before use.' : '');
+            summary.classList.remove('hidden');
+        }
+        const downloadBtn = document.getElementById('parts-library-download-btn');
+        if (downloadBtn) downloadBtn.disabled = false;
+
+        console.log('[Parts Library] Processed:', partsLibraryUpdateResult.existingCount, 'existing,', addedCount, 'added');
+        showToast(`Parts library processed: ${addedCount} new part(s) found`, 'success');
+    } catch (error) {
+        console.error('[Parts Library] Error:', error);
+        showToast('Failed to process parts.xml: ' + error.message, 'error');
+    }
+}
+
+function downloadUpdatedPartsLibrary() {
+    if (!partsLibraryUpdateResult) {
+        showToast('Process a parts.xml file first', 'warning');
+        return;
+    }
+    downloadXMLFile(partsLibraryUpdateResult.xmlString, partsLibraryUpdateResult.filename);
+    closeUpdatePartsLibraryModal();
 }
 
 // ===== UTILITIES =====
