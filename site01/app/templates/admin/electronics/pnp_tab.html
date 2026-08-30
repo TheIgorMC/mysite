@@ -377,8 +377,10 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
             <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p class="text-sm text-blue-800 dark:text-blue-300">
                     <i class="fas fa-info-circle mr-2"></i>
-                    Existing parts are never modified or removed &mdash; only parts whose ID (our component ID)
-                    isn't already in your file are added, using the component's manufacturer code and package.
+                    Existing parts are never modified or removed &mdash; only SMD components whose ID (our component ID)
+                    isn't already in your file are added, using the component's manufacturer code and package
+                    (package names are normalized to OpenPnP's underscore convention, e.g. <code>SOT-666-6</code> &rarr; <code>SOT_666_6</code>).
+                    THT/hand-soldered components and parts with no footprint are skipped, since OpenPnP doesn't place those.
                 </p>
             </div>
 

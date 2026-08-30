@@ -5317,6 +5317,13 @@ function xmlEscape(value) {
         .replace(/'/g, '&apos;');
 }
 
+// Our package/footprint names use dashes as separators (e.g. "SOT-666-6", "TQFP-32(7x7)"),
+// while OpenPnP package ids use underscores (e.g. "SOT_666_6", "TQFP_32(7x7)") — normalize
+// so parts.xml package-id lines up with an OpenPnP packages.xml library out of the box.
+function normalizeOpenPnPPackageId(pkg) {
+    return String(pkg || '').trim().replace(/-/g, '_');
+}
+
 // OpenPnP uses a signed rotation range (-180, 180], while our PnP data uses 0-360
 function normalizeOpenPnPRotation(rotation) {
     let rot = parseFloat(rotation) || 0;
@@ -5493,12 +5500,23 @@ async function processPartsLibraryFile() {
         }
 
         let addedCount = 0;
+        let skippedCount = 0;
         allComponents.forEach(comp => {
             const compId = String(comp.id);
             if (existingIds.has(compId)) return;
 
+            const rawPackage = comp.package || comp.smd_footprint || '';
+            // OpenPnP only picks & places SMD parts — skip THT/hand-soldered components
+            // and anything without a package/footprint at all (same convention used by
+            // the OpenPnP CSV export's "excluded" check).
+            const isTHT = rawPackage.toUpperCase().includes('THT');
+            if (!rawPackage || isTHT) {
+                skippedCount++;
+                return;
+            }
+
             const name = comp.manufacturer_code || comp.value || comp.mpn || `C${compId}`;
-            const packageId = comp.package || comp.smd_footprint || '';
+            const packageId = normalizeOpenPnPPackageId(rawPackage);
 
             const part = doc.createElement('part');
             part.setAttribute('id', compId);
@@ -5522,20 +5540,22 @@ async function processPartsLibraryFile() {
             xmlString,
             filename: `${baseName}_updated.xml`,
             existingCount: existingIds.size - addedCount,
-            addedCount
+            addedCount,
+            skippedCount
         };
 
         const summary = document.getElementById('parts-library-summary');
         if (summary) {
-            summary.textContent = `${partsLibraryUpdateResult.existingCount} existing parts, ${addedCount} new part${addedCount === 1 ? '' : 's'} added.` +
+            summary.textContent = `${partsLibraryUpdateResult.existingCount} existing parts, ${addedCount} new SMD part${addedCount === 1 ? '' : 's'} added` +
+                (skippedCount > 0 ? `, ${skippedCount} skipped (THT/no footprint)` : '') + '.' +
                 (addedCount > 0 ? ' New parts default to 0.5mm height — adjust for tall components before use.' : '');
             summary.classList.remove('hidden');
         }
         const downloadBtn = document.getElementById('parts-library-download-btn');
         if (downloadBtn) downloadBtn.disabled = false;
 
-        console.log('[Parts Library] Processed:', partsLibraryUpdateResult.existingCount, 'existing,', addedCount, 'added');
-        showToast(`Parts library processed: ${addedCount} new part(s) found`, 'success');
+        console.log('[Parts Library] Processed:', partsLibraryUpdateResult.existingCount, 'existing,', addedCount, 'added,', skippedCount, 'skipped (THT/no footprint)');
+        showToast(`Parts library processed: ${addedCount} new SMD part(s) found`, 'success');
     } catch (error) {
         console.error('[Parts Library] Error:', error);
         showToast('Failed to process parts.xml: ' + error.message, 'error');
