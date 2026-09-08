@@ -152,7 +152,7 @@
       <button class="btn btn-sm" id="importBtn" type="button">Import content.json</button>
       <input id="importFile" type="file" accept="application/json,.json" style="display:none">
       <button class="btn btn-sm" id="logoutBtn" type="button" style="display:none">Logout</button>
-      <button class="btn btn-primary" id="saveBtn" disabled>Save Changes</button>
+      <button class="btn btn-primary" id="saveBtn" disabled>Save now</button>
     </div>
   </div>
 </header>
@@ -270,11 +270,23 @@ function setVal(item, f, raw, lang='en') {
 }
 
 /* ─────────────────────────────────────────────────────── dirty */
+let autoSaveTimer = null;
+
 function markDirty() {
   dirty = true;
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = !adminAuthenticated;
-  setStatus('');
+  if (adminAuthenticated) {
+    setStatus('Unsaved changes…');
+    scheduleAutoSave();
+  } else {
+    setStatus('');
+  }
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(save, 900);
 }
 
 function setStatus(msg, cls='') {
@@ -915,11 +927,13 @@ async function load() {
 }
 
 async function save() {
+  clearTimeout(autoSaveTimer);
   if (!adminAuthenticated) {
     setStatus('Login required', 'err');
     updateAuthUI();
     return;
   }
+  if (!dirty) return;
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
   setStatus('Saving…');

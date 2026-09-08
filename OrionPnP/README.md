@@ -64,7 +64,8 @@ For persistent editing, the runtime now uses `local_data/` instead of writing ba
 
 ## Admin access
 
-The CMS editor at `/edit` now requires a password-backed login session for save, import, upload, and delete actions.
+The CMS editor at `/edit` requires a password-backed login session for save, import, upload, and delete actions.
+Once unlocked, edits autosave a moment after you stop typing (no more clicking "Save Changes" after every field) — the button becomes "Save now" for an immediate manual save.
 
 Set or reset the password with:
 
@@ -73,6 +74,28 @@ python scripts/setup_local_data.py --reset-password
 ```
 
 The password hash and session secret are stored in `local_data/auth.json`.
+
+## MCP server (agent access)
+
+`mcp_server.py` runs a separate, token-authenticated MCP server so AI agents can read and update OrionPnP content directly, without going through the browser CMS. It reuses the same `local_data/` JSON files and write helpers as the Flask app, so content stays consistent either way.
+
+- Every request must include `Authorization: Bearer <ORION_MCP_TOKEN>`. With no token configured, the server refuses all requests.
+- Tools exposed: `get_content`, `update_content_section`, `get_locales`, `update_locale_key`, `list_assets`, `get_registrations`.
+
+Run it standalone:
+
+```bash
+pip install -r requirements-mcp.txt
+ORION_MCP_TOKEN=change-me python mcp_server.py
+```
+
+Or via Docker Compose (already wired up alongside the site, on port 8765 — set a real `ORION_MCP_TOKEN` before exposing it):
+
+```bash
+docker compose up -d --build orionpnp-mcp
+```
+
+Point an MCP client (e.g. Claude Code) at `http://<host>:8765/mcp` with a Streamable HTTP transport and the bearer token above.
 
 ## Registration storage
 

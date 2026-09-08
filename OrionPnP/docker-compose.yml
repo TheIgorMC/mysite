@@ -11,3 +11,18 @@ services:
       # - ORION_ADMIN_TOKEN=change-me
     volumes:
       - ./local_data:/app/local_data
+
+  orionpnp-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: orionpnp_mcp
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      - MCP_PORT=8765
+      # Required: agents must send this as `Authorization: Bearer <token>`.
+      - ORION_MCP_TOKEN=change-me
+    volumes:
+      - ./local_data:/app/local_data
