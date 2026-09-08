@@ -22,7 +22,10 @@ services:
       - "8765:8765"
     environment:
       - MCP_PORT=8765
-      # Required: agents must send this as `Authorization: Bearer <token>`.
-      - ORION_MCP_TOKEN=change-me
+      # Required for OAuth (e.g. claude.ai connectors): the public URL this server is reachable at.
+      - ORION_MCP_ISSUER_URL=https://mcp.yourdomain.com
+      # Optional: enables a simple static-token fallback (Authorization: Bearer <token>) for
+      # non-OAuth clients like the Claude Code CLI. Leave unset to require OAuth only.
+      # - ORION_MCP_TOKEN=change-me
     volumes:
       - ./local_data:/app/local_data

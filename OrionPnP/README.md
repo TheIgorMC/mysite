@@ -77,25 +77,39 @@ The password hash and session secret are stored in `local_data/auth.json`.
 
 ## MCP server (agent access)
 
-`mcp_server.py` runs a separate, token-authenticated MCP server so AI agents can read and update OrionPnP content directly, without going through the browser CMS. It reuses the same `local_data/` JSON files and write helpers as the Flask app, so content stays consistent either way.
+`mcp_server.py` runs a separate MCP server so AI agents can read and update OrionPnP content directly, without going through the browser CMS. It reuses the same `local_data/` JSON files and write helpers as the Flask app, so content stays consistent either way.
 
-- Every request must include `Authorization: Bearer <ORION_MCP_TOKEN>`. With no token configured, the server refuses all requests.
-- Tools exposed: `get_content`, `update_content_section`, `get_locales`, `update_locale_key`, `list_assets`, `get_registrations`.
+Tools exposed: `get_content`, `update_content_section`, `get_locales`, `update_locale_key`, `list_assets`, `get_registrations`.
+
+There are two ways to authenticate, pick whichever fits the client:
+
+**1. OAuth 2.1 (for claude.ai's connector UI, or any MCP client that speaks OAuth).**
+Dynamic client registration is on, so you just give the client this server's URL (`http://<host>:8765/mcp`) — no manual client ID/secret to create. The client registers itself, then opens a browser tab where you approve access with the **same admin password used for `/edit`**. No separate setup page or token to copy — the password *is* the credential.
+
+- In claude.ai: Settings → Connectors → Add custom connector → paste the server URL. Claude discovers the OAuth endpoints and registration automatically.
+- `ORION_MCP_ISSUER_URL` (env var) must be set to the server's real public URL (e.g. `https://mcp.yourdomain.com`), since it's advertised in the OAuth metadata and used to restrict allowed hosts — it defaults to `http://127.0.0.1:8765`, which only works for local testing.
+
+**2. Static bearer token (for simple clients like the Claude Code CLI).**
+Set `ORION_MCP_TOKEN` and send `Authorization: Bearer <token>` — no OAuth dance needed:
+
+```bash
+claude mcp add --transport http orionpnp http://<host>:8765/mcp --header "Authorization: Bearer <token>"
+```
+
+With no `ORION_MCP_TOKEN` set, that fallback is simply disabled; OAuth still works.
 
 Run it standalone:
 
 ```bash
 pip install -r requirements-mcp.txt
-ORION_MCP_TOKEN=change-me python mcp_server.py
+ORION_MCP_ISSUER_URL=https://mcp.yourdomain.com ORION_MCP_TOKEN=change-me python mcp_server.py
 ```
 
-Or via Docker Compose (already wired up alongside the site, on port 8765 — set a real `ORION_MCP_TOKEN` before exposing it):
+Or via Docker Compose (already wired up alongside the site, on port 8765 — set `ORION_MCP_ISSUER_URL`/`ORION_MCP_TOKEN` for your deployment before exposing it):
 
 ```bash
 docker compose up -d --build orionpnp-mcp
 ```
-
-Point an MCP client (e.g. Claude Code) at `http://<host>:8765/mcp` with a Streamable HTTP transport and the bearer token above.
 
 ## Registration storage
 
