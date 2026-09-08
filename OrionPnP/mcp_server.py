@@ -271,6 +271,30 @@ def update_locale_key(lang: str, key: str, value: str) -> dict:
 
 
 @mcp.tool()
+def update_locale_bulk(lang: str, entries: dict, replace: bool = False) -> dict:
+    """Set multiple translation keys in one locale file (en|it|fr|es) in a single call.
+
+    entries is a {key: value} map merged into the existing locale file (or replacing
+    it entirely if replace=True). Prefer this over repeated update_locale_key calls
+    when updating more than a couple of keys at once.
+    """
+    if lang not in orion.SUPPORTED_LOCALES:
+        raise ValueError(f"lang must be one of {orion.SUPPORTED_LOCALES}")
+    if not isinstance(entries, dict):
+        raise ValueError("entries must be an object of {key: value}")
+
+    path = orion.LOCALES_DIR / f"{lang}.json"
+    with orion.WRITE_LOCK:
+        data = {} if replace else orion._load_json(path, {})
+        if not isinstance(data, dict):
+            data = {}
+        data.update({str(k): str(v) for k, v in entries.items()})
+        orion._atomic_write_json(path, data)
+
+    return {"ok": True, "lang": lang, "count": len(data)}
+
+
+@mcp.tool()
 def list_assets() -> list:
     """List available image assets on the site (name, url, size, whether it can be deleted)."""
     return orion._collect_assets()
