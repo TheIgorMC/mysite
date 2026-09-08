@@ -79,7 +79,7 @@ The password hash and session secret are stored in `local_data/auth.json`.
 
 `mcp_server.py` runs a separate MCP server so AI agents can read and update OrionPnP content directly, without going through the browser CMS. It reuses the same `local_data/` JSON files and write helpers as the Flask app, so content stays consistent either way.
 
-Tools exposed: `get_content`, `update_content_section`, `get_locales`, `update_locale_key`, `list_assets`, `get_registrations`.
+Tools exposed: `get_content`, `update_content_section`, `get_locales`, `update_locale_key`, `update_locale_bulk`, `list_assets`, `get_registrations`.
 
 There are two ways to authenticate, pick whichever fits the client:
 
