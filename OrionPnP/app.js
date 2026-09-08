@@ -262,6 +262,40 @@ async function loadLocales() {
   }
 }
 
+/* Turns a date-ish string into a sortable "quarter index" (year*4 + quarter 0-3).
+   Understands "YYYY" (start of year), "YYYY-Q#", "YYYY-MM", and "YYYY-MM-DD";
+   falls back to native Date parsing, then null if nothing matches. */
+function toQuarterIndex(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+
+  let m = s.match(/^(\d{4})-Q([1-4])$/i);
+  if (m) return Number(m[1]) * 4 + (Number(m[2]) - 1);
+
+  m = s.match(/^(\d{4})$/);
+  if (m) return Number(m[1]) * 4;
+
+  m = s.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+  if (m) return Number(m[1]) * 4 + Math.floor((Number(m[2]) - 1) / 3);
+
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d.getFullYear() * 4 + Math.floor(d.getMonth() / 3);
+
+  return null;
+}
+
+function sortByQuarter(items, dateField, { ascending = true, progressField = null } = {}) {
+  return items.slice().sort((a, b) => {
+    const ka = toQuarterIndex(a[dateField]);
+    const kb = toQuarterIndex(b[dateField]);
+    const ra = ka === null ? Infinity : ka;
+    const rb = kb === null ? Infinity : kb;
+    if (ra !== rb) return ascending ? ra - rb : rb - ra;
+    if (progressField) return Number(b[progressField] || 0) - Number(a[progressField] || 0);
+    return 0;
+  });
+}
+
 function pickText(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -385,7 +419,9 @@ function renderMilestones() {
   if (!box) return;
   box.innerHTML = "";
 
-  state.content.milestones.forEach((item) => {
+  const milestones = sortByQuarter(state.content.milestones || [], "target", { ascending: true, progressField: "progress" });
+
+  milestones.forEach((item) => {
     const progress = Math.max(0, Math.min(100, Number(item.progress || 0)));
     const el = document.createElement("div");
     el.className = "milestone-item";
@@ -426,7 +462,7 @@ function renderTimeline() {
   if (!box) return;
   box.innerHTML = "";
 
-  const events = state.content.timeline || [];
+  const events = sortByQuarter(state.content.timeline || [], "date", { ascending: true });
   if (!events.length) {
     box.innerHTML = `<p class="empty-note">${t("noEventsYet")}</p>`;
     return;
