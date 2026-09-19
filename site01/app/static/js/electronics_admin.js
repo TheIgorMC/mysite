@@ -1412,6 +1412,125 @@ async function deleteComponent(id) {
     }
 }
 
+// ============================================================================
+// QUICK STOCK CHECK
+// Rapid-fire inventory verification: type a number, hit Enter, move to the
+// next component. Leaving the field empty and pressing Enter keeps the
+// current quantity (i.e. "I checked, it's correct" or "I'll check later").
+// ============================================================================
+let quickStockQueue = [];
+let quickStockIndex = 0;
+let quickStockChangedCount = 0;
+
+function showQuickStockCheckModal() {
+    quickStockQueue = [...getFilteredComponents()].sort((a, b) => {
+        const av = getComponentSortValue(a, componentSortField);
+        const bv = getComponentSortValue(b, componentSortField);
+        if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
+        if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    if (quickStockQueue.length === 0) {
+        showToast('No components to check', 'info');
+        return;
+    }
+
+    quickStockIndex = 0;
+    quickStockChangedCount = 0;
+
+    document.getElementById('quick-stock-modal').classList.remove('hidden');
+    document.getElementById('quick-stock-modal').classList.add('flex');
+
+    renderQuickStockItem();
+
+    const input = document.getElementById('quick-stock-qty-input');
+    input.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            quickStockConfirm();
+        }
+    };
+}
+
+function closeQuickStockCheckModal() {
+    document.getElementById('quick-stock-modal').classList.add('hidden');
+    document.getElementById('quick-stock-modal').classList.remove('flex');
+    if (quickStockChangedCount > 0) {
+        loadComponents();
+    }
+}
+
+function renderQuickStockItem() {
+    const comp = quickStockQueue[quickStockIndex];
+    const currentQty = comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0);
+
+    document.getElementById('quick-stock-name').textContent =
+        `${comp.product_type || comp.category || 'Component'} ${comp.value || ''}`.trim();
+    document.getElementById('quick-stock-meta').textContent =
+        [comp.manufacturer_code || comp.mpn, comp.package].filter(Boolean).join(' · ') || `#${comp.id}`;
+    document.getElementById('quick-stock-current').textContent = `Current: ${currentQty} in stock`;
+
+    const input = document.getElementById('quick-stock-qty-input');
+    input.value = '';
+    input.placeholder = String(currentQty);
+    input.focus();
+
+    document.getElementById('quick-stock-progress-label').textContent =
+        `${quickStockIndex + 1} / ${quickStockQueue.length}`;
+    document.getElementById('quick-stock-changed-label').textContent = `${quickStockChangedCount} updated`;
+    document.getElementById('quick-stock-progress-bar').style.width =
+        `${Math.round(((quickStockIndex) / quickStockQueue.length) * 100)}%`;
+}
+
+async function quickStockConfirm() {
+    const comp = quickStockQueue[quickStockIndex];
+    const input = document.getElementById('quick-stock-qty-input');
+    const raw = input.value.trim();
+
+    if (raw !== '') {
+        const newQty = parseInt(raw, 10);
+        const currentQty = comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0);
+        if (!isNaN(newQty) && newQty !== currentQty) {
+            try {
+                const response = await fetch(`${ELECTRONICS_API_BASE}/components/${comp.id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({qty_left: newQty, stock_qty: newQty})
+                });
+                if (response.ok) {
+                    comp.qty_left = newQty;
+                    comp.stock_qty = newQty;
+                    quickStockChangedCount++;
+                } else {
+                    showToast(`Failed to update ${comp.manufacturer_code || comp.id}`, 'error');
+                }
+            } catch (error) {
+                console.error('[Quick Stock Check] Error updating component:', error);
+                showToast('Failed to update component', 'error');
+            }
+        }
+    }
+
+    quickStockAdvance();
+}
+
+function quickStockAdvance() {
+    if (quickStockIndex >= quickStockQueue.length - 1) {
+        showToast(`Stock check complete: ${quickStockChangedCount} updated`, 'success');
+        closeQuickStockCheckModal();
+        return;
+    }
+    quickStockIndex++;
+    renderQuickStockItem();
+}
+
+function quickStockPrevious() {
+    if (quickStockIndex === 0) return;
+    quickStockIndex--;
+    renderQuickStockItem();
+}
+
 async function showUsedInBoards(componentId) {
     const modal = document.getElementById('used-in-boards-modal');
     const titleEl = document.getElementById('used-in-boards-title');
@@ -5569,6 +5688,368 @@ function downloadUpdatedPartsLibrary() {
     }
     downloadXMLFile(partsLibraryUpdateResult.xmlString, partsLibraryUpdateResult.filename);
     closeUpdatePartsLibraryModal();
+}
+
+// ===== OPENPNP FOOTPRINT UPDATER =====
+// Finds <package> entries in an OpenPnP packages.xml with no pads defined
+// (an empty/self-closing <footprint/>) and lets the user fill them in one at
+// a time from a few parametric fields (pad count, pitch, pad size, layout),
+// instead of placing every pad by hand in the OpenPnP package editor.
+
+let footprintDoc = null;       // parsed packages.xml DOM
+let footprintFilename = 'packages.xml';
+let footprintQueue = [];       // package elements with no footprint
+let footprintIndex = 0;
+let footprintFilledCount = 0;
+
+function showFootprintUploadModal() {
+    footprintDoc = null;
+    footprintQueue = [];
+    const fileInput = document.getElementById('footprint-packages-file');
+    if (fileInput) fileInput.value = '';
+    const summary = document.getElementById('footprint-scan-summary');
+    if (summary) summary.classList.add('hidden');
+    const startBtn = document.getElementById('footprint-start-btn');
+    if (startBtn) startBtn.disabled = true;
+
+    document.getElementById('footprint-upload-modal').classList.remove('hidden');
+    document.getElementById('footprint-upload-modal').classList.add('flex');
+}
+
+function closeFootprintUploadModal() {
+    document.getElementById('footprint-upload-modal').classList.add('hidden');
+    document.getElementById('footprint-upload-modal').classList.remove('flex');
+}
+
+function packageHasFootprint(pkgEl) {
+    const fp = pkgEl.querySelector('footprint');
+    if (!fp) return false;
+    if (fp.querySelector('pad')) return true;
+    // No pad children — also treat a real body outline (rare, but possible)
+    // as "has footprint" so we don't touch it.
+    const bw = parseFloat(fp.getAttribute('body-width') || '0');
+    const bh = parseFloat(fp.getAttribute('body-height') || '0');
+    return bw > 0 && bh > 0;
+}
+
+async function scanFootprintPackagesFile() {
+    const fileInput = document.getElementById('footprint-packages-file');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+
+    if (!file) {
+        showToast('Please choose a packages.xml file', 'warning');
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/xml');
+
+        const parseError = doc.querySelector('parsererror');
+        if (parseError) {
+            throw new Error('Not a valid XML file');
+        }
+
+        const root = doc.documentElement;
+        if (!root || root.tagName !== 'openpnp-packages') {
+            throw new Error('This does not look like an OpenPnP packages.xml file (expected <openpnp-packages> root)');
+        }
+
+        const allPackages = Array.from(root.querySelectorAll('package'));
+        const missing = allPackages.filter(pkgEl => !packageHasFootprint(pkgEl));
+
+        footprintDoc = doc;
+        footprintFilename = (file.name || 'packages.xml').replace(/\.xml$/i, '') + '_updated.xml';
+        footprintQueue = missing;
+        footprintIndex = 0;
+        footprintFilledCount = 0;
+
+        const summary = document.getElementById('footprint-scan-summary');
+        if (summary) {
+            summary.textContent = `${allPackages.length} package(s) total, ${missing.length} with no footprint defined.`;
+            summary.classList.remove('hidden');
+        }
+        const startBtn = document.getElementById('footprint-start-btn');
+        if (startBtn) startBtn.disabled = missing.length === 0;
+
+        showToast(missing.length > 0
+            ? `${missing.length} package(s) need a footprint`
+            : 'Every package already has a footprint', missing.length > 0 ? 'info' : 'success');
+    } catch (error) {
+        console.error('[Update Footprints] Error scanning packages.xml:', error);
+        showToast('Failed to read packages.xml: ' + error.message, 'error');
+    }
+}
+
+async function startFootprintEditor() {
+    if (!footprintQueue || footprintQueue.length === 0) {
+        showToast('Scan a packages.xml file first', 'warning');
+        return;
+    }
+    closeFootprintUploadModal();
+
+    // Need our component list to cross-reference which parts use each
+    // package, so we can offer an LCSC / datasheet link for reference.
+    if (!allComponents || allComponents.length === 0) {
+        await loadComponents();
+    }
+
+    const modal = document.getElementById('footprint-editor-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    modal.querySelectorAll('input, select').forEach(el => {
+        el.onkeydown = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                footprintConfirm();
+            }
+        };
+    });
+
+    renderFootprintItem();
+}
+
+function closeFootprintEditorModal() {
+    document.getElementById('footprint-editor-modal').classList.add('hidden');
+    document.getElementById('footprint-editor-modal').classList.remove('flex');
+}
+
+function readFootprintForm() {
+    const style = document.getElementById('footprint-style').value;
+    const padCount = style === 'two' ? 2 : Math.max(2, parseInt(document.getElementById('footprint-padcount').value, 10) || 2);
+    const pitch = parseFloat(document.getElementById('footprint-pitch').value) || 0;
+    const padW = parseFloat(document.getElementById('footprint-pad-width').value) || 0;
+    const padH = parseFloat(document.getElementById('footprint-pad-height').value) || 0;
+    const rowSpacing = parseFloat(document.getElementById('footprint-row-spacing').value) || 0;
+    const bodyW = parseFloat(document.getElementById('footprint-body-width').value) || 0;
+    const bodyH = parseFloat(document.getElementById('footprint-body-height').value) || 0;
+    return {style, padCount, pitch, padW, padH, rowSpacing, bodyW, bodyH};
+}
+
+// Generates a simple parametric pad layout. Pin numbering isn't guaranteed
+// to match the part's real silkscreen pin 1 — it's meant to give OpenPnP a
+// usable outline/paste footprint fast, refine by hand for anything critical.
+function generateFootprintPads(form) {
+    const {style, padCount, pitch, padW, padH, rowSpacing} = form;
+    const pads = [];
+
+    if (style === 'two') {
+        pads.push({name: '1', x: -pitch / 2, y: 0, width: padW, height: padH});
+        pads.push({name: '2', x: pitch / 2, y: 0, width: padW, height: padH});
+    } else if (style === 'dual') {
+        const perSide = Math.ceil(padCount / 2);
+        const otherSide = padCount - perSide;
+        const half = rowSpacing / 2;
+        for (let i = 0; i < perSide; i++) {
+            const y = ((perSide - 1) / 2 - i) * pitch;
+            pads.push({name: String(i + 1), x: -half, y, width: padW, height: padH});
+        }
+        for (let i = 0; i < otherSide; i++) {
+            const y = -((otherSide - 1) / 2 - i) * pitch;
+            pads.push({name: String(perSide + i + 1), x: half, y, width: padW, height: padH});
+        }
+    } else if (style === 'quad') {
+        const perSide = Math.max(1, Math.round(padCount / 4));
+        const half = rowSpacing / 2;
+        let n = 1;
+        for (let i = 0; i < perSide; i++) {
+            const y = ((perSide - 1) / 2 - i) * pitch;
+            pads.push({name: String(n++), x: -half, y, width: padH, height: padW});
+        }
+        for (let i = 0; i < perSide; i++) {
+            const x = (-(perSide - 1) / 2 + i) * pitch;
+            pads.push({name: String(n++), x, y: -half, width: padW, height: padH});
+        }
+        for (let i = 0; i < perSide; i++) {
+            const y = (-(perSide - 1) / 2 + i) * pitch;
+            pads.push({name: String(n++), x: half, y, width: padH, height: padW});
+        }
+        for (let i = 0; i < perSide; i++) {
+            const x = ((perSide - 1) / 2 - i) * pitch;
+            pads.push({name: String(n++), x, y: half, width: padW, height: padH});
+        }
+    }
+
+    return pads;
+}
+
+function onFootprintFieldChange() {
+    const style = document.getElementById('footprint-style').value;
+    document.getElementById('footprint-padcount-wrap').classList.toggle('hidden', style === 'two');
+    document.getElementById('footprint-rowspacing-wrap').classList.toggle('hidden', style === 'two');
+
+    const form = readFootprintForm();
+    const pads = generateFootprintPads(form);
+    document.getElementById('footprint-preview').textContent = `${pads.length} pad(s) will be generated`;
+}
+
+function lcscSearchUrl(query) {
+    return `https://www.lcsc.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function datasheetSearchUrl(query) {
+    return `https://www.google.com/search?q=${encodeURIComponent(query + ' datasheet pdf')}`;
+}
+
+// Components in our DB whose package matches this OpenPnP package id, so the
+// user can pop open a real part's LCSC listing / datasheet as a reference
+// while filling in body/pad dimensions.
+function findComponentsForPackage(pkgId) {
+    if (!pkgId || !allComponents) return [];
+    const target = normalizeOpenPnPPackageId(pkgId).toUpperCase();
+    return allComponents.filter(c => {
+        const pkg = c.package || c.smd_footprint;
+        return pkg && normalizeOpenPnPPackageId(pkg).toUpperCase() === target;
+    }).slice(0, 5);
+}
+
+function renderFootprintRefs(pkgId) {
+    const container = document.getElementById('footprint-refs');
+    const matches = findComponentsForPackage(pkgId);
+
+    if (matches.length === 0) {
+        container.innerHTML = `
+            <div class="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+                <span class="text-blue-800 dark:text-blue-300"><i class="fas fa-info-circle mr-1"></i>No known component uses this package yet</span>
+                <a href="${datasheetSearchUrl(pkgId)}" target="_blank" rel="noopener" class="text-teal-600 dark:text-teal-400 hover:underline whitespace-nowrap ml-2">
+                    <i class="fas fa-search mr-1"></i>Search "${pkgId}"
+                </a>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Components using this package &mdash; open one for reference:</p>` +
+        matches.map(c => {
+            const label = [c.manufacturer_code || c.mpn || c.value, c.manufacturer].filter(Boolean).join(' &middot; ') || `#${c.id}`;
+            const lcscQuery = c.seller_code || c.manufacturer_code || c.mpn;
+            const dsQuery = c.manufacturer_code || c.mpn || c.value;
+            const isLcsc = (c.seller || '').toLowerCase().includes('lcsc');
+            return `
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 mb-1">
+                <span class="text-gray-800 dark:text-gray-200 truncate mr-2">${label}</span>
+                <span class="flex items-center gap-3 whitespace-nowrap">
+                    ${lcscQuery ? `<a href="${lcscSearchUrl(lcscQuery)}" target="_blank" rel="noopener" class="text-amber-600 dark:text-amber-400 hover:underline">
+                        <i class="fas fa-shopping-cart mr-1"></i>${isLcsc ? 'LCSC' : 'Search LCSC'}
+                    </a>` : ''}
+                    <a href="${datasheetSearchUrl(dsQuery)}" target="_blank" rel="noopener" class="text-teal-600 dark:text-teal-400 hover:underline">
+                        <i class="fas fa-file-pdf mr-1"></i>Datasheet
+                    </a>
+                </span>
+            </div>`;
+        }).join('');
+}
+
+function renderFootprintItem() {
+    const pkgEl = footprintQueue[footprintIndex];
+    document.getElementById('footprint-pkg-id').textContent = pkgEl.getAttribute('id') || '(unnamed package)';
+    document.getElementById('footprint-pkg-desc').textContent = pkgEl.getAttribute('description') || '';
+    renderFootprintRefs(pkgEl.getAttribute('id'));
+
+    // Reset form to sensible defaults each time; a guess at 2-pin vs multi-pin
+    // based on the id, just to save a click on the common case.
+    const guessDual = /(SOIC|SSOP|TSSOP|DIP|SOP)/i.test(pkgEl.getAttribute('id') || '');
+    const guessQuad = /(QFN|QFP|LQFP|LGA|VQFN)/i.test(pkgEl.getAttribute('id') || '');
+    document.getElementById('footprint-style').value = guessQuad ? 'quad' : (guessDual ? 'dual' : 'two');
+    document.getElementById('footprint-padcount').value = 2;
+    document.getElementById('footprint-pitch').value = '1.0';
+    document.getElementById('footprint-pad-width').value = '0.6';
+    document.getElementById('footprint-pad-height').value = '0.9';
+    document.getElementById('footprint-row-spacing').value = '5.0';
+    document.getElementById('footprint-body-width').value = '0';
+    document.getElementById('footprint-body-height').value = '0';
+
+    onFootprintFieldChange();
+
+    document.getElementById('footprint-progress-label').textContent =
+        `${footprintIndex + 1} / ${footprintQueue.length}`;
+    document.getElementById('footprint-filled-label').textContent = `${footprintFilledCount} filled`;
+    document.getElementById('footprint-progress-bar').style.width =
+        `${Math.round((footprintIndex / footprintQueue.length) * 100)}%`;
+
+    document.getElementById('footprint-padcount').focus();
+}
+
+function applyFootprintToPackage(pkgEl, form, pads) {
+    const doc = footprintDoc;
+    let fp = pkgEl.querySelector('footprint');
+    if (!fp) {
+        fp = doc.createElement('footprint');
+        pkgEl.insertBefore(fp, pkgEl.firstChild);
+    }
+    // Clear any stray pad children before rewriting.
+    Array.from(fp.querySelectorAll('pad')).forEach(p => p.remove());
+
+    fp.setAttribute('units', 'Millimeters');
+    fp.setAttribute('body-width', String(form.bodyW || 0));
+    fp.setAttribute('body-height', String(form.bodyH || 0));
+    fp.setAttribute('outer-dimension', fp.getAttribute('outer-dimension') || '0.0');
+    fp.setAttribute('inner-dimension', fp.getAttribute('inner-dimension') || '0.0');
+    fp.setAttribute('pad-count', String(pads.length));
+    fp.setAttribute('pad-pitch', String(form.pitch || 0));
+    fp.setAttribute('pad-across', String(form.rowSpacing || 0));
+    fp.setAttribute('pad-roundness', fp.getAttribute('pad-roundness') || '0.0');
+
+    pads.forEach(pad => {
+        const padEl = doc.createElement('pad');
+        padEl.setAttribute('name', pad.name);
+        padEl.setAttribute('x', String(pad.x));
+        padEl.setAttribute('y', String(pad.y));
+        padEl.setAttribute('width', String(pad.width));
+        padEl.setAttribute('height', String(pad.height));
+        padEl.setAttribute('rotation', '0.0');
+        padEl.setAttribute('roundness', '0.0');
+        fp.appendChild(padEl);
+    });
+}
+
+function footprintConfirm() {
+    const pkgEl = footprintQueue[footprintIndex];
+    const form = readFootprintForm();
+    const pads = generateFootprintPads(form);
+
+    if (pads.length === 0) {
+        showToast('Fill in the layout fields first', 'warning');
+        return;
+    }
+
+    applyFootprintToPackage(pkgEl, form, pads);
+    footprintFilledCount++;
+    footprintAdvance();
+}
+
+function footprintSkip() {
+    footprintAdvance();
+}
+
+function footprintAdvance() {
+    if (footprintIndex >= footprintQueue.length - 1) {
+        showToast(`Footprint pass complete: ${footprintFilledCount} filled in`, 'success');
+        finishFootprintEditor();
+        return;
+    }
+    footprintIndex++;
+    renderFootprintItem();
+}
+
+function footprintPrevious() {
+    if (footprintIndex === 0) return;
+    footprintIndex--;
+    renderFootprintItem();
+}
+
+function finishFootprintEditor() {
+    closeFootprintEditorModal();
+    if (!footprintDoc || footprintFilledCount === 0) {
+        footprintDoc = null;
+        return;
+    }
+    const serializer = new XMLSerializer();
+    const xmlString = serializer.serializeToString(footprintDoc);
+    downloadXMLFile(xmlString, footprintFilename);
+    showToast(`Downloaded ${footprintFilename} (${footprintFilledCount} footprint(s) filled)`, 'success');
+    footprintDoc = null;
 }
 
 // ===== UTILITIES =====

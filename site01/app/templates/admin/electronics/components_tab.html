@@ -52,10 +52,16 @@
                     class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                 <i class="fas fa-search mr-2"></i>Search
             </button>
-            <button onclick="showAddComponentModal()" 
-                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                <i class="fas fa-plus mr-2"></i>Add Component
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="showQuickStockCheckModal()"
+                        class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+                    <i class="fas fa-bolt mr-2"></i>Quick Stock Check
+                </button>
+                <button onclick="showAddComponentModal()"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                    <i class="fas fa-plus mr-2"></i>Add Component
+                </button>
+            </div>
         </div>
     </div>
 
@@ -305,6 +311,62 @@
             <p id="used-in-boards-title" class="text-sm text-gray-500 dark:text-gray-400 mb-4"></p>
             <div id="used-in-boards-list" class="space-y-2">
                 <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stock Check Modal -->
+<div id="quick-stock-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-bolt text-amber-600 mr-2"></i>Quick Stock Check
+                </h3>
+                <button onclick="closeQuickStockCheckModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Type the quantity you actually have and press Enter to save and move on.
+                Just press Enter with the field empty to leave the current amount unchanged.
+            </p>
+
+            <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span id="quick-stock-progress-label">0 / 0</span>
+                    <span id="quick-stock-changed-label">0 updated</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div id="quick-stock-progress-bar" class="bg-amber-600 h-2 rounded-full transition-all" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4 text-center">
+                <p id="quick-stock-name" class="text-lg font-semibold text-gray-900 dark:text-white"></p>
+                <p id="quick-stock-meta" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+            </div>
+
+            <div class="mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quantity in stock
+                </label>
+                <input type="number" id="quick-stock-qty-input" min="0" inputmode="numeric"
+                       autocomplete="off"
+                       class="w-full px-4 py-3 text-2xl text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500">
+                <p id="quick-stock-current" class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center"></p>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                <button type="button" onclick="quickStockPrevious()"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </button>
+                <button type="button" onclick="quickStockConfirm()"
+                        class="px-8 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+                    Confirm &amp; Next<i class="fas fa-arrow-right ml-2"></i>
+                </button>
             </div>
         </div>
     </div>
