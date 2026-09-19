@@ -8,6 +8,10 @@
                 <i class="fas fa-robot mr-2"></i>Pick & Place Files
             </h3>
             <div class="flex items-center gap-2">
+                <button onclick="showFootprintUploadModal()"
+                        class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition">
+                    <i class="fas fa-vector-square mr-2"></i>Update Footprints
+                </button>
                 <button onclick="showUpdatePartsLibraryModal()"
                         class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
                     <i class="fas fa-sync-alt mr-2"></i>Update Parts Library
@@ -410,6 +414,171 @@ Format: Designator, Mid X, Mid Y, Ref X, Ref Y, Pad X, Pad Y, Layer, Rotation, C
                         <i class="fas fa-download mr-2"></i>Download Updated parts.xml
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Footprints: Upload Modal -->
+<div id="footprint-upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-vector-square text-teal-600 mr-2"></i>Update Footprints
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Upload your local OpenPnP <code>packages.xml</code> to find packages with no footprint
+                        defined yet, then fill them in one by one &mdash; type a few numbers, press Enter, move to the next.
+                    </p>
+                </div>
+                <button onclick="closeFootprintUploadModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    A package "has no footprint" when it has zero pads defined &mdash; OpenPnP can't render or place it
+                    properly. This tool generates a simple parametric pad layout (2-pin chip, dual-row like
+                    SOIC/SSOP/DIP, or 4-side quad like QFN/QFP) from body/pitch numbers you enter; you can always
+                    refine a pad by hand afterwards in OpenPnP. Packages that already have a footprint are left untouched.
+                    Filling these in with an AI agent from a datasheet is on the roadmap &mdash; for now it's manual entry.
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    packages.xml *
+                </label>
+                <input type="file" id="footprint-packages-file" accept=".xml"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            </div>
+
+            <div id="footprint-scan-summary" class="hidden mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300">
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeFootprintUploadModal()"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Cancel
+                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="scanFootprintPackagesFile()"
+                            class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition">
+                        <i class="fas fa-search mr-2"></i>Scan
+                    </button>
+                    <button id="footprint-start-btn" onclick="startFootprintEditor()" disabled
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-play mr-2"></i>Start
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Footprints: Rapid Editor Modal -->
+<div id="footprint-editor-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-vector-square text-teal-600 mr-2"></i>Update Footprints
+                </h3>
+                <button onclick="closeFootprintEditorModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span id="footprint-progress-label">0 / 0</span>
+                    <span id="footprint-filled-label">0 filled</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div id="footprint-progress-bar" class="bg-teal-600 h-2 rounded-full transition-all" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4 text-center">
+                <p id="footprint-pkg-id" class="text-lg font-semibold text-gray-900 dark:text-white"></p>
+                <p id="footprint-pkg-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Layout</label>
+                    <select id="footprint-style" onchange="onFootprintFieldChange()"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="two">2-pin chip (R, C, LED, diode...)</option>
+                        <option value="dual">Dual row (SOIC, SSOP, TSSOP, DIP...)</option>
+                        <option value="quad">Quad / 4-side (QFN, QFP, LQFP...)</option>
+                    </select>
+                </div>
+                <div id="footprint-padcount-wrap">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Pad count</label>
+                    <input type="number" id="footprint-padcount" min="2" step="1" value="2" oninput="onFootprintFieldChange()"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Pitch (mm)</label>
+                    <input type="number" id="footprint-pitch" min="0" step="0.01" value="1.0" oninput="onFootprintFieldChange()"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Pad width (mm)</label>
+                    <input type="number" id="footprint-pad-width" min="0" step="0.01" value="0.6" oninput="onFootprintFieldChange()"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Pad height (mm)</label>
+                    <input type="number" id="footprint-pad-height" min="0" step="0.01" value="0.9" oninput="onFootprintFieldChange()"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div id="footprint-rowspacing-wrap" class="hidden">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Row spacing (mm)</label>
+                    <input type="number" id="footprint-row-spacing" min="0" step="0.01" value="5.0" oninput="onFootprintFieldChange()"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Body width (mm)</label>
+                    <input type="number" id="footprint-body-width" min="0" step="0.01" value="0"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Body height (mm)</label>
+                    <input type="number" id="footprint-body-height" min="0" step="0.01" value="0"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+            </div>
+
+            <p id="footprint-preview" class="text-xs text-gray-500 dark:text-gray-400 mb-4 text-center"></p>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="footprintPrevious()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                    <button type="button" onclick="footprintSkip()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Skip
+                    </button>
+                </div>
+                <button type="button" onclick="footprintConfirm()"
+                        class="px-8 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition">
+                    Save &amp; Next<i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-end pt-3">
+                <button type="button" onclick="finishFootprintEditor()"
+                        class="text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 underline">
+                    Finish now &amp; download packages.xml
+                </button>
             </div>
         </div>
     </div>
