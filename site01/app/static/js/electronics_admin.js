@@ -5782,12 +5782,18 @@ async function scanFootprintPackagesFile() {
     }
 }
 
-function startFootprintEditor() {
+async function startFootprintEditor() {
     if (!footprintQueue || footprintQueue.length === 0) {
         showToast('Scan a packages.xml file first', 'warning');
         return;
     }
     closeFootprintUploadModal();
+
+    // Need our component list to cross-reference which parts use each
+    // package, so we can offer an LCSC / datasheet link for reference.
+    if (!allComponents || allComponents.length === 0) {
+        await loadComponents();
+    }
 
     const modal = document.getElementById('footprint-editor-modal');
     modal.classList.remove('hidden');
@@ -5879,10 +5885,67 @@ function onFootprintFieldChange() {
     document.getElementById('footprint-preview').textContent = `${pads.length} pad(s) will be generated`;
 }
 
+function lcscSearchUrl(query) {
+    return `https://www.lcsc.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function datasheetSearchUrl(query) {
+    return `https://www.google.com/search?q=${encodeURIComponent(query + ' datasheet pdf')}`;
+}
+
+// Components in our DB whose package matches this OpenPnP package id, so the
+// user can pop open a real part's LCSC listing / datasheet as a reference
+// while filling in body/pad dimensions.
+function findComponentsForPackage(pkgId) {
+    if (!pkgId || !allComponents) return [];
+    const target = normalizeOpenPnPPackageId(pkgId).toUpperCase();
+    return allComponents.filter(c => {
+        const pkg = c.package || c.smd_footprint;
+        return pkg && normalizeOpenPnPPackageId(pkg).toUpperCase() === target;
+    }).slice(0, 5);
+}
+
+function renderFootprintRefs(pkgId) {
+    const container = document.getElementById('footprint-refs');
+    const matches = findComponentsForPackage(pkgId);
+
+    if (matches.length === 0) {
+        container.innerHTML = `
+            <div class="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+                <span class="text-blue-800 dark:text-blue-300"><i class="fas fa-info-circle mr-1"></i>No known component uses this package yet</span>
+                <a href="${datasheetSearchUrl(pkgId)}" target="_blank" rel="noopener" class="text-teal-600 dark:text-teal-400 hover:underline whitespace-nowrap ml-2">
+                    <i class="fas fa-search mr-1"></i>Search "${pkgId}"
+                </a>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Components using this package &mdash; open one for reference:</p>` +
+        matches.map(c => {
+            const label = [c.manufacturer_code || c.mpn || c.value, c.manufacturer].filter(Boolean).join(' &middot; ') || `#${c.id}`;
+            const lcscQuery = c.seller_code || c.manufacturer_code || c.mpn;
+            const dsQuery = c.manufacturer_code || c.mpn || c.value;
+            const isLcsc = (c.seller || '').toLowerCase().includes('lcsc');
+            return `
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 mb-1">
+                <span class="text-gray-800 dark:text-gray-200 truncate mr-2">${label}</span>
+                <span class="flex items-center gap-3 whitespace-nowrap">
+                    ${lcscQuery ? `<a href="${lcscSearchUrl(lcscQuery)}" target="_blank" rel="noopener" class="text-amber-600 dark:text-amber-400 hover:underline">
+                        <i class="fas fa-shopping-cart mr-1"></i>${isLcsc ? 'LCSC' : 'Search LCSC'}
+                    </a>` : ''}
+                    <a href="${datasheetSearchUrl(dsQuery)}" target="_blank" rel="noopener" class="text-teal-600 dark:text-teal-400 hover:underline">
+                        <i class="fas fa-file-pdf mr-1"></i>Datasheet
+                    </a>
+                </span>
+            </div>`;
+        }).join('');
+}
+
 function renderFootprintItem() {
     const pkgEl = footprintQueue[footprintIndex];
     document.getElementById('footprint-pkg-id').textContent = pkgEl.getAttribute('id') || '(unnamed package)';
     document.getElementById('footprint-pkg-desc').textContent = pkgEl.getAttribute('description') || '';
+    renderFootprintRefs(pkgEl.getAttribute('id'));
 
     // Reset form to sensible defaults each time; a guess at 2-pin vs multi-pin
     // based on the id, just to save a click on the common case.
