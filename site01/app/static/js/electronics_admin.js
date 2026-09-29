@@ -14,8 +14,12 @@ let componentSortField = 'id';
 let componentSortDirection = 'asc';
 
 // Designators matching this pattern (FID1, FID2, ...) are auto-treated as fiducials
-// in OpenPnP exports, on top of any manually-toggled designators.
+// in OpenPnP exports, on top of any manually-toggled designators (any designator,
+// e.g. U1, can be flagged as a fiducial from the PnP details view).
 const FIDUCIAL_DESIGNATOR_RE = /^FID\d+$/i;
+
+// Package/footprint id our OpenPnP library uses for fiducial markers.
+const FIDUCIAL_FOOTPRINT_ID = 'FID_BRD';
 
 // Check for required variables
 if (typeof ELECTRONICS_STORAGE_URL === 'undefined') {
@@ -4979,45 +4983,25 @@ async function viewPnPDetails(pnpId) {
         const tbody = document.getElementById('pnp-data-table');
         tbody.innerHTML = items.map((item, idx) => {
             const isFiducial = fiducials.includes(item.designator) || FIDUCIAL_DESIGNATOR_RE.test(item.designator || '');
-            const statusBadge = isFiducial
-                ? '<span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded"><i class="fas fa-crosshairs mr-1"></i>Fiducial</span>'
-                : item.isExcluded
-                ? '<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">Excluded</span>'
-                : item.status === 'mapped'
-                ? '<span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">Mapped</span>'
-                : '<span class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded">Unmapped</span>';
-            const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10'
-                : item.isExcluded ? 'bg-gray-50 dark:bg-gray-800/50 opacity-60'
-                : item.status === 'unmapped' ? 'bg-orange-50 dark:bg-orange-900/10' : '';
+            const rowClass = isFiducial ? 'bg-yellow-50 dark:bg-yellow-900/10' : '';
             
+            const designatorAttr = (item.designator || '').replace(/'/g, '\\\'');
+
             return `
             <tr class="text-sm ${rowClass}">
-                <td class="px-3 py-2 text-center">
-                    <input type="checkbox" 
-                           ${item.selected ? 'checked' : ''}
-                           onchange="toggleFiducial(${pnpId}, '${(item.designator || '').replace(/'/g, '\\\'')}', this.checked)"
-                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <td class="px-4 py-2 font-mono text-gray-900 dark:text-gray-100">${item.designator || '-'}</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.mid_x || item.x || '-'}</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.mid_y || item.y || '-'}</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.layer || '-'}</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.rotation || '0'}°</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.comment || '-'}</td>
+                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${item.device || '-'}</td>
+                <td class="px-4 py-2 text-center">
+                    <input type="checkbox" title="Mark ${item.designator || 'this component'} as a fiducial"
+                           ${isFiducial ? 'checked' : ''}
+                           onchange="toggleFiducial(${pnpId}, '${designatorAttr}', this.checked)"
+                           class="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500">
                 </td>
-                <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">${item.designator || '-'}</td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.mid_x || item.x || '-'}</td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.mid_y || item.y || '-'}</td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.layer || '-'}</td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${item.rotation || '0'}°</td>
-                <td class="px-3 py-2">
-                    <input type="number" 
-                           value="${item.component_id || ''}" 
-                           onchange="updateOpenPnPMapping(${idx}, 'component_id', this.value)"
-                           placeholder="Component ID"
-                           class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                </td>
-                <td class="px-3 py-2">
-                    <input type="text" 
-                           value="${item.footprint || ''}" 
-                           onchange="updateOpenPnPMapping(${idx}, 'footprint', this.value)"
-                           placeholder="Footprint"
-                           class="w-32 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                </td>
-                <td class="px-3 py-2">${statusBadge}</td>
             </tr>
         `;
     }).join('');
@@ -5128,8 +5112,13 @@ function toggleFiducial(pnpId, designator, checked) {
         if (idx !== -1) fiducials.splice(idx, 1);
     }
     setFiducialDesignators(pnpId, fiducials);
-    // Update fiducial count
-    document.getElementById('pnp-fiducial-count').textContent = fiducials.length;
+
+    // Update fiducial count (manual toggles + anything auto-matching FID#)
+    const items = (currentPnPData && currentPnPData.pnp_data) || [];
+    const fiducialCount = items.filter(item =>
+        fiducials.includes(item.designator) || FIDUCIAL_DESIGNATOR_RE.test(item.designator || '')
+    ).length;
+    document.getElementById('pnp-fiducial-count').textContent = fiducialCount;
 }
 
 // ===== OPENPNP EXPORT =====
@@ -5190,7 +5179,7 @@ async function showOpenPnPExportModal() {
                 layer: item.layer || '',
                 rotation: item.rotation || '0',
                 component_id: bomMatch ? bomMatch.component_id : null,
-                footprint: isFiducial ? 'Fiducial' : rawFootprint,
+                footprint: isFiducial ? FIDUCIAL_FOOTPRINT_ID : rawFootprint,
                 manufacturer_code: bomMatch ? bomMatch.manufacturer_code : '',
                 value: isFiducial ? 'Fiducial' : (bomMatch ? bomMatch.value : ''),
                 status: isFiducial ? 'mapped' : isExcluded ? 'excluded' : bomMatch ? 'mapped' : 'unmapped',
@@ -5367,7 +5356,7 @@ function downloadOpenPnPCSV() {
         }
         
         // OpenPnP CSV format
-        // Fiducials get special treatment: Value="Fiducial", Footprint="Fiducial"
+        // Fiducials get special treatment: Value="Fiducial", Footprint=FIDUCIAL_FOOTPRINT_ID
         const headers = ['Designator', 'X', 'Y', 'Rotation', 'Side', 'Value', 'Footprint', 'Comment'];
         
         const rows = selectedComponents.map(item => {
@@ -5388,7 +5377,7 @@ function downloadOpenPnPCSV() {
                 item.rotation || '0',
                 side,
                 item.isFiducial ? 'Fiducial' : (item.component_id || ''),
-                item.isFiducial ? 'Fiducial' : (item.footprint || ''),
+                item.isFiducial ? FIDUCIAL_FOOTPRINT_ID : (item.footprint || ''),
                 item.isFiducial ? '' : (item.manufacturer_code || item.value || '')
             ];
         });
