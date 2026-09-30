@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Materiali Stampa 3D - Admin{% endblock %}
+
+{% block content %}
+<section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4">
+        <div class="mb-8 flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <a href="{{ url_for('main.admin_dashboard') }}"
+                   class="inline-flex items-center text-primary hover:text-primary-dark mb-4 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Torna alla Dashboard Admin
+                </a>
+                <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+                    <i class="fas fa-cube mr-3"></i>Materiali Stampa 3D
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">Materiali usati dal calcolatore preventivi automatico</p>
+            </div>
+            <a href="{{ url_for('admin.print_quotes') }}"
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <i class="fas fa-inbox mr-2"></i>Richieste preventivo
+            </a>
+        </div>
+
+        <!-- Global settings -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-sliders-h mr-2"></i>Parametri di calcolo
+            </h2>
+            <form method="POST" action="{{ url_for('admin.print_settings_update') }}" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Infill %</label>
+                    <input type="number" step="1" min="0" max="100" name="infill_percent" value="{{ settings.infill_percent }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo fisso setup (&euro;)</label>
+                    <input type="number" step="0.01" min="0" name="setup_fee" value="{{ settings.setup_fee }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prezzo minimo (&euro;)</label>
+                    <input type="number" step="0.01" min="0" name="minimum_price" value="{{ settings.minimum_price }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volume stampa X (mm)</label>
+                    <input type="number" step="1" min="1" name="max_build_x_mm" value="{{ settings.max_build_x_mm }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volume stampa Y (mm)</label>
+                    <input type="number" step="1" min="1" name="max_build_y_mm" value="{{ settings.max_build_y_mm }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volume stampa Z (mm)</label>
+                    <input type="number" step="1" min="1" name="max_build_z_mm" value="{{ settings.max_build_z_mm }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div class="col-span-2 md:col-span-3">
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                        <i class="fas fa-save mr-2"></i>Salva parametri
+                    </button>
+                </div>
+            </form>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                Prezzo stimato = max(prezzo minimo, peso &times; prezzo/kg materiale + costo fisso).
+                Peso stimato = volume reale del modello &times; infill% &times; densità materiale.
+            </p>
+        </div>
+
+        <!-- Add material -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-plus mr-2"></i>Aggiungi materiale
+            </h2>
+            <form method="POST" action="{{ url_for('admin.print_material_add') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
+                    <input type="text" name="name" required placeholder="es. PLA"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Densità (g/cm&sup3;)</label>
+                    <input type="number" step="0.01" min="0.01" name="density_g_cm3" required placeholder="1.24"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prezzo (&euro;/kg)</label>
+                    <input type="number" step="0.01" min="0" name="price_per_kg" required placeholder="20.00"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <button type="submit" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-plus mr-2"></i>Aggiungi
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Materials list -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nome</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Densità (g/cm&sup3;)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Prezzo (&euro;/kg)</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Attivo</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for m in materials %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-3">
+                                <input type="text" name="name" value="{{ m.name }}" required form="edit-material-{{ m.id }}"
+                                       class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
+                            <td class="px-6 py-3">
+                                <input type="number" step="0.01" name="density_g_cm3" value="{{ m.density_g_cm3 }}" required form="edit-material-{{ m.id }}"
+                                       class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
+                            <td class="px-6 py-3">
+                                <input type="number" step="0.01" name="price_per_kg" value="{{ m.price_per_kg }}" required form="edit-material-{{ m.id }}"
+                                       class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
+                            <td class="px-6 py-3 text-center">
+                                <input type="checkbox" name="is_active" {{ 'checked' if m.is_active }} form="edit-material-{{ m.id }}"
+                                       class="w-4 h-4 text-primary border-gray-300 rounded">
+                            </td>
+                            <td class="px-6 py-3 text-right whitespace-nowrap">
+                                <!-- These forms have no body: their fields live in the row above via the form="..." attribute -->
+                                <form id="edit-material-{{ m.id }}" method="POST" action="{{ url_for('admin.print_material_edit', material_id=m.id) }}" class="hidden"></form>
+                                <button type="submit" form="edit-material-{{ m.id }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mr-3" title="Salva">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                                <form id="delete-material-{{ m.id }}" method="POST" action="{{ url_for('admin.print_material_delete', material_id=m.id) }}" class="hidden"
+                                      onsubmit="return confirm('Eliminare questo materiale?');"></form>
+                                <button type="submit" form="delete-material-{{ m.id }}" class="text-red-600 hover:text-red-800 dark:text-red-400" title="Elimina">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                Nessun materiale configurato. Aggiungine uno sopra per attivare il calcolatore preventivi.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -654,6 +654,7 @@ async function loadInitialData() {
 async function loadInvitiMassExport() {
     // Load ALL invites data from API in one request using mass export
     console.log('loadInvitiMassExport: Starting...');
+    allInviti = {};  // Reset before repopulating so a refresh doesn't leave stale entries
     try {
         const resp = await fetch(`/archery/api/inviti?export=full`);
         console.log('loadInvitiMassExport: Fetch complete, status:', resp.status);
@@ -677,6 +678,7 @@ async function loadInvitiMassExport() {
 async function loadSocietaMassExport() {
     // Load ALL organizations data from API
     console.log('loadSocietaMassExport: Starting...');
+    allSocieta = {};  // Reset before repopulating so a refresh doesn't leave stale entries
     try {
         const resp = await fetch(`/archery/api/societa?export=full`);
         console.log('loadSocietaMassExport: Fetch complete, status:', resp.status);
@@ -697,8 +699,12 @@ async function loadSocietaMassExport() {
 }
 
 async function loadUserSubscriptionsMassExport() {
+    // Reset before repopulating — otherwise every reload (e.g. after converting an
+    // interest into a subscription) appends on top of what's already in memory and
+    // every competition's subscriptions show up duplicated in the UI.
+    userSubscriptions.clear();
     if (authorizedAthletes.length === 0) return;
-    
+
     console.log('loadUserSubscriptionsMassExport: Starting for', authorizedAthletes.length, 'athletes');
     try {
         // Use mass export to get ALL subscriptions in one request
@@ -730,8 +736,12 @@ async function loadUserSubscriptionsMassExport() {
 }
 
 async function loadUserInterestsMassExport() {
+    // Reset before repopulating — otherwise every reload (e.g. after converting an
+    // interest into a subscription) appends on top of what's already in memory and
+    // every competition's interests show up duplicated in the UI.
+    userInterests.clear();
     if (authorizedAthletes.length === 0) return;
-    
+
     console.log('loadUserInterestsMassExport: Starting for', authorizedAthletes.length, 'athletes');
     try {
         // Use mass export to get ALL interests in one request

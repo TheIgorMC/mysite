@@ -383,3 +383,83 @@ class BlogPost(db.Model):
     
     def __repr__(self):
         return f'<BlogPost {self.title_en}>'
+
+
+class PrintMaterial(db.Model):
+    """Filament/resin material available for the 3D print quote calculator"""
+    __tablename__ = 'print_materials'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)  # e.g. "PLA", "PETG", "Resin"
+    density_g_cm3 = db.Column(db.Float, nullable=False)  # material density, g/cm3
+    price_per_kg = db.Column(db.Float, nullable=False)  # EUR per kg
+    is_active = db.Column(db.Boolean, default=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<PrintMaterial {self.name}>'
+
+
+class PrintSettings(db.Model):
+    """Single-row settings used by the 3D print quote calculator"""
+    __tablename__ = 'print_settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    infill_percent = db.Column(db.Float, default=20.0)  # used to estimate weight from mesh volume
+    setup_fee = db.Column(db.Float, default=0.0)  # flat EUR fee added to every quote
+    minimum_price = db.Column(db.Float, default=5.0)  # EUR floor for the estimate
+    max_build_x_mm = db.Column(db.Float, default=220.0)
+    max_build_y_mm = db.Column(db.Float, default=220.0)
+    max_build_z_mm = db.Column(db.Float, default=250.0)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        """Fetch the single settings row, creating it with defaults if missing"""
+        settings = cls.query.first()
+        if not settings:
+            settings = cls()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+
+    def __repr__(self):
+        return f'<PrintSettings infill={self.infill_percent}%>'
+
+
+class PrintQuoteRequest(db.Model):
+    """A 3D-print quote lead: file + auto-computed estimate, no checkout (fiscal reasons)"""
+    __tablename__ = 'print_quote_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    material_id = db.Column(db.Integer, db.ForeignKey('print_materials.id'), nullable=True)
+
+    project_name = db.Column(db.String(256))
+    notes = db.Column(db.Text)
+    quantity = db.Column(db.Integer, default=1)
+
+    original_filename = db.Column(db.String(256))
+    stored_filename = db.Column(db.String(256))  # sanitized name on disk, uploads/print_quotes/
+
+    # Computed from the uploaded mesh at submit time (server-side, not trusted from the client)
+    volume_cm3 = db.Column(db.Float)
+    bbox_x_mm = db.Column(db.Float)
+    bbox_y_mm = db.Column(db.Float)
+    bbox_z_mm = db.Column(db.Float)
+    fits_build_volume = db.Column(db.Boolean)
+    weight_g = db.Column(db.Float)
+    estimated_price = db.Column(db.Float)
+
+    status = db.Column(db.String(32), default='new')  # new, contacted, quoted, closed
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User')
+    material = db.relationship('PrintMaterial')
+
+    def __repr__(self):
+        return f'<PrintQuoteRequest {self.id} {self.project_name}>'

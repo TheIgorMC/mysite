@@ -5,8 +5,11 @@
 {% block content %}
 <section class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen">
     <div class="container mx-auto px-4 max-w-3xl">
-        <h1 class="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">{{ t('printing.quote') }}</h1>
-        
+        <h1 class="text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">{{ t('printing.quote') }}</h1>
+        <p class="text-center text-gray-600 dark:text-gray-400 mb-12">
+            Carica il tuo file STL: calcoliamo subito una stima del prezzo in base a volume e materiale.
+        </p>
+
         {% if not current_user.is_authenticated %}
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
             <i class="fas fa-lock text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
@@ -14,45 +17,76 @@
             <p class="text-gray-600 dark:text-gray-400 mb-6">
                 Please login to request a custom quote for your 3D printing project.
             </p>
-            <a href="{{ url_for('auth.login') }}" 
+            <a href="{{ url_for('auth.login') }}"
                class="inline-block bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-dark transition font-semibold">
                 Login
             </a>
         </div>
         {% else %}
+
+        {% if last_quote %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8 border-2 {{ 'border-green-400 dark:border-green-600' if last_quote.fits_build_volume else 'border-orange-400 dark:border-orange-600' }}">
+            <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                <i class="fas fa-calculator mr-2"></i>Preventivo stimato &mdash; {{ last_quote.project_name }}
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Dimensioni</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ last_quote.bbox_x_mm }} &times; {{ last_quote.bbox_y_mm }} &times; {{ last_quote.bbox_z_mm }} mm</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Volume</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ last_quote.volume_cm3 }} cm&sup3;</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Peso stimato</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ last_quote.weight_g }} g</p>
+                </div>
+                <div class="bg-primary/10 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Prezzo stimato</p>
+                    <p class="font-bold text-primary text-lg">&euro; {{ '%.2f'|format(last_quote.estimated_price) }}</p>
+                </div>
+            </div>
+            {% if not last_quote.fits_build_volume %}
+            <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-800 dark:text-orange-300">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Il pezzo supera il volume di stampa disponibile: potrebbe servire suddividerlo in più parti. Te ne parleremo in fase di contatto.
+            </div>
+            {% endif %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                <i class="fas fa-info-circle mr-1"></i>
+                Stima automatica, non un preventivo definitivo: non è possibile completare l'ordine online per motivi fiscali &mdash; ti contatteremo per finalizzarlo.
+            </p>
+        </div>
+        {% endif %}
+
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Request a Custom Quote</h2>
-            
+            <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Calcola un preventivo</h2>
+
+            {% if materials|length == 0 %}
+            <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-800 dark:text-orange-300">
+                Nessun materiale configurato al momento: il calcolo automatico non è ancora disponibile.
+            </div>
+            {% else %}
             <form method="POST" action="{{ url_for('printing.submit_quote') }}" enctype="multipart/form-data">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Project Name
+                        Nome progetto
                     </label>
-                    <input type="text" 
-                           name="project_name" 
-                           required
+                    <input type="text"
+                           name="project_name"
+                           placeholder="Es. Supporto per..."
                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Project Description
+                        File STL *
                     </label>
-                    <textarea name="description" 
-                              rows="5"
-                              required
-                              placeholder="Describe your project, including dimensions, material preferences, color, quantity, etc."
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Upload Files (STL, 3MF, or images)
-                    </label>
-                    <input type="file" 
-                           name="files" 
-                           multiple
-                           accept=".stl,.3mf,.obj,.jpg,.jpeg,.png"
+                    <input type="file"
+                           name="mesh_file"
+                           required
+                           accept=".stl"
                            class="w-full text-sm text-gray-500 dark:text-gray-400
                                   file:mr-4 file:py-2 file:px-4
                                   file:rounded-lg file:border-0
@@ -61,56 +95,57 @@
                                   hover:file:bg-primary-dark
                                   file:cursor-pointer cursor-pointer">
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Accepted formats: STL, 3MF, OBJ, JPG, PNG (Max 10MB per file)
+                        Solo STL per ora (max 16MB). Usiamo il volume reale del modello, non solo l'ingombro.
                     </p>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Quantity
+                            Materiale *
                         </label>
-                        <input type="number" 
-                               name="quantity" 
-                               min="1"
-                               value="1"
-                               required
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Urgency
-                        </label>
-                        <select name="urgency"
+                        <select name="material_id" required
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="standard">Standard (1-2 weeks)</option>
-                            <option value="priority">Priority (3-5 days)</option>
-                            <option value="urgent">Urgent (1-2 days)</option>
+                            {% for m in materials %}
+                            <option value="{{ m.id }}">{{ m.name }} &mdash; &euro;{{ '%.2f'|format(m.price_per_kg) }}/kg</option>
+                            {% endfor %}
                         </select>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Quantità
+                        </label>
+                        <input type="number"
+                               name="quantity"
+                               min="1"
+                               value="1"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
                 </div>
-                
+
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Additional Notes
+                        Note
                     </label>
-                    <textarea name="notes" 
+                    <textarea name="notes"
                               rows="3"
-                              placeholder="Any special requirements or questions?"
+                              placeholder="Colore, finitura, tolleranze, scadenze..."
                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
                 </div>
-                
-                <button type="submit" 
+
+                <button type="submit"
                         class="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark transition font-semibold">
-                    <i class="fas fa-paper-plane mr-2"></i>Submit Quote Request
+                    <i class="fas fa-calculator mr-2"></i>Calcola preventivo
                 </button>
             </form>
-            
+            {% endif %}
+
             <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p class="text-sm text-blue-800 dark:text-blue-300">
                     <i class="fas fa-info-circle mr-2"></i>
-                    You will receive a quote via email within 24-48 hours. For urgent requests, we'll prioritize your quote.
+                    Il prezzo è una stima automatica basata sul volume reale del modello e sul materiale scelto.
+                    Non è possibile completare l'ordine online per motivi fiscali: ti contatteremo per confermare i dettagli e finalizzare.
                 </p>
             </div>
         </div>

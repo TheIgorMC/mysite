@@ -1,11 +1,19 @@
 """
 3D Printing routes blueprint
 """
-from flask import Blueprint, render_template
-from app.models import GalleryItem
+import os
+import uuid
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+from app import db
+from app.models import GalleryItem, PrintMaterial, PrintSettings, PrintQuoteRequest
+from app.print_quote_utils import parse_stl, compute_quote, MeshParseError
 from app.utils import t
 
 bp = Blueprint('printing', __name__, url_prefix='/3dprinting')
+
+ALLOWED_MESH_EXTENSIONS = {'stl'}
 
 @bp.route('/')
 def index():
@@ -58,8 +66,89 @@ def item_detail(item_id):
 
 @bp.route('/quote')
 def quote():
-    """Request a quote - requires login"""
-    return render_template('printing/quote.html')
+    """3D print quote calculator - requires login"""
+    materials = PrintMaterial.query.filter_by(is_active=True).order_by(PrintMaterial.name).all()
+
+    last_quote = None
+    last_quote_id = request.args.get('quote_id', type=int)
+    if current_user.is_authenticated and last_quote_id:
+        last_quote = PrintQuoteRequest.query.filter_by(
+            id=last_quote_id, user_id=current_user.id
+        ).first()
+
+    return render_template('printing/quote.html', materials=materials, last_quote=last_quote)
+
+
+@bp.route('/quote/submit', methods=['POST'])
+@login_required
+def submit_quote():
+    """
+    Upload a mesh, compute a printability check + price estimate server-side,
+    and store the request as a lead. No checkout here (fiscal reasons) — this
+    just captures enough for a human to follow up and finalize manually.
+    """
+    mesh_file = request.files.get('mesh_file')
+    material_id = request.form.get('material_id', type=int)
+    project_name = request.form.get('project_name', '').strip()
+    quantity = request.form.get('quantity', type=int) or 1
+    notes = request.form.get('notes', '').strip()
+
+    if not mesh_file or not mesh_file.filename:
+        flash('Carica un file STL per calcolare il preventivo.', 'error')
+        return redirect(url_for('printing.quote'))
+
+    original_filename = mesh_file.filename
+    ext = original_filename.rsplit('.', 1)[-1].lower() if '.' in original_filename else ''
+    if ext not in ALLOWED_MESH_EXTENSIONS:
+        flash('Formato non supportato: al momento accettiamo solo file STL.', 'error')
+        return redirect(url_for('printing.quote'))
+
+    material = PrintMaterial.query.filter_by(id=material_id, is_active=True).first()
+    if not material:
+        flash('Seleziona un materiale valido.', 'error')
+        return redirect(url_for('printing.quote'))
+
+    data = mesh_file.read()
+    try:
+        bbox, volume_mm3 = parse_stl(data)
+    except MeshParseError as e:
+        flash(f'Impossibile leggere il file: {e}', 'error')
+        return redirect(url_for('printing.quote'))
+
+    settings = PrintSettings.get()
+    result = compute_quote(bbox, volume_mm3, material, settings)
+
+    # Save the file after it parsed successfully
+    safe_name = secure_filename(original_filename)
+    stored_filename = f"{uuid.uuid4().hex}_{safe_name}"
+    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'print_quotes')
+    os.makedirs(upload_folder, exist_ok=True)
+    with open(os.path.join(upload_folder, stored_filename), 'wb') as f:
+        f.write(data)
+
+    quote_request = PrintQuoteRequest(
+        user_id=current_user.id,
+        material_id=material.id,
+        project_name=project_name or original_filename,
+        notes=notes,
+        quantity=quantity,
+        original_filename=original_filename,
+        stored_filename=stored_filename,
+        volume_cm3=result['volume_cm3'],
+        bbox_x_mm=result['bbox_mm']['x'],
+        bbox_y_mm=result['bbox_mm']['y'],
+        bbox_z_mm=result['bbox_mm']['z'],
+        fits_build_volume=result['fits'],
+        weight_g=result['weight_g'],
+        estimated_price=result['price'],
+        status='new'
+    )
+    db.session.add(quote_request)
+    db.session.commit()
+
+    flash('Preventivo calcolato! Ti contatteremo per finalizzare l\'ordine.', 'success')
+    return redirect(url_for('printing.quote', quote_id=quote_request.id))
+
 
 @bp.route('/shop')
 def shop():

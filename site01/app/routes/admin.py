@@ -4,9 +4,16 @@ Admin routes blueprint
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import User
+from app.models import User, PrintMaterial, PrintSettings, PrintQuoteRequest
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+def admin_required():
+    """Abort with 403 unless the current user is an admin"""
+    if not getattr(current_user, 'is_admin', False):
+        from flask import abort
+        abort(403)
 
 
 @bp.route('/')
@@ -135,3 +142,118 @@ def admin_set_password(user_id):
         db.session.rollback()
         flash(f'Error updating password: {str(e)}', 'error')
     return redirect(url_for('admin.users'))
+
+
+# ============================================================================
+# 3D PRINT QUOTE CALCULATOR: materials, settings, incoming leads
+# ============================================================================
+
+@bp.route('/print-materials')
+@login_required
+def print_materials():
+    """List/manage the filament materials used by the print quote calculator"""
+    admin_required()
+    materials = PrintMaterial.query.order_by(PrintMaterial.name).all()
+    settings = PrintSettings.get()
+    return render_template('admin/print_materials.html', materials=materials, settings=settings)
+
+
+@bp.route('/print-materials/add', methods=['POST'])
+@login_required
+def print_material_add():
+    admin_required()
+    try:
+        material = PrintMaterial(
+            name=request.form.get('name', '').strip(),
+            density_g_cm3=float(request.form.get('density_g_cm3')),
+            price_per_kg=float(request.form.get('price_per_kg')),
+            is_active=True
+        )
+        db.session.add(material)
+        db.session.commit()
+        flash(f'Materiale "{material.name}" aggiunto', 'success')
+    except (TypeError, ValueError):
+        flash('Densità e prezzo devono essere numeri validi', 'error')
+    return redirect(url_for('admin.print_materials'))
+
+
+@bp.route('/print-materials/<int:material_id>/edit', methods=['POST'])
+@login_required
+def print_material_edit(material_id):
+    admin_required()
+    material = PrintMaterial.query.get_or_404(material_id)
+    try:
+        material.name = request.form.get('name', '').strip() or material.name
+        material.density_g_cm3 = float(request.form.get('density_g_cm3'))
+        material.price_per_kg = float(request.form.get('price_per_kg'))
+        material.is_active = request.form.get('is_active') == 'on'
+        db.session.commit()
+        flash(f'Materiale "{material.name}" aggiornato', 'success')
+    except (TypeError, ValueError):
+        db.session.rollback()
+        flash('Densità e prezzo devono essere numeri validi', 'error')
+    return redirect(url_for('admin.print_materials'))
+
+
+@bp.route('/print-materials/<int:material_id>/delete', methods=['POST'])
+@login_required
+def print_material_delete(material_id):
+    admin_required()
+    material = PrintMaterial.query.get_or_404(material_id)
+    if PrintQuoteRequest.query.filter_by(material_id=material.id).first():
+        # Keep history intact: deactivate instead of deleting a material that's
+        # referenced by past quote requests.
+        material.is_active = False
+        db.session.commit()
+        flash(f'"{material.name}" è referenziato da preventivi passati: disattivato invece di eliminato', 'warning')
+    else:
+        db.session.delete(material)
+        db.session.commit()
+        flash('Materiale eliminato', 'success')
+    return redirect(url_for('admin.print_materials'))
+
+
+@bp.route('/print-settings', methods=['POST'])
+@login_required
+def print_settings_update():
+    admin_required()
+    settings = PrintSettings.get()
+    try:
+        settings.infill_percent = float(request.form.get('infill_percent'))
+        settings.setup_fee = float(request.form.get('setup_fee'))
+        settings.minimum_price = float(request.form.get('minimum_price'))
+        settings.max_build_x_mm = float(request.form.get('max_build_x_mm'))
+        settings.max_build_y_mm = float(request.form.get('max_build_y_mm'))
+        settings.max_build_z_mm = float(request.form.get('max_build_z_mm'))
+        db.session.commit()
+        flash('Impostazioni aggiornate', 'success')
+    except (TypeError, ValueError):
+        db.session.rollback()
+        flash('Tutti i valori devono essere numeri validi', 'error')
+    return redirect(url_for('admin.print_materials'))
+
+
+@bp.route('/print-quotes')
+@login_required
+def print_quotes():
+    """List incoming 3D print quote requests (leads) for manual follow-up"""
+    admin_required()
+    status_filter = request.args.get('status', '')
+    query = PrintQuoteRequest.query.order_by(PrintQuoteRequest.created_at.desc())
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    quotes = query.all()
+    return render_template('admin/print_quotes.html', quotes=quotes, status_filter=status_filter)
+
+
+@bp.route('/print-quotes/<int:quote_id>/status', methods=['POST'])
+@login_required
+def print_quote_status(quote_id):
+    admin_required()
+    quote_request = PrintQuoteRequest.query.get_or_404(quote_id)
+    new_status = request.form.get('status')
+    if new_status in ('new', 'contacted', 'quoted', 'closed'):
+        quote_request.status = new_status
+        db.session.commit()
+        flash('Stato aggiornato', 'success')
+    return redirect(url_for('admin.print_quotes', status=request.args.get('status', '')))
