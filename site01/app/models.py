@@ -414,6 +414,8 @@ class PrintPrinter(db.Model):
     max_build_y_mm = db.Column(db.Float, nullable=False)
     max_build_z_mm = db.Column(db.Float, nullable=False)
     max_materials = db.Column(db.Integer, default=1)  # simultaneous colors/materials it can run (e.g. AMS slots)
+    hourly_rate = db.Column(db.Float, default=0.0)  # EUR/hour this printer costs to run
+    minutes_per_mm_height = db.Column(db.Float, default=2.0)  # rough print-time proxy until real slicing lands
     is_active = db.Column(db.Boolean, default=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -476,6 +478,9 @@ class PrintQuoteRequest(db.Model):
     fit_reason = db.Column(db.String(32))  # 'ok', 'too_big', 'too_many_materials', 'no_printer_for_technology'
     weight_g = db.Column(db.Float)
     detected_material_count = db.Column(db.Integer, default=1)  # distinct materials/colors found in the file (3MF only)
+    estimated_height_mm = db.Column(db.Float)  # shortest bbox dimension — auto-fit-on-a-plate proxy for print height
+    estimated_print_hours = db.Column(db.Float)
+    time_cost = db.Column(db.Float)
     estimated_price = db.Column(db.Float)
 
     status = db.Column(db.String(32), default='new')  # new, contacted, quoted, closed

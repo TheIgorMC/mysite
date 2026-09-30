@@ -42,6 +42,16 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">Peso stimato</p>
                     <p class="font-semibold text-gray-900 dark:text-white">{{ last_quote.weight_g }} g</p>
                 </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Altezza stimata</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ last_quote.estimated_height_mm }} mm</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Tempo di stampa</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">
+                        {% if last_quote.estimated_print_hours %}~{{ '%.1f'|format(last_quote.estimated_print_hours) }} h{% else %}-{% endif %}
+                    </p>
+                </div>
                 <div class="bg-primary/10 rounded-lg p-3 text-center">
                     <p class="text-xs text-gray-500 dark:text-gray-400">Prezzo stimato</p>
                     <p class="font-bold text-primary text-lg">&euro; {{ '%.2f'|format(last_quote.estimated_price) }}</p>
@@ -84,6 +94,7 @@
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
                 <i class="fas fa-info-circle mr-1"></i>
                 Stima automatica, non un preventivo definitivo: non è possibile completare l'ordine online per motivi fiscali &mdash; ti contatteremo per finalizzarlo.
+                Il tempo di stampa è una stima approssimativa basata sull'altezza del modello (orientato per minimizzarla), non su uno slicing reale.
             </p>
         </div>
         {% endif %}

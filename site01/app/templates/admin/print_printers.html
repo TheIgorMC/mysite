@@ -55,11 +55,28 @@
                     <input type="number" step="1" min="1" name="max_build_z_mm" required placeholder="256"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
-                <div class="md:col-span-5">
+                <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Materiali/colori simultanei</label>
                     <input type="number" step="1" min="1" name="max_materials" value="1" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">1 per una stampante mono-materiale, es. 4 per una con AMS/torre a 4 slot.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo orario (&euro;/h)</label>
+                    <input type="number" step="0.01" min="0" name="hourly_rate" value="0" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min. di stampa per mm altezza</label>
+                    <input type="number" step="0.1" min="0" name="minutes_per_mm_height" value="2.0" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div class="md:col-span-5">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Materiali/colori: 1 per una stampante mono-materiale, es. 4 per una con AMS/torre a 4 slot.
+                        Tempo di stampa: stima grezza = altezza del pezzo (il lato più corto del bounding box, assumendo
+                        venga orientato piatto per minimizzarla) &times; minuti/mm &times; costo orario &mdash; in attesa
+                        di uno slicing vero via PrusaSlicer.
+                    </p>
                 </div>
                 <div>
                     <button type="submit" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
@@ -81,6 +98,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Y (mm)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Z (mm)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Materiali</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">&euro;/h</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Min/mm</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Attiva</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Azioni</th>
                         </tr>
@@ -115,6 +134,14 @@
                                 <input type="number" step="1" min="1" name="max_materials" value="{{ p.max_materials }}" required form="edit-printer-{{ p.id }}"
                                        class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </td>
+                            <td class="px-6 py-3">
+                                <input type="number" step="0.01" min="0" name="hourly_rate" value="{{ p.hourly_rate }}" required form="edit-printer-{{ p.id }}"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
+                            <td class="px-6 py-3">
+                                <input type="number" step="0.1" min="0" name="minutes_per_mm_height" value="{{ p.minutes_per_mm_height }}" required form="edit-printer-{{ p.id }}"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
                             <td class="px-6 py-3 text-center">
                                 <input type="checkbox" name="is_active" {{ 'checked' if p.is_active }} form="edit-printer-{{ p.id }}"
                                        class="w-4 h-4 text-primary border-gray-300 rounded">
@@ -134,7 +161,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="10" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Nessuna stampante configurata. Senza almeno una stampante attiva per tecnologia, il calcolatore segnerà sempre "non stampabile".
                             </td>
                         </tr>

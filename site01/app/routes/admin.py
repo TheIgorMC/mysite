@@ -182,6 +182,8 @@ def print_printer_add():
             max_build_y_mm=float(request.form.get('max_build_y_mm')),
             max_build_z_mm=float(request.form.get('max_build_z_mm')),
             max_materials=int(request.form.get('max_materials') or 1),
+            hourly_rate=float(request.form.get('hourly_rate') or 0),
+            minutes_per_mm_height=float(request.form.get('minutes_per_mm_height') or 0),
             is_active=True
         )
         if not printer.name:
@@ -209,6 +211,8 @@ def print_printer_edit(printer_id):
         printer.max_build_y_mm = float(request.form.get('max_build_y_mm'))
         printer.max_build_z_mm = float(request.form.get('max_build_z_mm'))
         printer.max_materials = int(request.form.get('max_materials') or 1)
+        printer.hourly_rate = float(request.form.get('hourly_rate') or 0)
+        printer.minutes_per_mm_height = float(request.form.get('minutes_per_mm_height') or 0)
         printer.is_active = request.form.get('is_active') == 'on'
         db.session.commit()
         flash(f'Stampante "{printer.name}" aggiornata', 'success')

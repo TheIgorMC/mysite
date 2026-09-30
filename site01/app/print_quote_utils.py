@@ -371,6 +371,14 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings, printers
     detected material/color beyond the first adds a flat admin-configured
     fee (splitting volume precisely per color isn't reconstructed from the
     file — this is a ballpark, finalized on manual contact).
+
+    Print time has no real slicer behind it yet, so it's approximated from
+    height alone: we don't trust the part's orientation in the uploaded
+    file, so we take the *shortest* bounding-box dimension as the print
+    height — i.e. assume it gets auto-oriented to lie on its flattest side
+    before printing, same as a slicer's "place on face" would tend to
+    minimize height. minutes_per_mm_height and hourly_rate are per-printer,
+    so time cost only applies once a printer has actually been matched.
     """
     fits, printer, fit_reason = pick_printer(bbox, material_count, material.technology, printers)
 
@@ -383,9 +391,17 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings, printers
     material_cost = (weight_g / 1000.0) * material.price_per_kg
     extra_materials = max(0, material_count - 1)
     multi_material_fee = extra_materials * (settings.multi_material_fee_per_extra or 0)
+
+    height_mm = min(maxv - minv for minv, maxv in zip(bbox['min'], bbox['max']))
+    print_hours = None
+    time_cost = 0.0
+    if printer:
+        print_hours = height_mm * (printer.minutes_per_mm_height or 0) / 60.0
+        time_cost = print_hours * (printer.hourly_rate or 0)
+
     price = max(
         settings.minimum_price or 0,
-        material_cost + (settings.setup_fee or 0) + multi_material_fee
+        material_cost + (settings.setup_fee or 0) + multi_material_fee + time_cost
     )
 
     return {
@@ -397,6 +413,9 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings, printers
         'volume_cm3': round(volume_cm3, 2),
         'weight_g': round(weight_g, 1),
         'material_count': material_count,
+        'height_mm': round(height_mm, 1),
+        'print_hours': round(print_hours, 2) if print_hours is not None else None,
+        'time_cost': round(time_cost, 2),
         'price': round(price, 2),
         'fits': fits,
         'printer': printer,

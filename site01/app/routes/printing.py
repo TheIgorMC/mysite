@@ -148,6 +148,9 @@ def submit_quote():
         fit_reason=result['fit_reason'],
         weight_g=result['weight_g'],
         detected_material_count=result['material_count'],
+        estimated_height_mm=result['height_mm'],
+        estimated_print_hours=result['print_hours'],
+        time_cost=result['time_cost'],
         estimated_price=result['price'],
         status='new'
     )

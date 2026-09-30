@@ -89,6 +89,8 @@ try:
                 max_build_y_mm REAL NOT NULL,
                 max_build_z_mm REAL NOT NULL,
                 max_materials INTEGER DEFAULT 1,
+                hourly_rate REAL DEFAULT 0.0,
+                minutes_per_mm_height REAL DEFAULT 2.0,
                 is_active BOOLEAN DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -113,6 +115,8 @@ try:
                 print("✓ Default printer inserted — rename it and add the other two in the admin panel")
     else:
         print("✓ print_printers table already exists")
+        add_column_if_missing('print_printers', "hourly_rate REAL DEFAULT 0.0")
+        add_column_if_missing('print_printers', "minutes_per_mm_height REAL DEFAULT 2.0")
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='print_quote_requests'")
     if not cursor.fetchone():
@@ -137,6 +141,9 @@ try:
                 fit_reason VARCHAR(32),
                 weight_g REAL,
                 detected_material_count INTEGER DEFAULT 1,
+                estimated_height_mm REAL,
+                estimated_print_hours REAL,
+                time_cost REAL,
                 estimated_price REAL,
                 status VARCHAR(32) DEFAULT 'new',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -156,6 +163,9 @@ try:
         add_column_if_missing('print_quote_requests', "detected_material_count INTEGER DEFAULT 1")
         add_column_if_missing('print_quote_requests', "printer_id INTEGER REFERENCES print_printers(id)")
         add_column_if_missing('print_quote_requests', "fit_reason VARCHAR(32)")
+        add_column_if_missing('print_quote_requests', "estimated_height_mm REAL")
+        add_column_if_missing('print_quote_requests', "estimated_print_hours REAL")
+        add_column_if_missing('print_quote_requests', "time_cost REAL")
 
     conn.commit()
     print("Migration completed successfully!")
