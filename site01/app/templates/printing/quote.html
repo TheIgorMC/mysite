@@ -61,7 +61,21 @@
                 </span>
                 {% endif %}
             </div>
-            {% if not last_quote.fits_build_volume %}
+            {% if last_quote.fits_build_volume and last_quote.printer %}
+            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm text-green-800 dark:text-green-300">
+                <i class="fas fa-print mr-2"></i>Ci stampiamo su: {{ last_quote.printer.name }}
+            </div>
+            {% elif last_quote.fit_reason == 'too_many_materials' %}
+            <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-800 dark:text-orange-300">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Il pezzo usa più materiali/colori di quanti le nostre stampanti gestiscano in un job unico: te ne parleremo in fase di contatto.
+            </div>
+            {% elif last_quote.fit_reason == 'no_printer_for_technology' %}
+            <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-800 dark:text-orange-300">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Al momento non abbiamo una stampante attiva per questa tecnologia: ti contatteremo per valutare le alternative.
+            </div>
+            {% elif not last_quote.fits_build_volume %}
             <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-800 dark:text-orange-300">
                 <i class="fas fa-exclamation-triangle mr-2"></i>
                 Il pezzo supera il volume di stampa disponibile: potrebbe servire suddividerlo in più parti. Te ne parleremo in fase di contatto.

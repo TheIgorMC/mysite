@@ -74,8 +74,14 @@
                             <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                 {{ q.bbox_x_mm }}&times;{{ q.bbox_y_mm }}&times;{{ q.bbox_z_mm }} mm<br>
                                 {{ q.volume_cm3 }} cm&sup3; &middot; {{ q.weight_g }} g
-                                {% if not q.fits_build_volume %}
-                                <br><span class="text-orange-600 dark:text-orange-400 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>fuori volume stampa</span>
+                                {% if q.fits_build_volume and q.printer %}
+                                <br><span class="text-green-600 dark:text-green-400 text-xs"><i class="fas fa-print mr-1"></i>{{ q.printer.name }}</span>
+                                {% elif q.fit_reason == 'too_big' %}
+                                <br><span class="text-orange-600 dark:text-orange-400 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>troppo grande per le stampanti disponibili</span>
+                                {% elif q.fit_reason == 'too_many_materials' %}
+                                <br><span class="text-orange-600 dark:text-orange-400 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>troppi materiali/colori per le stampanti disponibili</span>
+                                {% elif q.fit_reason == 'no_printer_for_technology' %}
+                                <br><span class="text-orange-600 dark:text-orange-400 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>nessuna stampante per questa tecnologia</span>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">

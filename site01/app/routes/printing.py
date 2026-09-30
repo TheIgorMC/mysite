@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import GalleryItem, PrintMaterial, PrintSettings, PrintQuoteRequest
+from app.models import GalleryItem, PrintMaterial, PrintSettings, PrintPrinter, PrintQuoteRequest
 from app.print_quote_utils import parse_stl, parse_3mf, compute_quote, MeshParseError
 from app.utils import t
 
@@ -119,7 +119,8 @@ def submit_quote():
         return redirect(url_for('printing.quote'))
 
     settings = PrintSettings.get()
-    result = compute_quote(bbox, volume_mm3, material_count, material, settings)
+    printers = PrintPrinter.query.filter_by(is_active=True).all()
+    result = compute_quote(bbox, volume_mm3, material_count, material, settings, printers)
 
     # Save the file after it parsed successfully
     safe_name = secure_filename(original_filename)
@@ -132,6 +133,7 @@ def submit_quote():
     quote_request = PrintQuoteRequest(
         user_id=current_user.id,
         material_id=material.id,
+        printer_id=result['printer'].id if result['printer'] else None,
         project_name=project_name or original_filename,
         notes=notes,
         quantity=quantity,
@@ -143,6 +145,7 @@ def submit_quote():
         bbox_y_mm=result['bbox_mm']['y'],
         bbox_z_mm=result['bbox_mm']['z'],
         fits_build_volume=result['fits'],
+        fit_reason=result['fit_reason'],
         weight_g=result['weight_g'],
         detected_material_count=result['material_count'],
         estimated_price=result['price'],

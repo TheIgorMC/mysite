@@ -403,6 +403,26 @@ class PrintMaterial(db.Model):
         return f'<PrintMaterial {self.name}>'
 
 
+class PrintPrinter(db.Model):
+    """A physical printer: its technology, build volume and how many materials/colors it can run at once"""
+    __tablename__ = 'print_printers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)  # e.g. "Bambu X1C", "Elegoo Mars 4"
+    technology = db.Column(db.String(16), nullable=False, default='fdm')  # 'fdm' or 'resin'
+    max_build_x_mm = db.Column(db.Float, nullable=False)
+    max_build_y_mm = db.Column(db.Float, nullable=False)
+    max_build_z_mm = db.Column(db.Float, nullable=False)
+    max_materials = db.Column(db.Integer, default=1)  # simultaneous colors/materials it can run (e.g. AMS slots)
+    is_active = db.Column(db.Boolean, default=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<PrintPrinter {self.name}>'
+
+
 class PrintSettings(db.Model):
     """Single-row settings used by the 3D print quote calculator"""
     __tablename__ = 'print_settings'
@@ -413,9 +433,6 @@ class PrintSettings(db.Model):
     setup_fee = db.Column(db.Float, default=0.0)  # flat EUR fee added to every quote
     minimum_price = db.Column(db.Float, default=5.0)  # EUR floor for the estimate
     multi_material_fee_per_extra = db.Column(db.Float, default=0.0)  # EUR per extra color/material beyond the first
-    max_build_x_mm = db.Column(db.Float, default=220.0)
-    max_build_y_mm = db.Column(db.Float, default=220.0)
-    max_build_z_mm = db.Column(db.Float, default=250.0)
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -440,6 +457,7 @@ class PrintQuoteRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('print_materials.id'), nullable=True)
+    printer_id = db.Column(db.Integer, db.ForeignKey('print_printers.id'), nullable=True)  # suggested printer, if any fit
 
     project_name = db.Column(db.String(256))
     notes = db.Column(db.Text)
@@ -455,6 +473,7 @@ class PrintQuoteRequest(db.Model):
     bbox_y_mm = db.Column(db.Float)
     bbox_z_mm = db.Column(db.Float)
     fits_build_volume = db.Column(db.Boolean)
+    fit_reason = db.Column(db.String(32))  # 'ok', 'too_big', 'too_many_materials', 'no_printer_for_technology'
     weight_g = db.Column(db.Float)
     detected_material_count = db.Column(db.Integer, default=1)  # distinct materials/colors found in the file (3MF only)
     estimated_price = db.Column(db.Float)
@@ -465,6 +484,7 @@ class PrintQuoteRequest(db.Model):
 
     user = db.relationship('User')
     material = db.relationship('PrintMaterial')
+    printer = db.relationship('PrintPrinter')
 
     def __repr__(self):
         return f'<PrintQuoteRequest {self.id} {self.project_name}>'

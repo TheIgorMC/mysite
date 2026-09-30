@@ -304,7 +304,57 @@ def _signed_tetra_volume(v1, v2, v3):
     ) / 6.0
 
 
-def compute_quote(bbox, volume_mm3, material_count, material, settings):
+def pick_printer(bbox, material_count, technology, printers):
+    """
+    Among the given PrintPrinter rows, find the smallest (by build volume)
+    active one of the right technology that the part fits in — sorting both
+    the part's dimensions and each printer's build volume so the part can be
+    attributed to any axis (it doesn't have to already be oriented in the
+    uploaded file) — and whose max_materials covers the detected material
+    count.
+
+    Returns (fits, printer_or_none, reason) where reason is one of
+    'ok', 'no_printer_for_technology', 'too_big', 'too_many_materials' —
+    used to give the visitor a precise, honest message instead of a bare
+    yes/no.
+    """
+    dims_mm = sorted(
+        maxv - minv for minv, maxv in zip(bbox['min'], bbox['max'])
+    )
+
+    candidates = [p for p in printers if p.is_active and p.technology == technology]
+    if not candidates:
+        return False, None, 'no_printer_for_technology'
+
+    def build_volume(p):
+        return p.max_build_x_mm * p.max_build_y_mm * p.max_build_z_mm
+
+    candidates.sort(key=build_volume)
+
+    fits_size = None
+    for p in candidates:
+        build_mm = sorted([p.max_build_x_mm, p.max_build_y_mm, p.max_build_z_mm])
+        if all(d <= b for d, b in zip(dims_mm, build_mm)):
+            fits_size = p
+            break
+
+    if fits_size is None:
+        return False, None, 'too_big'
+
+    if (fits_size.max_materials or 1) < material_count:
+        # Re-check: maybe a bigger printer than the smallest fitting one also
+        # has enough material slots.
+        for p in candidates:
+            build_mm = sorted([p.max_build_x_mm, p.max_build_y_mm, p.max_build_z_mm])
+            fits_dims = all(d <= b for d, b in zip(dims_mm, build_mm))
+            if fits_dims and (p.max_materials or 1) >= material_count:
+                return True, p, 'ok'
+        return False, fits_size, 'too_many_materials'
+
+    return True, fits_size, 'ok'
+
+
+def compute_quote(bbox, volume_mm3, material_count, material, settings, printers):
     """
     Turn a parsed bbox/volume/material_count into a printability check +
     price estimate.
@@ -312,7 +362,8 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings):
     - bbox/volume/material_count come from parse_stl() or parse_3mf().
     - material is a PrintMaterial (technology, density_g_cm3, price_per_kg).
     - settings is a PrintSettings row (infill_percent, resin_fill_percent,
-      setup_fee, minimum_price, multi_material_fee_per_extra, max_build_*_mm).
+      setup_fee, minimum_price, multi_material_fee_per_extra).
+    - printers is the list of active PrintPrinter rows to match against.
 
     FDM uses settings.infill_percent to estimate weight from mesh volume;
     resin uses settings.resin_fill_percent instead (resin prints are close
@@ -320,18 +371,8 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings):
     detected material/color beyond the first adds a flat admin-configured
     fee (splitting volume precisely per color isn't reconstructed from the
     file — this is a ballpark, finalized on manual contact).
-
-    The printer fit check sorts both the part's dimensions and the build
-    volume so the part can be attributed to any of the printer's axes
-    (i.e. it doesn't have to already be oriented in the uploaded file).
     """
-    dims_mm = sorted(
-        maxv - minv for minv, maxv in zip(bbox['min'], bbox['max'])
-    )
-    build_mm = sorted([
-        settings.max_build_x_mm, settings.max_build_y_mm, settings.max_build_z_mm
-    ])
-    fits = all(d <= b for d, b in zip(dims_mm, build_mm))
+    fits, printer, fit_reason = pick_printer(bbox, material_count, material.technology, printers)
 
     volume_cm3 = volume_mm3 / 1000.0
     fill_percent = settings.resin_fill_percent if material.technology == 'resin' else settings.infill_percent
@@ -358,4 +399,6 @@ def compute_quote(bbox, volume_mm3, material_count, material, settings):
         'material_count': material_count,
         'price': round(price, 2),
         'fits': fits,
+        'printer': printer,
+        'fit_reason': fit_reason,
     }

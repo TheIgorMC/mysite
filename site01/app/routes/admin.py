@@ -4,7 +4,7 @@ Admin routes blueprint
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import User, PrintMaterial, PrintSettings, PrintQuoteRequest
+from app.models import User, PrintMaterial, PrintSettings, PrintPrinter, PrintQuoteRequest
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -158,6 +158,84 @@ def print_materials():
     return render_template('admin/print_materials.html', materials=materials, settings=settings)
 
 
+@bp.route('/print-printers')
+@login_required
+def print_printers():
+    """List/manage the physical printers used by the print quote calculator"""
+    admin_required()
+    printers = PrintPrinter.query.order_by(PrintPrinter.name).all()
+    return render_template('admin/print_printers.html', printers=printers)
+
+
+@bp.route('/print-printers/add', methods=['POST'])
+@login_required
+def print_printer_add():
+    admin_required()
+    technology = request.form.get('technology', 'fdm')
+    if technology not in ('fdm', 'resin'):
+        technology = 'fdm'
+    try:
+        printer = PrintPrinter(
+            name=request.form.get('name', '').strip(),
+            technology=technology,
+            max_build_x_mm=float(request.form.get('max_build_x_mm')),
+            max_build_y_mm=float(request.form.get('max_build_y_mm')),
+            max_build_z_mm=float(request.form.get('max_build_z_mm')),
+            max_materials=int(request.form.get('max_materials') or 1),
+            is_active=True
+        )
+        if not printer.name:
+            raise ValueError('name required')
+        db.session.add(printer)
+        db.session.commit()
+        flash(f'Stampante "{printer.name}" aggiunta', 'success')
+    except (TypeError, ValueError):
+        flash('Nome e dimensioni devono essere validi', 'error')
+    return redirect(url_for('admin.print_printers'))
+
+
+@bp.route('/print-printers/<int:printer_id>/edit', methods=['POST'])
+@login_required
+def print_printer_edit(printer_id):
+    admin_required()
+    printer = PrintPrinter.query.get_or_404(printer_id)
+    technology = request.form.get('technology', printer.technology)
+    if technology not in ('fdm', 'resin'):
+        technology = printer.technology
+    try:
+        printer.name = request.form.get('name', '').strip() or printer.name
+        printer.technology = technology
+        printer.max_build_x_mm = float(request.form.get('max_build_x_mm'))
+        printer.max_build_y_mm = float(request.form.get('max_build_y_mm'))
+        printer.max_build_z_mm = float(request.form.get('max_build_z_mm'))
+        printer.max_materials = int(request.form.get('max_materials') or 1)
+        printer.is_active = request.form.get('is_active') == 'on'
+        db.session.commit()
+        flash(f'Stampante "{printer.name}" aggiornata', 'success')
+    except (TypeError, ValueError):
+        db.session.rollback()
+        flash('Nome e dimensioni devono essere validi', 'error')
+    return redirect(url_for('admin.print_printers'))
+
+
+@bp.route('/print-printers/<int:printer_id>/delete', methods=['POST'])
+@login_required
+def print_printer_delete(printer_id):
+    admin_required()
+    printer = PrintPrinter.query.get_or_404(printer_id)
+    if PrintQuoteRequest.query.filter_by(printer_id=printer.id).first():
+        # Keep history intact: deactivate instead of deleting a printer that's
+        # referenced by past quote requests.
+        printer.is_active = False
+        db.session.commit()
+        flash(f'"{printer.name}" è referenziata da preventivi passati: disattivata invece di eliminata', 'warning')
+    else:
+        db.session.delete(printer)
+        db.session.commit()
+        flash('Stampante eliminata', 'success')
+    return redirect(url_for('admin.print_printers'))
+
+
 @bp.route('/print-materials/add', methods=['POST'])
 @login_required
 def print_material_add():
@@ -232,9 +310,6 @@ def print_settings_update():
         settings.setup_fee = float(request.form.get('setup_fee'))
         settings.minimum_price = float(request.form.get('minimum_price'))
         settings.multi_material_fee_per_extra = float(request.form.get('multi_material_fee_per_extra'))
-        settings.max_build_x_mm = float(request.form.get('max_build_x_mm'))
-        settings.max_build_y_mm = float(request.form.get('max_build_y_mm'))
-        settings.max_build_z_mm = float(request.form.get('max_build_z_mm'))
         db.session.commit()
         flash('Impostazioni aggiornate', 'success')
     except (TypeError, ValueError):
