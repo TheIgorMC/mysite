@@ -61,6 +61,15 @@
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                                 {{ q.material.name if q.material else '-' }}
+                                <span class="block text-xs">
+                                    {{ 'Resina' if q.material and q.material.technology == 'resin' else 'FDM' }}
+                                    &middot; {{ (q.file_format or '-')|upper }}
+                                </span>
+                                {% if q.detected_material_count and q.detected_material_count > 1 %}
+                                <span class="inline-block mt-1 px-1.5 py-0.5 text-xs rounded bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                                    <i class="fas fa-palette mr-1"></i>{{ q.detected_material_count }} materiali/colori
+                                </span>
+                                {% endif %}
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                 {{ q.bbox_x_mm }}&times;{{ q.bbox_y_mm }}&times;{{ q.bbox_z_mm }} mm<br>

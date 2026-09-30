@@ -27,10 +27,15 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 <i class="fas fa-sliders-h mr-2"></i>Parametri di calcolo
             </h2>
-            <form method="POST" action="{{ url_for('admin.print_settings_update') }}" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <form method="POST" action="{{ url_for('admin.print_settings_update') }}" class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Infill %</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Infill % (FDM)</label>
                     <input type="number" step="1" min="0" max="100" name="infill_percent" value="{{ settings.infill_percent }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Riempimento % (Resina)</label>
+                    <input type="number" step="1" min="0" max="100" name="resin_fill_percent" value="{{ settings.resin_fill_percent }}" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
                 <div>
@@ -41,6 +46,11 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prezzo minimo (&euro;)</label>
                     <input type="number" step="0.01" min="0" name="minimum_price" value="{{ settings.minimum_price }}" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sovrapprezzo per colore/materiale extra (&euro;)</label>
+                    <input type="number" step="0.01" min="0" name="multi_material_fee_per_extra" value="{{ settings.multi_material_fee_per_extra }}" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
                 <div>
@@ -58,15 +68,16 @@
                     <input type="number" step="1" min="1" name="max_build_z_mm" value="{{ settings.max_build_z_mm }}" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
-                <div class="col-span-2 md:col-span-3">
+                <div class="col-span-2 md:col-span-4">
                     <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
                         <i class="fas fa-save mr-2"></i>Salva parametri
                     </button>
                 </div>
             </form>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                Prezzo stimato = max(prezzo minimo, peso &times; prezzo/kg materiale + costo fisso).
-                Peso stimato = volume reale del modello &times; infill% &times; densità materiale.
+                Prezzo stimato = max(prezzo minimo, peso &times; prezzo/kg materiale + costo fisso + sovrapprezzo multi-materiale).
+                Peso stimato = volume reale del modello &times; (infill% o riempimento% a seconda della tecnologia del materiale) &times; densità.
+                Il numero di materiali/colori viene rilevato automaticamente solo dai file 3MF (materiali/gruppi colore multipli); l'STL non lo supporta.
             </p>
         </div>
 
@@ -75,11 +86,19 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 <i class="fas fa-plus mr-2"></i>Aggiungi materiale
             </h2>
-            <form method="POST" action="{{ url_for('admin.print_material_add') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <form method="POST" action="{{ url_for('admin.print_material_add') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
                     <input type="text" name="name" required placeholder="es. PLA"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tecnologia</label>
+                    <select name="technology" required
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="fdm">FDM (filamento)</option>
+                        <option value="resin">Resina (SLA/DLP)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Densità (g/cm&sup3;)</label>
@@ -106,6 +125,7 @@
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nome</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tecnologia</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Densità (g/cm&sup3;)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Prezzo (&euro;/kg)</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Attivo</th>
@@ -118,6 +138,13 @@
                             <td class="px-6 py-3">
                                 <input type="text" name="name" value="{{ m.name }}" required form="edit-material-{{ m.id }}"
                                        class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </td>
+                            <td class="px-6 py-3">
+                                <select name="technology" required form="edit-material-{{ m.id }}"
+                                        class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="fdm" {{ 'selected' if m.technology == 'fdm' }}>FDM</option>
+                                    <option value="resin" {{ 'selected' if m.technology == 'resin' }}>Resina</option>
+                                </select>
                             </td>
                             <td class="px-6 py-3">
                                 <input type="number" step="0.01" name="density_g_cm3" value="{{ m.density_g_cm3 }}" required form="edit-material-{{ m.id }}"
@@ -146,7 +173,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 Nessun materiale configurato. Aggiungine uno sopra per attivare il calcolatore preventivi.
                             </td>
                         </tr>

@@ -162,9 +162,13 @@ def print_materials():
 @login_required
 def print_material_add():
     admin_required()
+    technology = request.form.get('technology', 'fdm')
+    if technology not in ('fdm', 'resin'):
+        technology = 'fdm'
     try:
         material = PrintMaterial(
             name=request.form.get('name', '').strip(),
+            technology=technology,
             density_g_cm3=float(request.form.get('density_g_cm3')),
             price_per_kg=float(request.form.get('price_per_kg')),
             is_active=True
@@ -182,8 +186,12 @@ def print_material_add():
 def print_material_edit(material_id):
     admin_required()
     material = PrintMaterial.query.get_or_404(material_id)
+    technology = request.form.get('technology', material.technology)
+    if technology not in ('fdm', 'resin'):
+        technology = material.technology
     try:
         material.name = request.form.get('name', '').strip() or material.name
+        material.technology = technology
         material.density_g_cm3 = float(request.form.get('density_g_cm3'))
         material.price_per_kg = float(request.form.get('price_per_kg'))
         material.is_active = request.form.get('is_active') == 'on'
@@ -220,8 +228,10 @@ def print_settings_update():
     settings = PrintSettings.get()
     try:
         settings.infill_percent = float(request.form.get('infill_percent'))
+        settings.resin_fill_percent = float(request.form.get('resin_fill_percent'))
         settings.setup_fee = float(request.form.get('setup_fee'))
         settings.minimum_price = float(request.form.get('minimum_price'))
+        settings.multi_material_fee_per_extra = float(request.form.get('multi_material_fee_per_extra'))
         settings.max_build_x_mm = float(request.form.get('max_build_x_mm'))
         settings.max_build_y_mm = float(request.form.get('max_build_y_mm'))
         settings.max_build_z_mm = float(request.form.get('max_build_z_mm'))

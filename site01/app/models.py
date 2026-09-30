@@ -390,7 +390,8 @@ class PrintMaterial(db.Model):
     __tablename__ = 'print_materials'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable=False)  # e.g. "PLA", "PETG", "Resin"
+    name = db.Column(db.String(128), nullable=False)  # e.g. "PLA", "PETG", "Resin standard"
+    technology = db.Column(db.String(16), nullable=False, default='fdm')  # 'fdm' or 'resin' — drives the pricing formula
     density_g_cm3 = db.Column(db.Float, nullable=False)  # material density, g/cm3
     price_per_kg = db.Column(db.Float, nullable=False)  # EUR per kg
     is_active = db.Column(db.Boolean, default=True)
@@ -407,9 +408,11 @@ class PrintSettings(db.Model):
     __tablename__ = 'print_settings'
 
     id = db.Column(db.Integer, primary_key=True)
-    infill_percent = db.Column(db.Float, default=20.0)  # used to estimate weight from mesh volume
+    infill_percent = db.Column(db.Float, default=20.0)  # FDM: used to estimate weight from mesh volume
+    resin_fill_percent = db.Column(db.Float, default=100.0)  # Resin: prints are ~solid, but large ones get hollowed
     setup_fee = db.Column(db.Float, default=0.0)  # flat EUR fee added to every quote
     minimum_price = db.Column(db.Float, default=5.0)  # EUR floor for the estimate
+    multi_material_fee_per_extra = db.Column(db.Float, default=0.0)  # EUR per extra color/material beyond the first
     max_build_x_mm = db.Column(db.Float, default=220.0)
     max_build_y_mm = db.Column(db.Float, default=220.0)
     max_build_z_mm = db.Column(db.Float, default=250.0)
@@ -444,6 +447,7 @@ class PrintQuoteRequest(db.Model):
 
     original_filename = db.Column(db.String(256))
     stored_filename = db.Column(db.String(256))  # sanitized name on disk, uploads/print_quotes/
+    file_format = db.Column(db.String(8))  # 'stl' or '3mf'
 
     # Computed from the uploaded mesh at submit time (server-side, not trusted from the client)
     volume_cm3 = db.Column(db.Float)
@@ -452,6 +456,7 @@ class PrintQuoteRequest(db.Model):
     bbox_z_mm = db.Column(db.Float)
     fits_build_volume = db.Column(db.Boolean)
     weight_g = db.Column(db.Float)
+    detected_material_count = db.Column(db.Integer, default=1)  # distinct materials/colors found in the file (3MF only)
     estimated_price = db.Column(db.Float)
 
     status = db.Column(db.String(32), default='new')  # new, contacted, quoted, closed

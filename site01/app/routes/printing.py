@@ -8,12 +8,12 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
 from app.models import GalleryItem, PrintMaterial, PrintSettings, PrintQuoteRequest
-from app.print_quote_utils import parse_stl, compute_quote, MeshParseError
+from app.print_quote_utils import parse_stl, parse_3mf, compute_quote, MeshParseError
 from app.utils import t
 
 bp = Blueprint('printing', __name__, url_prefix='/3dprinting')
 
-ALLOWED_MESH_EXTENSIONS = {'stl'}
+ALLOWED_MESH_EXTENSIONS = {'stl', '3mf'}
 
 @bp.route('/')
 def index():
@@ -100,7 +100,7 @@ def submit_quote():
     original_filename = mesh_file.filename
     ext = original_filename.rsplit('.', 1)[-1].lower() if '.' in original_filename else ''
     if ext not in ALLOWED_MESH_EXTENSIONS:
-        flash('Formato non supportato: al momento accettiamo solo file STL.', 'error')
+        flash('Formato non supportato: accettiamo file STL o 3MF.', 'error')
         return redirect(url_for('printing.quote'))
 
     material = PrintMaterial.query.filter_by(id=material_id, is_active=True).first()
@@ -110,13 +110,16 @@ def submit_quote():
 
     data = mesh_file.read()
     try:
-        bbox, volume_mm3 = parse_stl(data)
+        if ext == '3mf':
+            bbox, volume_mm3, material_count = parse_3mf(data)
+        else:
+            bbox, volume_mm3, material_count = parse_stl(data)
     except MeshParseError as e:
         flash(f'Impossibile leggere il file: {e}', 'error')
         return redirect(url_for('printing.quote'))
 
     settings = PrintSettings.get()
-    result = compute_quote(bbox, volume_mm3, material, settings)
+    result = compute_quote(bbox, volume_mm3, material_count, material, settings)
 
     # Save the file after it parsed successfully
     safe_name = secure_filename(original_filename)
@@ -134,12 +137,14 @@ def submit_quote():
         quantity=quantity,
         original_filename=original_filename,
         stored_filename=stored_filename,
+        file_format=ext,
         volume_cm3=result['volume_cm3'],
         bbox_x_mm=result['bbox_mm']['x'],
         bbox_y_mm=result['bbox_mm']['y'],
         bbox_z_mm=result['bbox_mm']['z'],
         fits_build_volume=result['fits'],
         weight_g=result['weight_g'],
+        detected_material_count=result['material_count'],
         estimated_price=result['price'],
         status='new'
     )
