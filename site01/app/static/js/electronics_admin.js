@@ -1200,7 +1200,7 @@ function renderComponentsTable(components = allComponents) {
     if (sortedComponents.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="12" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No components found
                 </td>
             </tr>
@@ -1228,12 +1228,10 @@ function renderComponentsTable(components = allComponents) {
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
             <td class="px-2 py-2 text-xs text-gray-400 dark:text-gray-500 font-mono">${comp.id || '-'}</td>
             <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 max-w-[6rem] truncate" title="${comp.product_type || ''}">${comp.product_type || '-'}</td>
-            <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-gray-100 max-w-[5rem] truncate" title="${(comp.value || '') + (formatSpecsSummary(comp.specs) ? ' — ' + formatSpecsSummary(comp.specs) : '')}">
-                ${comp.value || '-'}
-                ${formatSpecsSummary(comp.specs) ? '<i class="fas fa-list-ul text-gray-400 ml-1" title="' + formatSpecsSummary(comp.specs).replace(/"/g, '&quot;') + '"></i>' : ''}
-            </td>
+            <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-gray-100 max-w-[5rem] truncate" title="${comp.value || ''}">${comp.value || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-600 dark:text-gray-400 max-w-[9rem] truncate" title="${formatSpecsSummary(comp.specs).replace(/"/g, '&quot;')}">${formatSpecsSummary(comp.specs) || '<span class="text-gray-300 dark:text-gray-600">-</span>'}</td>
             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 font-mono max-w-[8rem] truncate" title="${comp.manufacturer_code ? 'Click to copy: ' + comp.manufacturer_code : ''}">${comp.manufacturer_code ? `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition" onclick="copyToClipboard('${comp.manufacturer_code.replace(/'/g, "\\'")}')">` + comp.manufacturer_code + ' <i class="fas fa-copy text-gray-400 text-[9px]"></i></span>' : '-'}</td>
-            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">${comp.package || '-'}</td>
+            <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[4.5rem] truncate" title="${comp.package || ''}">${comp.package || '-'}</td>
             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[6rem] truncate" title="${comp.manufacturer || ''}">${comp.manufacturer || '-'}</td>
             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300">
                 <div class="whitespace-nowrap">
