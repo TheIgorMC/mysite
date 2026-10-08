@@ -1248,7 +1248,7 @@ function renderComponentsTable(components = allComponents) {
             <td class="px-2 py-2 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 €${(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0).toFixed(4)}
             </td>
-            <td class="px-2 py-2 text-xs text-right whitespace-nowrap">
+            <td class="px-4 py-2 text-xs text-right whitespace-nowrap">
                 <button onclick="showUsedInBoards(${comp.id})" 
                         class="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 mr-2"
                         title="Used in boards">
