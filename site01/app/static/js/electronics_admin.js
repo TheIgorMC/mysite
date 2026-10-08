@@ -1305,128 +1305,27 @@ function getEditableStockBadge(qty, componentId) {
                     title="Click to edit stock quantity">${qty}</button>`;
 }
 
-// ============================================================================
-// COMPONENT SPECS (per-type extra parameters: tolerance, voltage, Rds(on), mA...)
-// Stored server-side as a single JSON "specs" object so the schema doesn't
-// need a column per possible parameter. The admin types free-form key/value
-// pairs; a datalist just suggests common names for the selected product type.
-// ============================================================================
-
-const SPEC_SUGGESTIONS_BY_TYPE = {
-    resistor: ['tolerance', 'power', 'tcr_ppm', 'voltage'],
-    capacitor: ['tolerance', 'voltage', 'dielectric', 'tcr_ppm'],
-    inductor: ['tolerance', 'current_rating', 'dcr', 'saturation_current'],
-    diode: ['vf', 'if_max', 'reverse_voltage'],
-    transistor: ['rds_on', 'vgs_th', 'id_max', 'vce_max', 'hfe'],
-    mosfet: ['rds_on', 'vgs_th', 'id_max'],
-    led: ['current_ma', 'voltage_f', 'wavelength_nm', 'color', 'luminous_intensity'],
-    ic: ['supply_voltage', 'package_pins'],
-    connector: ['pitch', 'pins', 'current_rating'],
-    crystal: ['frequency', 'load_capacitance', 'tolerance_ppm']
-};
-
-function getSpecSuggestionsForType(productType) {
-    const key = (productType || '').trim().toLowerCase();
-    for (const [typeKey, fields] of Object.entries(SPEC_SUGGESTIONS_BY_TYPE)) {
-        if (key.includes(typeKey)) return fields;
-    }
-    return [];
-}
-
-function updateSpecSuggestions(productType) {
-    const datalist = document.getElementById('component-specs-suggestions');
-    if (!datalist) return;
-    datalist.innerHTML = getSpecSuggestionsForType(productType)
-        .map(name => `<option value="${name}">`)
-        .join('');
-}
-
-function addSpecRow(containerId, key = '', value = '') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-2';
-    row.innerHTML = `
-        <input type="text" class="spec-key-input w-1/2 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-               placeholder="es. tolerance" list="component-specs-suggestions" value="${String(key).replace(/"/g, '&quot;')}">
-        <input type="text" class="spec-value-input w-1/2 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-               placeholder="es. 5%" value="${String(value).replace(/"/g, '&quot;')}">
-        <button type="button" onclick="this.closest('div').remove()"
-                class="text-red-500 hover:text-red-700 dark:hover:text-red-400 px-1" title="Rimuovi">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-    container.appendChild(row);
-}
-
-function getSpecsFromContainer(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return {};
-
-    const keys = container.querySelectorAll('.spec-key-input');
-    const values = container.querySelectorAll('.spec-value-input');
-    const specs = {};
-    keys.forEach((keyInput, idx) => {
-        const key = keyInput.value.trim();
-        const value = values[idx] ? values[idx].value.trim() : '';
-        if (key) specs[key] = value;
-    });
-    return specs;
-}
-
-function parseSpecs(raw) {
-    if (!raw) return {};
-    if (typeof raw === 'object') return raw;
-    if (typeof raw === 'string') {
-        try {
-            const parsed = JSON.parse(raw);
-            return (parsed && typeof parsed === 'object') ? parsed : {};
-        } catch {
-            return {};
-        }
-    }
-    return {};
-}
-
+// Extra per-type specs (tolerance, voltage, Rds(on), mA...) is just free
+// text, same as the Value field -- no structured key/value editor needed.
 function formatSpecsSummary(specs) {
-    const parsed = parseSpecs(specs);
-    const entries = Object.entries(parsed).filter(([, v]) => v !== '' && v !== null && v !== undefined);
-    if (entries.length === 0) return '';
-    return entries.map(([k, v]) => `${k}: ${v}`).join(', ');
+    return (specs || '').trim();
 }
 
 function showAddComponentModal() {
     document.getElementById('add-component-modal').classList.remove('hidden');
     document.getElementById('add-component-modal').classList.add('flex');
-
-    const specsContainer = document.getElementById('add-component-specs');
-    specsContainer.innerHTML = '';
-    addSpecRow('add-component-specs');
-
-    const typeInput = document.querySelector('#add-component-form input[name="product_type"]');
-    if (typeInput && !typeInput._specsBound) {
-        typeInput.addEventListener('input', () => updateSpecSuggestions(typeInput.value));
-        typeInput._specsBound = true;
-    }
-    updateSpecSuggestions(typeInput ? typeInput.value : '');
 }
 
 function closeAddComponentModal() {
     document.getElementById('add-component-modal').classList.add('hidden');
     document.getElementById('add-component-modal').classList.remove('flex');
     document.getElementById('add-component-form').reset();
-    document.getElementById('add-component-specs').innerHTML = '';
 }
 
 document.getElementById('add-component-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    const specs = getSpecsFromContainer('add-component-specs');
-    if (Object.keys(specs).length > 0) {
-        data.specs = specs;
-    }
 
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/components`, {
@@ -1458,21 +1357,10 @@ function editComponent(id) {
     const currentPrice = comp.price !== undefined ? comp.price : (comp.unit_price || 0);
     
     document.getElementById('edit-component-id').value = id;
-    document.getElementById('edit-component-type').value = comp.product_type || '';
     document.getElementById('edit-component-name').textContent = displayName;
     document.getElementById('edit-component-qty').value = currentQty;
     document.getElementById('edit-component-price').value = currentPrice;
-
-    const specsContainer = document.getElementById('edit-component-specs');
-    specsContainer.innerHTML = '';
-    const existingSpecs = parseSpecs(comp.specs);
-    const specEntries = Object.entries(existingSpecs);
-    if (specEntries.length > 0) {
-        specEntries.forEach(([key, value]) => addSpecRow('edit-component-specs', key, value));
-    } else {
-        addSpecRow('edit-component-specs');
-    }
-    updateSpecSuggestions(comp.product_type || '');
+    document.getElementById('edit-component-specs').value = comp.specs || '';
 
     document.getElementById('edit-component-modal').classList.remove('hidden');
     document.getElementById('edit-component-modal').classList.add('flex');
@@ -1481,7 +1369,6 @@ function editComponent(id) {
 function closeEditComponentModal() {
     document.getElementById('edit-component-modal').classList.add('hidden');
     document.getElementById('edit-component-modal').classList.remove('flex');
-    document.getElementById('edit-component-specs').innerHTML = '';
 }
 
 document.getElementById('edit-component-form')?.addEventListener('submit', async function(e) {
@@ -1489,7 +1376,7 @@ document.getElementById('edit-component-form')?.addEventListener('submit', async
     const id = document.getElementById('edit-component-id').value;
     const qty = parseInt(document.getElementById('edit-component-qty').value);
     const price = parseFloat(document.getElementById('edit-component-price').value);
-    const specs = getSpecsFromContainer('edit-component-specs');
+    const specs = document.getElementById('edit-component-specs').value.trim();
 
     try {
         const response = await fetch(`${ELECTRONICS_API_BASE}/components/${id}`, {
