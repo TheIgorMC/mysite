@@ -8,6 +8,8 @@ import requests
 import csv
 import io
 import re
+import html
+from urllib.parse import quote
 from functools import wraps
 from app.api import OrionAPIClient
 
@@ -180,6 +182,60 @@ def delete_component(component_id):
     """Delete component"""
     result = api_request(f'/api/elec/components/{component_id}', method='DELETE')
     return api_result(result, 'Failed to delete component')
+
+
+def _extract_lcsc_key_attributes(page_html):
+    """
+    Best-effort scrape of LCSC's product page "Key Attributes" summary line
+    (e.g. "CAP CER 22pF 50V C0G 0805") — a single short descriptor, not the
+    full parametric table. We don't target specific class names (LCSC's are
+    build-hashed utility classes that can change at any deploy); instead we
+    anchor on the literal label text and take the first <span> after it.
+
+    LCSC's page may render parts of its content client-side via JS, in which
+    case this raw HTML fetch won't contain the text and we return None — the
+    caller falls back to just offering the product page link.
+    """
+    idx = page_html.find('Key Attributes')
+    if idx == -1:
+        return None
+    window = page_html[idx:idx + 4000]
+    match = re.search(r'<span[^>]*>([^<]+)</span>', window)
+    if not match:
+        return None
+    text = html.unescape(match.group(1)).strip()
+    return text or None
+
+
+@bp.route('/api/components/lcsc-lookup')
+@admin_required
+def lcsc_lookup():
+    """
+    Fetch the LCSC product page for a seller_code and try to pull its "Key
+    Attributes" line, to help fill in the free-text specs field quickly.
+    Always returns the product URL (even on parse failure) so the UI can
+    offer it as a manual fallback link.
+    """
+    seller_code = request.args.get('seller_code', '').strip()
+    if not seller_code:
+        return jsonify({'error': 'seller_code is required'}), 400
+
+    url = f'https://www.lcsc.com/product-detail/{quote(seller_code)}.html'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=8, allow_redirects=True)
+        key_attributes = _extract_lcsc_key_attributes(response.text) if response.status_code == 200 else None
+        return jsonify({
+            'url': response.url,
+            'key_attributes': key_attributes
+        })
+    except requests.exceptions.RequestException as e:
+        current_app.logger.warning(f'[LCSC Lookup] Failed for seller_code={seller_code}: {e}')
+        return jsonify({'url': url, 'key_attributes': None, 'error': 'fetch_failed'})
 
 # ============================================================================
 # BOARDS API ENDPOINTS

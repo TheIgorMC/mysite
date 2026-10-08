@@ -1545,6 +1545,189 @@ function quickStockPrevious() {
     renderQuickStockItem();
 }
 
+// ============================================================================
+// FILL SPECS
+// Consecutive-edit mode for the free-text specs field: walks components with
+// no specs yet, and for LCSC-sourced parts tries to pull LCSC's "Key
+// Attributes" summary line server-side as a starting point (LCSC blocks
+// cross-origin fetches from the browser, so this goes through our own API).
+// The next item's lookup is prefetched/cached while the current one is being
+// reviewed, so advancing feels instant.
+// ============================================================================
+let specsFillQueue = [];
+let specsFillIndex = 0;
+let specsFillChangedCount = 0;
+let specsFillCache = new Map(); // component id -> Promise<{url, key_attributes}|null>
+
+function fetchLcscAttributes(comp) {
+    if (!comp.seller_code || (comp.seller || '').toLowerCase() !== 'lcsc') {
+        return Promise.resolve(null);
+    }
+    if (specsFillCache.has(comp.id)) {
+        return specsFillCache.get(comp.id);
+    }
+    const promise = fetch(`${ELECTRONICS_API_BASE}/components/lcsc-lookup?seller_code=${encodeURIComponent(comp.seller_code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(error => {
+            console.error('[Fill Specs] LCSC lookup failed:', error);
+            return null;
+        });
+    specsFillCache.set(comp.id, promise);
+    return promise;
+}
+
+function showSpecsFillModal() {
+    specsFillQueue = [...getFilteredComponents()]
+        .filter(c => !(c.specs || '').trim())
+        .sort((a, b) => {
+            const av = getComponentSortValue(a, componentSortField);
+            const bv = getComponentSortValue(b, componentSortField);
+            if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
+            if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+    if (specsFillQueue.length === 0) {
+        showToast('No components without specs found', 'info');
+        return;
+    }
+
+    specsFillIndex = 0;
+    specsFillChangedCount = 0;
+    specsFillCache = new Map();
+
+    document.getElementById('specs-fill-modal').classList.remove('hidden');
+    document.getElementById('specs-fill-modal').classList.add('flex');
+
+    renderSpecsFillItem();
+
+    const input = document.getElementById('specs-fill-input');
+    input.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            specsFillConfirm();
+        }
+    };
+}
+
+function closeSpecsFillModal() {
+    document.getElementById('specs-fill-modal').classList.add('hidden');
+    document.getElementById('specs-fill-modal').classList.remove('flex');
+    if (specsFillChangedCount > 0) {
+        loadComponents();
+    }
+}
+
+async function renderSpecsFillItem() {
+    const comp = specsFillQueue[specsFillIndex];
+
+    document.getElementById('specs-fill-name').textContent =
+        `${comp.product_type || comp.category || 'Component'} ${comp.value || ''}`.trim();
+    document.getElementById('specs-fill-meta').textContent =
+        [comp.manufacturer_code || comp.mpn, comp.package].filter(Boolean).join(' · ') || `#${comp.id}`;
+
+    const input = document.getElementById('specs-fill-input');
+    input.value = '';
+    input.focus();
+
+    document.getElementById('specs-fill-progress-label').textContent =
+        `${specsFillIndex + 1} / ${specsFillQueue.length}`;
+    document.getElementById('specs-fill-changed-label').textContent = `${specsFillChangedCount} updated`;
+    document.getElementById('specs-fill-progress-bar').style.width =
+        `${Math.round((specsFillIndex / specsFillQueue.length) * 100)}%`;
+
+    const lcscBox = document.getElementById('specs-fill-lcsc-box');
+    const lcscStatus = document.getElementById('specs-fill-lcsc-status');
+    const lcscLink = document.getElementById('specs-fill-lcsc-link');
+    const lcscText = document.getElementById('specs-fill-lcsc-text');
+    const useBtn = document.getElementById('specs-fill-use-btn');
+
+    if (!comp.seller_code || (comp.seller || '').toLowerCase() !== 'lcsc') {
+        lcscBox.classList.add('hidden');
+    } else {
+        lcscBox.classList.remove('hidden');
+        lcscStatus.textContent = 'Checking LCSC…';
+        lcscLink.href = `https://www.lcsc.com/product-detail/${encodeURIComponent(comp.seller_code)}.html`;
+        lcscText.textContent = '';
+        useBtn.classList.add('hidden');
+
+        const thisIndex = specsFillIndex;
+        const result = await fetchLcscAttributes(comp);
+        // The admin may have already moved on by the time this resolves
+        if (specsFillIndex !== thisIndex) return;
+
+        if (result && result.url) {
+            lcscLink.href = result.url;
+        }
+        if (result && result.key_attributes) {
+            lcscStatus.textContent = 'LCSC key attributes';
+            lcscText.textContent = result.key_attributes;
+            useBtn.classList.remove('hidden');
+        } else {
+            lcscStatus.textContent = 'Not found automatically';
+            lcscText.textContent = 'Open the product page to check the specs manually.';
+        }
+    }
+
+    // Prefetch the next item in the background so it's ready when we advance
+    const next = specsFillQueue[specsFillIndex + 1];
+    if (next) fetchLcscAttributes(next);
+}
+
+function specsFillUseSuggestion() {
+    const text = document.getElementById('specs-fill-lcsc-text').textContent.trim();
+    if (text && text !== 'Open the product page to check the specs manually.') {
+        document.getElementById('specs-fill-input').value = text;
+        document.getElementById('specs-fill-input').focus();
+    }
+}
+
+async function specsFillConfirm() {
+    const comp = specsFillQueue[specsFillIndex];
+    const newSpecs = document.getElementById('specs-fill-input').value.trim();
+
+    if (newSpecs) {
+        try {
+            const response = await fetch(`${ELECTRONICS_API_BASE}/components/${comp.id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({specs: newSpecs})
+            });
+            if (response.ok) {
+                comp.specs = newSpecs;
+                specsFillChangedCount++;
+            } else {
+                showToast(`Failed to update ${comp.manufacturer_code || comp.id}`, 'error');
+            }
+        } catch (error) {
+            console.error('[Fill Specs] Error updating component:', error);
+            showToast('Failed to update component', 'error');
+        }
+    }
+
+    specsFillAdvance();
+}
+
+function specsFillSkip() {
+    specsFillAdvance();
+}
+
+function specsFillAdvance() {
+    if (specsFillIndex >= specsFillQueue.length - 1) {
+        showToast(`Specs fill complete: ${specsFillChangedCount} updated`, 'success');
+        closeSpecsFillModal();
+        return;
+    }
+    specsFillIndex++;
+    renderSpecsFillItem();
+}
+
+function specsFillPrevious() {
+    if (specsFillIndex === 0) return;
+    specsFillIndex--;
+    renderSpecsFillItem();
+}
+
 async function showUsedInBoards(componentId) {
     const modal = document.getElementById('used-in-boards-modal');
     const titleEl = document.getElementById('used-in-boards-title');
