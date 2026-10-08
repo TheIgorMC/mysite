@@ -1138,13 +1138,83 @@ function getFilteredComponents() {
     return filtered;
 }
 
+// SI/engineering prefixes used in component values (resistors, caps, etc).
+// Case matters: 'm' is milli (1e-3), 'M' is Mega (1e6) -- never normalize case.
+const ENGINEERING_PREFIXES = {
+    f: 1e-15, p: 1e-12, n: 1e-9,
+    u: 1e-6, 'µ': 1e-6, 'μ': 1e-6,
+    m: 1e-3,
+    k: 1e3, K: 1e3,
+    M: 1e6,
+    g: 1e9, G: 1e9,
+    t: 1e12, T: 1e12,
+    R: 1, r: 1 // resistor shorthand "ohms" marker, e.g. "2R2" = 2.2 ohm
+};
+
+// Parses a component value string into a plain number for sorting, so
+// "470k" sorts after "720" (470000 > 720) instead of alphabetically, and
+// unit suffixes (pF/nF/uF, mA, kHz, ...) are stripped after reading their
+// SI prefix. Returns null when the string isn't a recognizable number
+// (e.g. part names like "nRF52840"), so the caller can fall back to a
+// plain string comparison for those.
+function parseEngineeringValue(raw) {
+    if (raw === null || raw === undefined) return null;
+    const str = String(raw).trim();
+    if (!str) return null;
+
+    // Resistor/cap shorthand: digits, a unit letter standing in for the
+    // decimal point, then more digits -- e.g. "4k7" = 4.7k, "2R2" = 2.2,
+    // "1n5" = 1.5n. Only matches when there IS a fractional part this way.
+    const shorthand = str.match(/^(\d*)([pnuµμmkKMGTRr])(\d+)$/);
+    if (shorthand) {
+        const [, intPart, prefixChar, fracPart] = shorthand;
+        const multiplier = ENGINEERING_PREFIXES[prefixChar];
+        if (multiplier !== undefined) {
+            return parseFloat(`${intPart || '0'}.${fracPart}`) * multiplier;
+        }
+    }
+
+    // Standard "<number><optional SI prefix><optional unit letters>" form,
+    // e.g. "100nF", "4.7uF", "470k", "20mA", "50V", "32,768KHz", "720".
+    // A leading comma-as-decimal (European notation) is normalized to a dot.
+    const match = str.replace(',', '.').match(/^(-?\d+(?:\.\d+)?)\s*([a-zA-Zµμ]*)$/);
+    if (!match) return null;
+
+    const [, numberPart, suffix] = match;
+    const number = parseFloat(numberPart);
+    if (isNaN(number)) return null;
+
+    const prefixChar = suffix.charAt(0);
+    const multiplier = ENGINEERING_PREFIXES[prefixChar];
+    return multiplier !== undefined ? number * multiplier : number;
+}
+
 function getComponentSortValue(comp, field) {
     if (field === 'id') return Number(comp.id || 0);
     if (field === 'stock') return Number(comp.qty_left !== undefined ? comp.qty_left : (comp.stock_qty || 0));
     if (field === 'price') return Number(parseFloat(comp.price) || parseFloat(comp.unit_price) || 0);
 
+    if (field === 'value') {
+        const parsed = parseEngineeringValue(comp.value);
+        if (parsed !== null) return parsed;
+    }
+
     const value = comp[field];
     return value === null || value === undefined ? '' : String(value).toLowerCase();
+}
+
+// Compares two getComponentSortValue() results. Numbers sort by magnitude;
+// strings sort lexicographically; when one side parsed as a number and the
+// other didn't (e.g. sorting Value with both "470k" and "nRF52840" present),
+// numbers sort first -- mixing them meaningfully isn't possible anyway.
+function compareSortValues(av, bv) {
+    const aIsNum = typeof av === 'number';
+    const bIsNum = typeof bv === 'number';
+    if (aIsNum && bIsNum) return av - bv;
+    if (aIsNum !== bIsNum) return aIsNum ? -1 : 1;
+    if (av < bv) return -1;
+    if (av > bv) return 1;
+    return 0;
 }
 
 function sortComponents(field) {
@@ -1191,10 +1261,7 @@ function renderComponentsTable(components = allComponents) {
     const sortedComponents = [...components].sort((a, b) => {
         const av = getComponentSortValue(a, componentSortField);
         const bv = getComponentSortValue(b, componentSortField);
-
-        if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
-        if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
-        return 0;
+        return componentSortDirection === 'asc' ? compareSortValues(av, bv) : compareSortValues(bv, av);
     });
     
     if (sortedComponents.length === 0) {
@@ -1440,9 +1507,7 @@ function showQuickStockCheckModal() {
     quickStockQueue = [...getFilteredComponents()].sort((a, b) => {
         const av = getComponentSortValue(a, componentSortField);
         const bv = getComponentSortValue(b, componentSortField);
-        if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
-        if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
-        return 0;
+        return componentSortDirection === 'asc' ? compareSortValues(av, bv) : compareSortValues(bv, av);
     });
 
     if (quickStockQueue.length === 0) {
@@ -1582,9 +1647,7 @@ function showSpecsFillModal() {
         .sort((a, b) => {
             const av = getComponentSortValue(a, componentSortField);
             const bv = getComponentSortValue(b, componentSortField);
-            if (av < bv) return componentSortDirection === 'asc' ? -1 : 1;
-            if (av > bv) return componentSortDirection === 'asc' ? 1 : -1;
-            return 0;
+            return componentSortDirection === 'asc' ? compareSortValues(av, bv) : compareSortValues(bv, av);
         });
 
     if (specsFillQueue.length === 0) {
