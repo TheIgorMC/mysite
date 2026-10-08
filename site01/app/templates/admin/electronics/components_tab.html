@@ -196,7 +196,26 @@
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                     </div>
                 </div>
-                
+
+                <!-- Extra per-type specs (tolerance, voltage, Rds(on), mA, ...) stored as one JSON "specs" field -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Specifiche aggiuntive
+                        </label>
+                        <button type="button" onclick="addSpecRow('add-component-specs')"
+                                class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                            <i class="fas fa-plus mr-1"></i>Aggiungi parametro
+                        </button>
+                    </div>
+                    <div id="add-component-specs" class="space-y-2">
+                        <!-- Rows added by JS via addSpecRow() -->
+                    </div>
+                    <datalist id="component-specs-suggestions">
+                        <!-- Populated by JS based on the selected Product Type -->
+                    </datalist>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -248,19 +267,20 @@
 
 <!-- Edit Component Modal -->
 <div id="edit-component-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    <i class="fas fa-edit text-blue-600 mr-2"></i>Edit Stock
+                    <i class="fas fa-edit text-blue-600 mr-2"></i>Edit Component
                 </h3>
                 <button onclick="closeEditComponentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
+
             <form id="edit-component-form" class="space-y-4">
                 <input type="hidden" id="edit-component-id">
+                <input type="hidden" id="edit-component-type">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Component
@@ -281,6 +301,23 @@
                     <input type="number" id="edit-component-price" step="0.0001" min="0"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 </div>
+
+                <!-- Extra per-type specs (tolerance, voltage, Rds(on), mA, ...) stored as one JSON "specs" field -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Specifiche aggiuntive
+                        </label>
+                        <button type="button" onclick="addSpecRow('edit-component-specs')"
+                                class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                            <i class="fas fa-plus mr-1"></i>Aggiungi parametro
+                        </button>
+                    </div>
+                    <div id="edit-component-specs" class="space-y-2">
+                        <!-- Rows added by JS via addSpecRow() -->
+                    </div>
+                </div>
+
                 <div class="flex items-center justify-end space-x-3 pt-4">
                     <button type="button" onclick="closeEditComponentModal()"
                             class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
