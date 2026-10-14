@@ -577,6 +577,41 @@ function renderAll() {
   renderTimeline();
   renderGallery();
   renderHomeSnapshot();
+  applyHeroBackground();
+}
+
+/* ── HERO BACKGROUND (video, falls back to image) ── */
+function applyHeroBackground() {
+  const heroSection = document.getElementById("heroSection");
+  const video = document.getElementById("bgVideo");
+  if (!heroSection || !video) return;
+
+  const hero = (state.content && state.content.hero) || {};
+  const videoUrl = (hero.background_video || "").trim();
+  const imageUrl = (hero.background_image || "").trim();
+
+  // Image: overrides the CSS default when the CMS sets one, otherwise the
+  // section's own stylesheet background-image is left alone.
+  if (imageUrl) {
+    heroSection.style.backgroundImage = `url('${imageUrl}')`;
+  }
+
+  // Video: sits on top of the (video or CMS) image at partial opacity. No
+  // video configured -> hidden, so the image behind it is what's seen.
+  if (videoUrl) {
+    video.innerHTML = `<source src="${videoUrl}" type="video/mp4">`;
+    video.style.display = "";
+    video.load();
+    video.play().catch(() => {});
+    // If the video fails to actually load/play (missing/corrupt file),
+    // hide it so the background-image shows through cleanly instead of a
+    // broken black box.
+    video.onerror = () => { video.style.display = "none"; };
+  } else {
+    video.removeAttribute("src");
+    video.innerHTML = "";
+    video.style.display = "none";
+  }
 }
 
 /* ── CONTENT LOAD ── */
