@@ -28,11 +28,17 @@ AUTH_FILE = LOCAL_DATA_DIR / "auth.json"
 
 SUPPORTED_LOCALES = ("en", "it", "fr", "es")
 ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"}
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+ALLOWED_VIDEO_EXTS = {".mp4", ".webm"}
+ALLOWED_ASSET_EXTS = ALLOWED_IMAGE_EXTS | ALLOWED_VIDEO_EXTS
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB, images
+MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB, background video loops
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_INTENTS = {"stay_posted", "buy_if_price", "contribute"}
 WRITE_LOCK = Lock()
-CONTENT_FALLBACK = {"updates": [], "timeline": [], "milestones": [], "planned_work": [], "gallery": []}
+CONTENT_FALLBACK = {
+    "updates": [], "timeline": [], "milestones": [], "planned_work": [], "gallery": [],
+    "hero": {"background_video": "", "background_image": ""},
+}
 AUTH_SESSION_KEY = "orion_admin_authenticated"
 LIST_IDENTITY_KEYS = {
     "updates": ("date", "title"),
@@ -195,7 +201,9 @@ def _read_content_file():
     if not isinstance(content, dict):
         return deepcopy(CONTENT_FALLBACK)
     normalized = deepcopy(CONTENT_FALLBACK)
-    normalized.update({k: content.get(k, []) for k in normalized.keys()})
+    for key, fallback_value in CONTENT_FALLBACK.items():
+        value = content.get(key, fallback_value)
+        normalized[key] = value if isinstance(value, type(fallback_value)) else deepcopy(fallback_value)
     return normalized
 
 
@@ -213,7 +221,8 @@ def _collect_assets():
         if not directory.exists():
             continue
         for file_path in sorted(directory.iterdir()):
-            if not file_path.is_file() or file_path.suffix.lower() not in ALLOWED_IMAGE_EXTS:
+            ext = file_path.suffix.lower()
+            if not file_path.is_file() or ext not in ALLOWED_ASSET_EXTS:
                 continue
             assets[file_path.name] = {
                 "name": file_path.name,
@@ -221,6 +230,7 @@ def _collect_assets():
                 "size": file_path.stat().st_size,
                 "source": source,
                 "deletable": source == "local",
+                "kind": "video" if ext in ALLOWED_VIDEO_EXTS else "image",
             }
     return [assets[name] for name in sorted(assets)]
 
@@ -341,16 +351,26 @@ def put_content():
     if not isinstance(payload, dict):
         return _json_response("Expected JSON object", 400)
 
-    allowed_keys = {"updates", "timeline", "milestones", "planned_work", "gallery"}
-    for key in allowed_keys:
+    list_keys = {"updates", "timeline", "milestones", "planned_work", "gallery"}
+    for key in list_keys:
         if key in payload and not isinstance(payload[key], list):
             return _json_response(f"'{key}' must be a list", 400)
 
+    if "hero" in payload:
+        hero = payload["hero"]
+        if not isinstance(hero, dict):
+            return _json_response("'hero' must be an object", 400)
+        for field in ("background_video", "background_image"):
+            if field in hero and not isinstance(hero[field], str):
+                return _json_response(f"'hero.{field}' must be a string", 400)
+
     with WRITE_LOCK:
         existing = _read_content_file()
-        for key in allowed_keys:
+        for key in list_keys:
             if key in payload:
                 existing[key] = payload[key]
+        if "hero" in payload:
+            existing["hero"] = {**existing.get("hero", {}), **payload["hero"]}
         _atomic_write_json(CONTENT_FILE, existing)
 
     return jsonify({"ok": True})
@@ -395,16 +415,19 @@ def upload_asset():
     if not filename:
         return _json_response("Invalid filename", 400)
     ext = Path(filename).suffix.lower()
-    if ext not in ALLOWED_IMAGE_EXTS:
+    if ext not in ALLOWED_ASSET_EXTS:
         return _json_response("File type not allowed", 400)
 
-    data = file_obj.read(MAX_UPLOAD_BYTES + 1)
-    if len(data) > MAX_UPLOAD_BYTES:
-        return _json_response("File too large (max 10 MB)", 400)
+    is_video = ext in ALLOWED_VIDEO_EXTS
+    size_limit = MAX_VIDEO_UPLOAD_BYTES if is_video else MAX_UPLOAD_BYTES
+    data = file_obj.read(size_limit + 1)
+    if len(data) > size_limit:
+        limit_mb = size_limit // (1024 * 1024)
+        return _json_response(f"File too large (max {limit_mb} MB)", 400)
 
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     (ASSETS_DIR / filename).write_bytes(data)
-    return jsonify({"ok": True, "url": f"assets/{filename}", "name": filename})
+    return jsonify({"ok": True, "url": f"assets/{filename}", "name": filename, "kind": "video" if is_video else "image"})
 
 
 @app.delete("/api/assets/<path:filename>")

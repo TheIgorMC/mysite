@@ -1349,13 +1349,23 @@ function copyToClipboard(text) {
     });
 }
 
+// Compact display for large stock quantities, e.g. 11200 -> "11.2k", so bulk
+// passives don't blow out the Stock column. Below 1000 shows the exact
+// number; the full exact value is always still in the title tooltip.
+function formatCompactStock(qty) {
+    const num = Number(qty) || 0;
+    if (num < 1000) return String(num);
+    if (num < 1000000) return (num / 1000).toFixed(1) + 'k';
+    return (num / 1000000).toFixed(1) + 'M';
+}
+
 function getStockBadge(qty) {
     if (qty === 0) {
         return '<span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-semibold rounded">Out</span>';
     } else if (qty <= 10) {
-        return `<span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-semibold rounded">${qty}</span>`;
+        return `<span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-semibold rounded" title="${qty} in stock">${formatCompactStock(qty)}</span>`;
     } else {
-        return `<span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold rounded">${qty}</span>`;
+        return `<span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold rounded" title="${qty} in stock">${formatCompactStock(qty)}</span>`;
     }
 }
 
@@ -1369,7 +1379,7 @@ function getEditableStockBadge(qty, componentId) {
     return `<button type="button"
                     onclick="openStockQtyModal(${componentId})"
                     class="px-2 py-1 ${stockBadgeClass} text-xs font-semibold rounded hover:opacity-90 transition"
-                    title="Click to edit stock quantity">${qty}</button>`;
+                    title="${qty} in stock — click to edit">${formatCompactStock(qty)}</button>`;
 }
 
 // Extra per-type specs (tolerance, voltage, Rds(on), mA...) is just free

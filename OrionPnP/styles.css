@@ -220,7 +220,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.35;
+  opacity: 1;
   z-index: 0;
 }
 .hero-overlay {

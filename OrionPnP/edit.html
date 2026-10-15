@@ -122,7 +122,7 @@
     .asset-browser-hdr h3{font-size:.9rem;font-weight:600;}
     .asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;}
     .asset-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;}
-    .asset-tile img{width:100%;aspect-ratio:1;object-fit:cover;background:#0b1629;display:block;}
+    .asset-tile img,.asset-tile video{width:100%;aspect-ratio:1;object-fit:cover;background:#0b1629;display:block;}
     .asset-tile-foot{padding:.4rem .5rem;display:flex;flex-direction:column;gap:.3rem;}
     .asset-tile-name{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .asset-tile-btns{display:flex;gap:.3rem;}
@@ -198,6 +198,7 @@ const TABS = [
   { key: 'milestones',   label: 'Milestones' },
   { key: 'planned_work', label: 'Planned Work' },
   { key: 'gallery',      label: 'Gallery' },
+  { key: 'hero',         label: 'Homepage Background' },
   { key: 'locales',      label: 'Locales' },
 ];
 
@@ -360,6 +361,7 @@ function renderTabs() {
     let count;
     if (t.key === 'locales') count = Object.keys((locales && locales.en) || {}).length;
     else if (t.key === 'gallery') count = (content && content.gallery ? content.gallery.length : 0);
+    else if (t.key === 'hero') count = (content && content.hero && (content.hero.background_video || content.hero.background_image)) ? 1 : 0;
     else count = (content && content[t.key] ? content[t.key].length : 0);
     return `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${count})</span></button>`;
   }).join('');
@@ -371,6 +373,7 @@ function renderTabs() {
 function renderMain() {
   if (activeTab === 'locales') { renderLocalesPanel(); return; }
   if (activeTab === 'gallery') { renderGalleryPanel(); return; }
+  if (activeTab === 'hero')    { renderHeroPanel(); return; }
 
   const main = document.getElementById('main');
   const schema = SCHEMA[activeTab];
@@ -685,6 +688,145 @@ async function uploadAssetFile(file) {
   } catch { setStatus('Upload failed','err'); }
 }
 
+/* ─────────────────────────────────────────────────────── hero panel */
+function renderHeroPanel() {
+  const main = document.getElementById('main');
+  content.hero = content.hero || { background_video: '', background_image: '' };
+  const hero = content.hero;
+
+  const imageAssets = assetList.filter(a => (a.kind || 'image') === 'image');
+  const videoAssets = assetList.filter(a => a.kind === 'video');
+
+  const tile = (a, current, kind) => `
+    <div class="asset-tile">
+      ${kind === 'video'
+        ? `<video src="${esc(a.url)}" muted></video>`
+        : `<img src="${esc(a.url)}" alt="${esc(a.name)}">`}
+      <div class="asset-tile-foot">
+        <div class="asset-tile-name" title="${esc(a.name)}">${esc(a.name)}</div>
+        <div class="asset-tile-btns">
+          <button class="btn-add-gallery" data-hero-set="${kind}" data-hero-url="${esc(a.url)}">${current === a.url ? '✓ Active' : 'Use'}</button>
+          <button class="btn-sm btn-del" data-del-asset="${esc(a.name)}" ${a.deletable ? '' : 'disabled title="Tracked asset"'}>✕</button>
+        </div>
+      </div>
+    </div>`;
+
+  const imageTiles = imageAssets.map(a => tile(a, hero.background_image, 'image')).join('');
+  const videoTiles = videoAssets.map(a => tile(a, hero.background_video, 'video')).join('');
+
+  main.innerHTML = `<div class="panel">
+    <div class="panel-header">
+      <h2>Homepage Background</h2>
+    </div>
+    <p style="font-size:.82rem;color:var(--muted);max-width:60ch">
+      The video plays on top of the image at low opacity and loops muted; the image always shows underneath,
+      so it is used automatically if no video is set or the video fails to load.
+      Recommended video: <strong>MP4 (H.264) or WebM</strong>, <strong>1920×1080</strong>, roughly a
+      <strong>5–15 s</strong> seamless loop, no audio needed, under <strong>50&nbsp;MB</strong>.
+    </p>
+
+    <div class="asset-browser" style="margin-top:1rem">
+      <div class="asset-browser-hdr">
+        <h3>Background image</h3>
+        <button class="btn btn-sm" id="heroUploadImgBtn">Upload image</button>
+        <input id="heroUploadImgFile" type="file" accept="image/*" style="display:none" multiple>
+      </div>
+      <div class="upload-zone" id="heroUploadImgZone">Drop images here or click Upload</div>
+      <div class="asset-grid">${imageTiles || '<p class="empty">No images in assets/ folder</p>'}</div>
+    </div>
+
+    <div class="asset-browser" style="margin-top:1.5rem">
+      <div class="asset-browser-hdr">
+        <h3>Background video (optional)</h3>
+        <button class="btn btn-sm" id="heroUploadVidBtn">Upload video</button>
+        <input id="heroUploadVidFile" type="file" accept="video/mp4,video/webm" style="display:none" multiple>
+      </div>
+      <div class="upload-zone" id="heroUploadVidZone">Drop a .mp4/.webm here or click Upload</div>
+      <div class="asset-grid">${videoTiles || '<p class="empty">No videos in assets/ folder</p>'}</div>
+      ${hero.background_video ? `<button class="btn-sm btn-del" id="heroClearVideo" style="margin-top:.5rem">Clear video (use image only)</button>` : ''}
+    </div>
+  </div>`;
+
+  document.getElementById('heroUploadImgBtn').addEventListener('click', () => document.getElementById('heroUploadImgFile').click());
+  document.getElementById('heroUploadImgFile').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+  const imgZone = document.getElementById('heroUploadImgZone');
+  imgZone.addEventListener('dragover', e => { e.preventDefault(); imgZone.classList.add('drag'); });
+  imgZone.addEventListener('dragleave', () => imgZone.classList.remove('drag'));
+  imgZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    imgZone.classList.remove('drag');
+    const files = [...(e.dataTransfer.files || [])].filter(f => f.type.startsWith('image/'));
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+
+  document.getElementById('heroUploadVidBtn').addEventListener('click', () => document.getElementById('heroUploadVidFile').click());
+  document.getElementById('heroUploadVidFile').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+  const vidZone = document.getElementById('heroUploadVidZone');
+  vidZone.addEventListener('dragover', e => { e.preventDefault(); vidZone.classList.add('drag'); });
+  vidZone.addEventListener('dragleave', () => vidZone.classList.remove('drag'));
+  vidZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    vidZone.classList.remove('drag');
+    const files = [...(e.dataTransfer.files || [])].filter(f => f.type.startsWith('video/'));
+    for (const file of files) await uploadAssetFile(file);
+    await refreshAssets();
+    renderAll();
+  });
+
+  main.querySelectorAll('[data-hero-set]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
+      const kind = btn.dataset.heroSet;
+      const url  = btn.dataset.heroUrl;
+      if (kind === 'video') content.hero.background_video = url;
+      else content.hero.background_image = url;
+      markDirty();
+      renderAll();
+    });
+  });
+
+  const clearVideoBtn = document.getElementById('heroClearVideo');
+  if (clearVideoBtn) {
+    clearVideoBtn.addEventListener('click', () => {
+      content.hero.background_video = '';
+      markDirty();
+      renderAll();
+    });
+  }
+
+  main.querySelectorAll('[data-del-asset]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
+      const name = btn.dataset.delAsset;
+      if (!confirm(`Delete asset "${name}"?\nThis cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/assets/${encodeURIComponent(name)}`, {method:'DELETE'});
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setStatus(data.error || 'Delete failed','err');
+          return;
+        }
+        await refreshAssets();
+        renderAll();
+      } catch { setStatus('Delete failed','err'); }
+    });
+  });
+}
+
 function renderLocalesPanel() {
   const main = document.getElementById('main');
   const keySet = new Set();
@@ -914,6 +1056,9 @@ async function load() {
     content.milestones   = content.milestones   || [];
     content.planned_work = content.planned_work || [];
     content.gallery      = content.gallery      || [];
+    content.hero = content.hero && typeof content.hero === 'object' ? content.hero : {};
+    content.hero.background_video = content.hero.background_video || '';
+    content.hero.background_image = content.hero.background_image || '';
 
     locales = locales && typeof locales === 'object' ? locales : {};
     ['en', 'it', 'fr', 'es'].forEach((lang) => {
