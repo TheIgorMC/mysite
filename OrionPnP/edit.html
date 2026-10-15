@@ -677,15 +677,34 @@ function applyGalleryField(el) {
 
 async function uploadAssetFile(file) {
   if (!adminAuthenticated) { setStatus('Login required', 'err'); return; }
-  const fd = new FormData();
-  fd.append('file', file);
+  setStatus(`Uploading ${file.name}…`);
   try {
-    const res = await fetch('/api/assets/upload', {method:'POST', body:fd});
-    const data = await res.json();
-    if (!res.ok) { setStatus(data.error || 'Upload failed','err'); return; }
+    const data = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/assets/upload');
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setStatus(`Uploading ${file.name}… ${Math.round(e.loaded / e.total * 100)}%`);
+        }
+      });
+      xhr.addEventListener('load', () => {
+        let parsed;
+        try { parsed = JSON.parse(xhr.responseText); } catch { parsed = {}; }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+        else reject(new Error(parsed.error || `Upload failed (${xhr.status})`));
+      });
+      xhr.addEventListener('error', () => reject(new Error('Upload failed (network error)')));
+      xhr.addEventListener('timeout', () => reject(new Error('Upload timed out')));
+      xhr.timeout = 10 * 60 * 1000; // 10 min, mobile uploads can be slow
+      const fd = new FormData();
+      fd.append('file', file);
+      xhr.send(fd);
+    });
     setStatus(`Uploaded ${data.name} ✓`, 'ok');
     setTimeout(() => setStatus(''), 3000);
-  } catch { setStatus('Upload failed','err'); }
+  } catch (err) {
+    setStatus(err.message || 'Upload failed', 'err');
+  }
 }
 
 /* ─────────────────────────────────────────────────────── hero panel */
