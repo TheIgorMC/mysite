@@ -199,6 +199,7 @@ const TABS = [
   { key: 'planned_work', label: 'Planned Work' },
   { key: 'gallery',      label: 'Gallery' },
   { key: 'hero',         label: 'Homepage Background' },
+  { key: 'registrations', label: 'Registrations' },
   { key: 'locales',      label: 'Locales' },
 ];
 
@@ -345,6 +346,7 @@ async function loginWithPassword(password) {
   try { data = await res.json(); } catch {}
   if (!res.ok) throw new Error(data.error || 'Login failed');
   adminAuthenticated = true;
+  await refreshRegistrations();
   updateAuthUI();
 }
 
@@ -362,6 +364,7 @@ function renderTabs() {
     if (t.key === 'locales') count = Object.keys((locales && locales.en) || {}).length;
     else if (t.key === 'gallery') count = (content && content.gallery ? content.gallery.length : 0);
     else if (t.key === 'hero') count = (content && content.hero && (content.hero.background_video || content.hero.background_image)) ? 1 : 0;
+    else if (t.key === 'registrations') count = registrationsList.length;
     else count = (content && content[t.key] ? content[t.key].length : 0);
     return `<button class="tab${t.key===activeTab?' active':''}" data-tab="${t.key}">${t.label} <span style="opacity:.5;font-size:.78em">(${count})</span></button>`;
   }).join('');
@@ -374,6 +377,7 @@ function renderMain() {
   if (activeTab === 'locales') { renderLocalesPanel(); return; }
   if (activeTab === 'gallery') { renderGalleryPanel(); return; }
   if (activeTab === 'hero')    { renderHeroPanel(); return; }
+  if (activeTab === 'registrations') { renderRegistrationsPanel(); return; }
 
   const main = document.getElementById('main');
   const schema = SCHEMA[activeTab];
@@ -476,6 +480,15 @@ function renderMain() {
 
 /* ─────────────────────────────────────────────────────── gallery panel */
 let assetList = [];   // [{name, url, size}] loaded from /api/assets
+let registrationsList = [];   // loaded from /api/registrations (admin only)
+
+async function refreshRegistrations() {
+  if (!adminAuthenticated) { registrationsList = []; return; }
+  try {
+    const res = await fetch('/api/registrations', {headers:{Accept:'application/json'}});
+    registrationsList = res.ok ? await res.json() : [];
+  } catch { registrationsList = []; }
+}
 
 async function refreshAssets() {
   try {
@@ -846,6 +859,81 @@ function renderHeroPanel() {
   });
 }
 
+/* ─────────────────────────────────────────────────────── registrations panel */
+function csvEscape(v) {
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function exportRegistrationsCsv() {
+  const cols = ['created_at', 'name', 'email', 'interest', 'intent', 'max_price', 'language', 'message'];
+  const rows = [cols.join(',')];
+  registrationsList.forEach(r => rows.push(cols.map(c => csvEscape(r[c])).join(',')));
+  const blob = new Blob([rows.join('\n')], {type: 'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `orionpnp-registrations-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function renderRegistrationsPanel() {
+  const main = document.getElementById('main');
+
+  if (!adminAuthenticated) {
+    main.innerHTML = `<div class="panel"><p class="empty">Login required to view registrations.</p></div>`;
+    return;
+  }
+
+  const rows = registrationsList
+    .slice()
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    .map(r => `
+    <div class="gallery-item-card" data-reg-id="${esc(r.id)}">
+      <div class="gallery-item-fields" style="width:100%">
+        <div class="fgrid">
+          <div class="field"><label>Name</label><div>${esc(r.name)}</div></div>
+          <div class="field"><label>Email</label><div><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></div></div>
+        </div>
+        <div class="fgrid">
+          <div class="field"><label>Interest</label><div>${esc(r.interest)}</div></div>
+          <div class="field"><label>Intent</label><div>${esc(r.intent || '')}${r.max_price != null ? ` · max €${esc(r.max_price)}` : ''}</div></div>
+        </div>
+        ${r.message ? `<div class="field"><label>Message</label><div>${esc(r.message)}</div></div>` : ''}
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">${esc(r.created_at || '')} · ${esc(r.language || '')}</div>
+      </div>
+      <div class="gallery-item-actions">
+        <button class="btn-sm btn-del" data-reg-del="${esc(r.id)}">Delete</button>
+      </div>
+    </div>`).join('');
+
+  main.innerHTML = `<div class="panel">
+    <div class="panel-header">
+      <h2>Registrations</h2>
+      <span class="cnt">${registrationsList.length} item${registrationsList.length!==1?'s':''}</span>
+    </div>
+    <div style="margin-bottom:1rem">
+      <button class="btn btn-sm" id="exportRegBtn" ${registrationsList.length ? '' : 'disabled'}>Export CSV</button>
+    </div>
+    <div id="registrationsList">${rows || '<p class="empty">No registrations yet.</p>'}</div>
+  </div>`;
+
+  document.getElementById('exportRegBtn')?.addEventListener('click', exportRegistrationsCsv);
+
+  main.querySelectorAll('[data-reg-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.regDel;
+      if (!confirm('Delete this registration?\nThis cannot be undone.')) return;
+      try {
+        const res = await fetch(`/api/registrations/${encodeURIComponent(id)}`, {method:'DELETE'});
+        if (!res.ok) { setStatus('Delete failed','err'); return; }
+        await refreshRegistrations();
+        renderAll();
+      } catch { setStatus('Delete failed','err'); }
+    });
+  });
+}
+
 function renderLocalesPanel() {
   const main = document.getElementById('main');
   const keySet = new Set();
@@ -1085,6 +1173,7 @@ async function load() {
     });
 
     await refreshAssets();
+    await refreshRegistrations();
     updateAuthUI();
     renderAll();
   } catch {
