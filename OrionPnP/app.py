@@ -344,6 +344,27 @@ def export_registrations():
     return jsonify(registrations if isinstance(registrations, list) else [])
 
 
+@app.get("/api/registrations")
+@admin_required
+def list_registrations():
+    registrations = _load_json(REGISTRATIONS_FILE, [])
+    return jsonify(registrations if isinstance(registrations, list) else [])
+
+
+@app.delete("/api/registrations/<reg_id>")
+@admin_required
+def delete_registration(reg_id):
+    with WRITE_LOCK:
+        registrations = _load_json(REGISTRATIONS_FILE, [])
+        if not isinstance(registrations, list):
+            registrations = []
+        filtered = [r for r in registrations if r.get("id") != reg_id]
+        if len(filtered) == len(registrations):
+            return _json_response("Not found", 404)
+        _atomic_write_json(REGISTRATIONS_FILE, filtered)
+    return jsonify({"ok": True})
+
+
 @app.put("/api/content")
 @admin_required
 def put_content():
