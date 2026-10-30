@@ -11,16 +11,21 @@
                 <!-- Selection toolbar (hidden by default) -->
                 <div id="jobs-selection-toolbar" class="hidden flex items-center gap-3">
                     <span id="jobs-selected-count" class="text-sm font-medium text-indigo-700 dark:text-indigo-300"></span>
-                    <button onclick="showCombinedBomModal()" 
+                    <button onclick="showCombinedBomModal()"
                             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-sm">
                         <i class="fas fa-clipboard-list mr-2"></i>Combined Order BOM
                     </button>
-                    <button onclick="clearJobSelection()" 
+                    <button onclick="clearJobSelection()"
                             class="px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm">
                         <i class="fas fa-times mr-1"></i>Clear
                     </button>
                 </div>
-                <button onclick="showCreateJobModal()" 
+                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                    <input type="checkbox" id="jobs-show-completed" onchange="setJobsShowCompleted(this.checked)"
+                           class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                    Includi completati
+                </label>
+                <button onclick="showCreateJobModal()"
                         class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
                     <i class="fas fa-plus mr-2"></i>Create Job
                 </button>

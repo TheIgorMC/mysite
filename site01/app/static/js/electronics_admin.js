@@ -3016,7 +3016,7 @@ async function loadJobs() {
             }
         }
         
-        renderJobsGrid(allJobs);
+        applyJobsFilter();
     } catch (error) {
         console.error('Error loading jobs:', error);
         allJobs = [];
@@ -3031,6 +3031,20 @@ async function loadJobs() {
             `;
         }
     }
+}
+
+let showCompletedJobs = false;
+
+function setJobsShowCompleted(checked) {
+    showCompletedJobs = checked;
+    applyJobsFilter();
+}
+
+function applyJobsFilter() {
+    const visible = showCompletedJobs
+        ? allJobs
+        : allJobs.filter(job => (job.status || 'created') !== 'completed');
+    renderJobsGrid(visible);
 }
 
 function renderJobsGrid(jobs) {
