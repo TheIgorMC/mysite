@@ -84,6 +84,12 @@
     .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent2);}
     .field textarea{resize:vertical;min-height:72px;line-height:1.5;}
     .field input[type=number]{-moz-appearance:textfield;}
+    .list-toolbar input[type=search]{
+      background:rgba(6,13,26,.85);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:inherit;font-size:.88rem;padding:.42rem .7rem;
+      transition:border-color .15s;
+    }
+    .list-toolbar input[type=search]:focus{outline:none;border-color:var(--accent2);}
     /* ── lang toggle ── */
     .lang-hdr{margin-top:.6rem;}
     .lang-btn{background:none;border:none;color:var(--accent2);font-size:.75rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:.3rem;}
@@ -207,6 +213,8 @@ const SCHEMA = {
   updates: {
     summary: i => i.title?.en || '(untitled)',
     meta:    i => [i.date, i.status].filter(Boolean).join(' · '),
+    concluded: i => i.status === 'archived',
+    searchText: i => [i.title?.en, i.body?.en, i.date, i.status, ...(i.tags||[])].filter(Boolean).join(' '),
     fields: [
       { k:'date',   label:'Date',              type:'text',     half:true  },
       { k:'status', label:'Status',            type:'select',   half:true,  opts:['active','draft','archived'] },
@@ -219,6 +227,7 @@ const SCHEMA = {
   timeline: {
     summary: i => i.label?.en || '(untitled)',
     meta:    i => i.date || '',
+    searchText: i => [i.label?.en, i.description?.en, i.date].filter(Boolean).join(' '),
     fields: [
       { k:'date',        label:'Date',        type:'text',     half:false },
       { k:'label',       label:'Label',       type:'text',     half:false, ml:true },
@@ -229,6 +238,8 @@ const SCHEMA = {
   milestones: {
     summary: i => i.name?.en || '(untitled)',
     meta:    i => [i.target, i.progress != null ? i.progress+'%' : ''].filter(Boolean).join(' · '),
+    concluded: i => (Number(i.progress) || 0) >= 100,
+    searchText: i => [i.name?.en, i.description?.en, i.target].filter(Boolean).join(' '),
     fields: [
       { k:'target',      label:'Target',      type:'text',     half:true  },
       { k:'progress',    label:'Progress %',  type:'number',   half:true  },
@@ -239,15 +250,23 @@ const SCHEMA = {
   },
   planned_work: {
     summary: i => i.task?.en || i.window || '(untitled)',
-    meta:    i => i.window || '',
+    meta:    i => [i.window, i.done ? 'done' : ''].filter(Boolean).join(' · '),
+    concluded: i => !!i.done,
+    searchText: i => [i.task?.en, i.details?.en, i.window].filter(Boolean).join(' '),
     fields: [
-      { k:'window',  label:'Window',  type:'text',     half:false },
-      { k:'task',    label:'Task',    type:'text',     half:false, ml:true },
-      { k:'details', label:'Details', type:'textarea', half:false, ml:true },
+      { k:'window',  label:'Window',    type:'text',     half:true  },
+      { k:'done',    label:'Completed', type:'checkbox', half:true  },
+      { k:'task',    label:'Task',      type:'text',     half:false, ml:true },
+      { k:'details', label:'Details',   type:'textarea', half:false, ml:true },
     ],
-    blank: () => ({ window:'', task:{en:'',it:'',fr:'',es:''}, details:{en:'',it:'',fr:'',es:''} }),
+    blank: () => ({ window:'', done:false, task:{en:'',it:'',fr:'',es:''}, details:{en:'',it:'',fr:'',es:''} }),
   },
 };
+
+const tabFilters = {}; // { [tabKey]: { search: '', showConcluded: false } }
+function getTabFilter(tab) {
+  return tabFilters[tab] || (tabFilters[tab] = { search: '', showConcluded: false });
+}
 
 /* ─────────────────────────────────────────────────────── helpers */
 function today() { return new Date().toISOString().slice(0,10); }
@@ -256,6 +275,7 @@ function esc(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 function getVal(item, f, lang='en') {
   if (f.ml)      return item[f.k]?.[lang] ?? '';
   if (f.toVal)   return f.toVal(item[f.k]);
+  if (f.type === 'checkbox') return !!item[f.k];
   return item[f.k] ?? '';
 }
 
@@ -267,6 +287,8 @@ function setVal(item, f, raw, lang='en') {
     item[f.k] = f.fromVal(raw);
   } else if (f.type === 'number') {
     item[f.k] = raw === '' ? 0 : Number(raw);
+  } else if (f.type === 'checkbox') {
+    item[f.k] = !!raw;
   } else {
     item[f.k] = raw;
   }
@@ -382,21 +404,52 @@ function renderMain() {
   const main = document.getElementById('main');
   const schema = SCHEMA[activeTab];
   const items  = content[activeTab] || [];
+  const filter = getTabFilter(activeTab);
+
+  const q = filter.search.trim().toLowerCase();
+  const visibleIdx = items
+    .map((item, idx) => idx)
+    .filter(idx => {
+      const item = items[idx];
+      if (!filter.showConcluded && schema.concluded && schema.concluded(item)) return false;
+      if (q && !(schema.searchText ? schema.searchText(item) : schema.summary(item)).toLowerCase().includes(q)) return false;
+      return true;
+    });
 
   let html = `<div class="panel">
     <div class="panel-header">
       <h2>${TABS.find(t=>t.key===activeTab).label}</h2>
-      <span class="cnt">${items.length} item${items.length!==1?'s':''}</span>
+      <span class="cnt">${visibleIdx.length}${visibleIdx.length!==items.length?` of ${items.length}`:''} item${items.length!==1?'s':''}</span>
+    </div>
+    <div class="list-toolbar" style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.8rem">
+      <input type="search" id="itemSearch" placeholder="Search…" value="${esc(filter.search)}" style="flex:1;min-width:160px">
+      ${schema.concluded ? `<label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--muted);white-space:nowrap">
+        <input type="checkbox" id="showConcluded" ${filter.showConcluded?'checked':''}> Includi conclusi
+      </label>` : ''}
     </div>
     <div class="items" id="itemList">`;
 
-  items.forEach((item, idx) => {
+  visibleIdx.forEach(idx => {
     const open = openCards[activeTab].has(idx);
-    html += renderCard(schema, item, idx, open);
+    html += renderCard(schema, items[idx], idx, open);
   });
+
+  if (!visibleIdx.length) html += `<p class="empty">${items.length ? 'No entries match the current filter.' : 'No entries yet.'}</p>`;
 
   html += `</div><button class="btn-add" id="btnAdd">+ Add entry</button></div>`;
   main.innerHTML = html;
+
+  document.getElementById('itemSearch').addEventListener('input', e => {
+    filter.search = e.target.value;
+    renderMain();
+    document.getElementById('itemSearch').focus();
+    const v = document.getElementById('itemSearch').value;
+    document.getElementById('itemSearch').setSelectionRange(v.length, v.length);
+  });
+  document.getElementById('showConcluded')?.addEventListener('change', e => {
+    filter.showConcluded = e.target.checked;
+    renderMain();
+  });
 
   // card header toggles
   main.querySelectorAll('.card-hdr').forEach(hdr => {
@@ -419,8 +472,9 @@ function renderMain() {
       const lang = el.dataset.lang || null;
       const f    = schema.fields.find(x => x.k === fk);
       if (!f) return;
-      if (lang) setVal(sectionItems[idx], f, el.value, lang);
-      else      setVal(sectionItems[idx], f, el.value);
+      const raw = f.type === 'checkbox' ? el.checked : el.value;
+      if (lang) setVal(sectionItems[idx], f, raw, lang);
+      else      setVal(sectionItems[idx], f, raw);
       // update summary in header without full re-render
       const hdrSum = el.closest('.card')?.querySelector('.card-summary');
       if (hdrSum) hdrSum.textContent = schema.summary(sectionItems[idx]);
@@ -1079,6 +1133,7 @@ function renderInput(f, val, idx, lang) {
   if (f.type === 'select')   return `<select ${attrs}>${f.opts.map(o=>`<option${o===val?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
   if (f.type === 'textarea') return `<textarea ${attrs} rows="3">${v}</textarea>`;
   if (f.type === 'number')   return `<input type="number" ${attrs} value="${v}" min="0" max="100">`;
+  if (f.type === 'checkbox') return `<input type="checkbox" ${attrs} ${val ? 'checked' : ''}>`;
   return `<input type="text" ${attrs} value="${v}">`;
 }
 
